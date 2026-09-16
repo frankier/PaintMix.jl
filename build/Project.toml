@@ -1,0 +1,20 @@
+# Entry project for the compiled shared library.
+#
+# Only what the library itself executes belongs here. Build tooling
+# (JuliaC, JuliaLibWrapping) lives in build-env/ so it is not part of the
+# library's dependency closure.
+
+name = "PaintMixLib"
+uuid = "02c30ab6-0f6b-4cce-b39c-6cfbbc18ec0f"
+version = "0.1.0"
+
+[deps]
+JLWInterop = "65e54657-ed21-41a3-96db-71ab7fa6d94b"
+PaintMix = "baf22a60-1c55-4971-a207-55391bb51cf2"
+
+[compat]
+JLWInterop = "0.2"
+julia = "1.13"
+
+[sources]
+PaintMix = {path = ".."}

@@ -1,0 +1,6 @@
+[deps]
+PaintMix = "baf22a60-1c55-4971-a207-55391bb51cf2"
+Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+
+[sources]
+PaintMix = {path = ".."}

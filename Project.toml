@@ -1,0 +1,9 @@
+name = "PaintMix"
+uuid = "baf22a60-1c55-4971-a207-55391bb51cf2"
+version = "0.1.0"
+
+[compat]
+julia = "1.13"
+
+[workspace]
+projects = ["precompute", "precompute/test", "test", "build", "benchmarks"]

@@ -1,0 +1,35 @@
+# Julia
+/Manifest-v*.toml
+!/Manifest.toml
+
+# Build products
+/build/out/
+/build/data/*.pmx
+/build/*-bundle/
+/build/build-env/Manifest.toml
+/test/Manifest.toml
+/benchmarks/Manifest.toml
+/precompute/test/Manifest.toml
+
+# Generated bindings are checked in, but virtualenvs and build trees are not
+/build/**/venv/
+/build/**/__pycache__/
+/build/**/*.egg-info/
+
+# The promoted release payload is a 96 MiB build artifact, reproduced by
+# precompute/scripts/generate.jl; see data/default/README.md.
+/data/default/*.pmx
+
+# The promoted release payload is a 96 MiB build artifact, reproduced by
+# precompute/scripts/generate.jl; see data/default/README.md.
+/data/default/*.pmx
+
+# Precompute artifacts
+/precompute/output/*
+!/precompute/output/.gitignore
+/precompute/inputs/*.duckdb
+/precompute/inputs/*.csv
+
+# Editors and OS
+*.swp
+.DS_Store

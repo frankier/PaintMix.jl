@@ -1,0 +1,162 @@
+# Conventions and generation parameters for the default PaintMix model.
+#
+# Plan step 1 fixes these; changing any of them produces a *different* model,
+# not a re-run. The generated payload records the resulting conventions in
+# its header, and `precompute/output/<model-id>.toml` records this file's
+# hash alongside the input checksums.
+
+schema_version = 1
+
+[color]
+# Core coordinate system for both tables and all residuals.
+color_space = "linear-srgb-d65"
+# Paper equation (7): XYZ tristimulus to linear sRGB, row-major, already
+# divided by Y_D65 normalization. Pinned rather than derived so the runtime
+# and the precompute pipeline cannot disagree.
+xyz_to_rgb = [
+    [3.2406, -1.5372, -0.4986],
+    [-0.9689, 1.8758, 0.0415],
+    [0.0557, -0.2040, 1.0570],
+]
+observer = "CIE 1931 2-degree"
+illuminant = "D65"
+# The tables store linear light. Encoded sRGB never enters the model; the
+# runtime exposes `linear_from_srgb8` / `srgb8_from_linear` for image data.
+storage_transfer = "linear"
+
+[spectra]
+wavelength_min_nm = 380
+wavelength_max_nm = 750
+wavelength_step_nm = 10
+# 38 samples. Integration is trapezoidal on this grid; see spectra.jl.
+integration = "trapezoidal"
+
+[saunderson]
+# Paper equation (6). `kins` is deliberately absent: the plan uses the
+# paper's convention, which has no added specular term. The source workbook
+# lists both 1.0 and 0.0 for `kins`, so it is not a usable constant.
+k1 = 0.03
+k2 = 0.65
+
+[inputs]
+primary = "data/Final_artist_database.xlsx"
+primary_sheet = "k and s data"
+reflectance_cross_check = "data/Reflectance Data for Golden HB 10 mil Drawdowns over White.xlsx"
+checksums = "precompute/inputs/checksums.sha256"
+# CIE 1931 2-degree observer and D65 relative SPD on the configuration grid.
+# The source workbook does not carry an observer table, so the standard CIE
+# tables are an explicit input; see inputs/README.md for provenance.
+observer_file = "precompute/inputs/cie_1931_2deg_d65_10nm.csv"
+# DuckDB database the import step writes and the pipeline reads.
+database = "precompute/output/paintmix.duckdb"
+# Cell ranges are recorded in precompute/inputs/README.md.
+absorption_rows = "B6:B43"
+scattering_rows = "B45:B82"
+
+# Pigment order is fixed for the lifetime of a model. It is the order of the
+# concentrations in every table, latent, and report.
+[[pigments]]
+code = "PB15:4"
+name = "Phthalo Blue (Green Shade)"
+ci = "PB 15:4"
+column = "Q"
+
+[[pigments]]
+code = "PR122"
+name = "Quinacridone Magenta"
+ci = "PR 122"
+column = "K"
+
+[[pigments]]
+code = "PY74"
+name = "Arylide (Hansa) Yellow Opaque"
+ci = "PY 74"
+column = "D"
+note = "plan text names PY73; the selected source provides PY74. See inputs/README.md."
+
+[[pigments]]
+code = "PW6"
+name = "Titanium White"
+ci = "PW 6"
+column = "Z"
+
+[grid]
+# Development grids for CI, release grid for the shipped payload. The release
+# resolution is not reduced without measured error results.
+release_n = 256
+dev_n = 32
+# A 256^3 pair is 96 MiB before headers and is stored as UInt8 with b/255
+# scaling. Wider storage is a format variant, not a runtime option.
+storage = "u8"
+byte_scale = "b/255"
+interpolation = "trilinear"
+index_order = "channel-fast"
+
+[quantization]
+# Joint largest-remainder rounding of all four concentrations to integers
+# summing to 255, storing the first three. Independent rounding can imply a
+# negative fourth concentration.
+rule = "simplex-largest-remainder"
+# Forward-table vertices outside the simplex are projected onto it before
+# evaluation, so K-M is never evaluated with a negative fourth
+# concentration. The paper does not specify this padding rule; it is an
+# implementation choice to be quantified near every face, edge, and vertex.
+padding = "project-to-simplex"
+
+[surrogate]
+# K = epsilon + softplus(thetaK), S = epsilon + softplus(thetaS).
+# Unconstrained L-BFGS on the transformed variables, warm-started as alpha
+# halves, per the paper's continuation schedule.
+epsilon = 1.0e-6
+alpha_initial = 1.0e5
+# Halving continues until the surrogate gamut fits inside the RGB cube
+# (Epush <= push_tolerance), as the paper terminates, or until alpha reaches
+# alpha_final or the halving cap, whichever comes first.
+alpha_final = 1.0e-2
+alpha_halvings = 40
+push_tolerance = 1.0e-8
+max_iterations = 200
+time_limit_seconds = 7200
+# Equally spaced concentrations on the four simplex faces, as the paper
+# describes for equations (16)-(17). The RGB-surface area element is reported
+# by `quadrature_report` but is not used as a weight: it depends on the
+# fitted parameters, which would make the integral a moving-boundary one.
+surface_divisions = 20
+
+[unmix]
+# Active-face reference solver: for each of the 15 nonempty pigment subsets,
+# fewer than two pigments are evaluated directly and the rest optimize
+# softmax coordinates with one logit fixed to zero.
+strategy = "active-face-softmax"
+objective = "rgb-least-squares"
+restarts = 4
+# 50 iterations matches a 150-iteration ground truth exactly on a 1200-point
+# sample of the fitted model; further iterations only cost time. See
+# precompute/README.md.
+max_iterations = 50
+# Step stationarity tolerance and the concentration below which a pigment is
+# treated as inactive (dropped and re-solved on the lower-dimensional face).
+tolerance = 1.0e-10
+face_threshold = 1.0e-6
+
+[generation]
+# The release profile uses the surrogate settings above. The dev profile is
+# for pipeline smoke tests and CI: it caps the surrogate effort so a dev run
+# stays minutes, and uses grid.dev_n.
+dev_surface_divisions = 8
+dev_max_iterations = 40
+dev_alpha_halvings = 12
+# Coarse-to-fine inverse: solve the reference on a coarse RGB grid, then
+# polish the fine grid with a short bulk solve seeded from it. 15 iterations
+# matched the reference exactly on a held-out sample of the fitted model.
+coarse_n = 64
+fine_max_iterations = 15
+
+[validation]
+# Provisional targets from the plan's acceptance table. Numeric, not paper
+# guarantees.
+lut_channel_p99 = 0.00784313725490196
+lut_channel_max = 0.03137254901960784
+lut_oklab_p99 = 0.01
+roundtrip_f32 = 2.0e-6
+roundtrip_f64 = 1.0e-12

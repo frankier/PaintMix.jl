@@ -8,29 +8,11 @@
 # Reports are plain dictionaries so they serialize into the provenance
 # sidecar and can be compared between runs.
 
-"""
-    DeterministicRNG
+# Sampling uses `Random.Xoshiro` from the standard library. The stream is not
+# promised across Julia versions, but it is stable in practice, which is all
+# the validation reports need.
 
-SplitMix64. Sampling must be reproducible across processes and runs, and the
-standard library has no stable, seedable stream guaranteed across versions,
-so the sampler carries its own generator.
-"""
-mutable struct DeterministicRNG
-    state::UInt64
-end
-
-DeterministicRNG(seed::Integer = 0x12345678) = DeterministicRNG(UInt64(seed) + 0x9e3779b97f4a7c15)
-
-function rand_float(rng::DeterministicRNG)
-    rng.state += 0x9e3779b97f4a7c15
-    z = rng.state
-    z = (z ⊻ (z >> 30)) * 0xbf58476d1ce4e5b9
-    z = (z ⊻ (z >> 27)) * 0x94d049bb133111eb
-    z = z ⊻ (z >> 31)
-    return (z >> 11) * (1.0 / 9007199254740992.0)
-end
-
-rand_rgb(rng::DeterministicRNG) = (rand_float(rng), rand_float(rng), rand_float(rng))
+@inline rand_rgb(rng::AbstractRNG) = (rand(rng), rand(rng), rand(rng))
 
 # --- spectral reference implementation of encode/mix ----------------------
 
@@ -78,7 +60,7 @@ A deterministic validation corpus: the eight RGB cube corners, the four
 pigment vertices and white, a spread of random colors, and some near-black
 and near-white samples where residuals dominate.
 """
-function corpus(rng::DeterministicRNG, count::Integer)
+function corpus(rng::AbstractRNG, count::Integer)
     colors = NTuple{3,Float64}[]
     for r in (0.0, 1.0), g in (0.0, 1.0), b in (0.0, 1.0)
         push!(colors, (r, g, b))
@@ -109,7 +91,7 @@ function quality_report(
     ) where {T}
     settings = unmix_settings(cfg)
     scratch = SolverScratch()
-    rng = DeterministicRNG(seed)
+    rng = Xoshiro(seed)
     points = corpus(rng, colors)
     latents = Vector{Tuple{NTuple{4,T},NTuple{3,T}}}(undef, length(points))
     for (i, rgb) in enumerate(points)
@@ -121,9 +103,9 @@ function quality_report(
     ok = Float64[]
     worst = (0.0, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), 0.0)
     @inbounds for _ in 1:pairs
-        ia = 1 + floor(Int, rand_float(rng) * (length(points) - 1))
-        ib = 1 + floor(Int, rand_float(rng) * (length(points) - 1))
-        t = rand_float(rng)
+        ia = 1 + floor(Int, rand(rng) * (length(points) - 1))
+        ib = 1 + floor(Int, rand(rng) * (length(points) - 1))
+        t = rand(rng)
         a = points[ia]
         b = points[ib]
         ca, ra = latents[ia]
@@ -251,7 +233,7 @@ function roundtrip_report(
         model::PaintMix.PigmentModel, cfg::AbstractDict; colors::Integer = 2000,
         seed::Integer = 7,
     )
-    rng = DeterministicRNG(seed)
+    rng = Xoshiro(seed)
     points = corpus(rng, colors)
     err32 = Float64[]
     err64 = Float64[]
@@ -351,7 +333,7 @@ function continuity_report(
         model::PaintMix.PigmentModel, cfg::AbstractDict;
         lines::Integer = 256, points::Integer = 65, seed::Integer = 424242,
     )
-    rng = DeterministicRNG(seed)
+    rng = Xoshiro(seed)
     jumps = Float64[]
     decode_err = Float64[]
     worst_jump = (0.0, (0.0, 0.0, 0.0))

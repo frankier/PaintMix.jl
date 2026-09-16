@@ -16,45 +16,30 @@
 
 using PaintMix
 using Printf: @printf
-using Random: MersenneTwister
-
-struct SplitMix64
-    state::Base.RefValue{UInt64}
-end
-
-SplitMix64(seed::UInt64) = SplitMix64(Ref(seed))
-
-@inline function next_u64(r::SplitMix64)
-    s = r.state[] + 0x9e3779b97f4a7c15
-    r.state[] = s
-    z = (s ⊻ (s >> 30)) * 0xbf58476d1ce4e5b9
-    z = (z ⊻ (z >> 27)) * 0x94d049bb133111eb
-    return z ⊻ (z >> 31)
-end
+using Random: Xoshiro
 
 function synthetic_model(n::Integer)
-    rng = SplitMix64(0x62656e63686d6172)
+    rng = Xoshiro(0x62656e63686d6172)
     m = Int(n)
     payload = 3 * m^3
     fwd = Vector{UInt8}(undef, payload)
     inv = Vector{UInt8}(undef, payload)
     for i in 1:payload
-        fwd[i] = UInt8(next_u64(rng) & 0xff)
+        fwd[i] = rand(rng, UInt8)
     end
     for v in 0:(m^3 - 1)
-        a = Int(UInt8(next_u64(rng) & 0xff))
-        b = Int(UInt8(next_u64(rng) & 0xff)) % (256 - a)
-        c = Int(UInt8(next_u64(rng) & 0xff)) % (256 - a - b)
+        a = Int(rand(rng, UInt8))
+        b = Int(rand(rng, UInt8)) % (256 - a)
+        c = Int(rand(rng, UInt8)) % (256 - a - b)
         base = 3v + 1
         inv[base] = UInt8(a)
         inv[base + 1] = UInt8(b)
         inv[base + 2] = UInt8(c)
     end
     return PigmentModel(
-        ntuple(_ -> UInt8(next_u64(rng) & 0xff), Val(16)),
+        ntuple(_ -> rand(rng, UInt8), Val(16)),
         ByteLUT(m, inv), ByteLUT(m, fwd), FORMAT_VERSION,
         FLAG_FORWARD_SIMPLEX_PROJECTED | FLAG_INVERSE_LARGEST_REMAINDER,
-        crc32(fwd), crc32(inv),
     )
 end
 
@@ -113,7 +98,7 @@ end
 
 function run_benchmarks(model::PigmentModel, samples::Int)
     n = grid_n(model)
-    rng = MersenneTwister(7)
+    rng = Xoshiro(7)
     a = (rand(rng), rand(rng), rand(rng))
     b = (rand(rng), rand(rng), rand(rng))
     dest = zeros(3)
@@ -150,8 +135,7 @@ function main(args)
         load_time = @elapsed m = read_model(opts["payload"])
         m
     end
-    @printf("model: n = %d, id = %s, forward crc = 0x%08x\n",
-        grid_n(model), model_id(model), model.forward_crc32)
+    @printf("model: n = %d, id = %s\n", grid_n(model), model_id(model))
     opts["payload"] === nothing ||
         @printf("%-40s %10.4f s\n", "payload load and validation", load_time)
     return run_benchmarks(model, Int(opts["samples"]))

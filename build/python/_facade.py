@@ -49,7 +49,6 @@ __all__ = [
     "PM_ERR_TOTAL",
     "abi_version",
     "model_info",
-    "embedded_table_crc32",
     "encode",
     "decode",
     "mix",
@@ -76,8 +75,6 @@ class ModelDescription:
     grid_n: int
     channel_count: int
     flags: int
-    forward_crc32: int
-    inverse_crc32: int
     model_id: bytes
 
     @property
@@ -99,7 +96,7 @@ def _decode_message(buf) -> str:
 
 
 def model_info() -> ModelDescription:
-    """Grid size, payload checksums, generation flags, and model identifier."""
+    """Grid size, generation flags, and model identifier."""
     info = _lowlevel.paintmix_model_info()
     if info.status.code != 0:
         raise JLWError(info.status.code, _decode_message(info.status.message))
@@ -112,24 +109,8 @@ def model_info() -> ModelDescription:
         grid_n=int(info.grid_n),
         channel_count=int(info.channel_count),
         flags=int(info.flags),
-        forward_crc32=int(info.forward_crc32),
-        inverse_crc32=int(info.inverse_crc32),
         model_id=ident,
     )
-
-
-def embedded_table_crc32(index: int) -> int:
-    """CRC-32 of an embedded table, recomputed from the live bytes.
-
-    `index` is 0 for the inverse table and 1 for the forward table. The result
-    must equal `model_info().inverse_crc32` / `.forward_crc32`; if it does not,
-    the payload did not survive trimming or relocation.
-    """
-    from ._lowlevel import CVector_borrowed_UInt32
-
-    out = np.zeros(1, dtype=np.uint32)
-    _lowlevel.paintmix_table_crc32(int(index), CVector_borrowed_UInt32.from_numpy(out))
-    return int(out[0])
 
 
 def _dtype_of(arrays, dtype):

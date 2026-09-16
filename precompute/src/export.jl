@@ -205,10 +205,7 @@ function build_model(ft::FloatTables, cfg::AbstractDict, provenance::AbstractDic
     id = _model_id_from(text)
     inverse, forward = quantize_tables(ft, cfg)
     flags = PaintMix.FLAG_FORWARD_SIMPLEX_PROJECTED | PaintMix.FLAG_INVERSE_LARGEST_REMAINDER
-    return PaintMix.PigmentModel(
-        id, inverse, forward, PaintMix.FORMAT_VERSION, flags,
-        PaintMix.crc32(forward.data), PaintMix.crc32(inverse.data),
-    )
+    return PaintMix.PigmentModel(id, inverse, forward, PaintMix.FORMAT_VERSION, flags)
 end
 
 """
@@ -251,8 +248,6 @@ function write_sidecar(path::AbstractString, provenance::AbstractDict, model, ft
         "format_version" => Int(PaintMix.FORMAT_VERSION),
         "grid_n" => PaintMix.grid_n(model),
         "flags" => Int(model.flags),
-        "inverse_crc32" => string(model.inverse_crc32; base = 16, pad = 8),
-        "forward_crc32" => string(model.forward_crc32; base = 16, pad = 8),
         "payload_bytes" => 128 + 6 * PaintMix.grid_n(model)^3,
         "table_bytes_each" => 3 * PaintMix.grid_n(model)^3,
         "float_grid_n" => ft === nothing ? PaintMix.grid_n(model) : ft.n,

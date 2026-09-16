@@ -1,5 +1,5 @@
-# Payload format tests: header conventions, checksums, validation, and the
-# packaged default model loader.
+# Payload format tests: header conventions, validation, and the packaged
+# default model loader.
 
 # Build a payload for a model that `write_model` would refuse to validate: the
 # header is written directly, so the file is well-formed but invalid.
@@ -9,17 +9,6 @@ function BytesForTest(model::PigmentModel)
     write(io, model.inverse.data)
     write(io, model.forward.data)
     return take!(io)
-end
-
-@testset "crc32 matches the reference vectors" begin
-    @test crc32(UInt8[]) == 0x00000000
-    @test crc32(Vector{UInt8}(codeunits("123456789"))) == 0xcbf43926
-    @test crc32(Vector{UInt8}(codeunits("The quick brown fox jumps over the lazy dog"))) ==
-        0x414fa339
-    @test crc32(UInt8[0x00]) == 0xd202ef8d
-    # Length argument.
-    @test crc32(Vector{UInt8}(codeunits("123456789")), 4) ==
-        crc32(Vector{UInt8}(codeunits("1234")))
 end
 
 @testset "payload round trip" begin
@@ -34,8 +23,6 @@ end
     @test back.format_version == FORMAT_VERSION
     @test model_id(back) == model_id(model)
     @test grid_n(back) == 4
-    @test back.inverse_crc32 == crc32(model.inverse.data)
-    @test back.forward_crc32 == crc32(model.forward.data)
     # Re-serializing a parsed model is byte-identical.
     @test model_to_bytes(back) == bytes
 end
@@ -51,7 +38,6 @@ end
     @test h.byte_scale == PaintMix.BYTE_SCALE_255
     @test h.interpolation == PaintMix.INTERP_TRILINEAR
     @test h.index_order == PaintMix.INDEX_CHANNEL_FAST
-    @test h.checksum == PaintMix.CHECKSUM_CRC32
     @test h.grid_n == 3
     @test h.inverse_offset == HEADER_BYTES
     @test h.forward_offset == HEADER_BYTES + 3 * 3^3
@@ -86,15 +72,6 @@ end
     @test_throws InvalidPayload model_from_bytes(short)
     @test_throws InvalidPayload model_from_bytes(UInt8[])
 
-    corrupt = copy(good)
-    corrupt[end] ⊻= 0xff
-    @test_throws InvalidPayload model_from_bytes(corrupt)
-
-    # A corrupted header checksum field is caught the same way.
-    corrupt_crc = copy(good)
-    PaintMix._put_u32!(corrupt_crc, 44, 0xdeadbeef)
-    @test_throws InvalidPayload model_from_bytes(corrupt_crc)
-
     wrong_n = copy(good)
     PaintMix._put_u32!(wrong_n, 16, 5)
     @test_throws InvalidPayload model_from_bytes(wrong_n)
@@ -107,15 +84,12 @@ end
     PaintMix._put_u8!(wrong_scale, 40, 0x01)
     @test_throws InvalidPayload model_from_bytes(wrong_scale)
 
-    # `checksum = false` skips the CRC-32 comparison. It is a promise that the
-    # caller verified the bytes elsewhere, so a corrupted table loads and the
-    # header's checksums are carried through unchanged.
-    loaded = model_from_bytes(corrupt; checksum = false)
-    @test loaded.forward_crc32 == model.forward_crc32
-    @test loaded.forward.data != model.forward.data
-    @test loaded.inverse.data == model.inverse.data
-    # It is structurally valid, so the simplex check still runs.
-    @test validate_model(loaded) === loaded
+    # Table bytes are not checked. A truncated payload is caught by the
+    # header offsets, but a flipped table byte is accepted; only the simplex
+    # invariant, checked separately, can reject a table at load time.
+    flipped = copy(good)
+    flipped[end] ⊻= 0xff
+    @test model_from_bytes(flipped) isa PigmentModel
 end
 
 @testset "simplex validation" begin
@@ -130,13 +104,12 @@ end
     inv[2] = 0xff
     inv[3] = 0xff
     broken = PigmentModel(
-        good.id, ByteLUT(n, inv), good.forward, FORMAT_VERSION, good.flags,
-        good.forward_crc32, crc32(inv),
+        good.id, ByteLUT(n, inv), good.forward, FORMAT_VERSION, good.flags
     )
     @test_throws ArgumentError validate_model(broken)
     bytes = BytesForTest(broken)
     @test_throws ArgumentError model_from_bytes(bytes)
-    # The checksum is valid, so this really is the simplex check firing.
+    # Without the simplex check the payload is structurally acceptable.
     @test model_from_bytes(bytes; validate = false) isa PigmentModel
 end
 

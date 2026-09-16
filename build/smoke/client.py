@@ -83,8 +83,6 @@ def main(argv) -> int:
     assert integer() == 1
     grid_n = integer()
     abi = integer()
-    fwd_crc = integer()
-    inv_crc = integer()
     id_lo = integer()
     id_hi = integer()
 
@@ -95,10 +93,6 @@ def main(argv) -> int:
         ok()
     if info.abi_version != abi:
         fail("model_info abi_version")
-    else:
-        ok()
-    if info.forward_crc32 != fwd_crc or info.inverse_crc32 != inv_crc:
-        fail("model_info crc32")
     else:
         ok()
     got_id = (
@@ -113,16 +107,6 @@ def main(argv) -> int:
         fail("abi_version")
     else:
         ok()
-
-    # Recompute the embedded tables' checksums from the live bytes: the
-    # relocation check. A payload mangled by trimming or the loader cannot
-    # reproduce the header's checksums.
-    for index, want, label in ((0, inv_crc, "inverse"), (1, fwd_crc, "forward")):
-        got = pm.embedded_table_crc32(index)
-        if got != want:
-            fail(f"{label} table bytes did not survive relocation")
-        else:
-            ok()
 
     assert word() == "mix"
     count = integer()

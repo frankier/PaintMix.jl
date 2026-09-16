@@ -18,18 +18,14 @@ const LATENT_SCALARS = 7
 
 # The payload is read while the image is built and becomes part of it.
 #
-# Its bytes were checksummed and simplex-validated by `compile.jl` in an
-# optimized process, so this load skips both checks on purpose: the
-# image-building and ABI-probing subprocesses run without optimization
-# (`--compile=min`), where re-verifying 100 MB costs minutes of interpreted
-# byte loops. Structural checks that are O(1) — magic, version, dimensions,
-# offsets, storage conventions — still run, and
-# `paintmix_table_crc32` recomputes the live checksums so a consumer can
-# confirm that trimming and relocation preserved the bytes.
+# Its bytes were simplex-validated by `compile.jl` in an optimized process,
+# so this load skips that check on purpose: the image-building and
+# ABI-probing subprocesses run without optimization (`--compile=min`), where
+# re-verifying 100 MB costs minutes of interpreted byte loops. Structural
+# checks that are O(1) — magic, version, dimensions, offsets, storage
+# conventions — still run.
 const PAYLOAD_PATH = joinpath(@__DIR__, "data", "payload.pmx")
-const MODEL = PaintMix.model_from_bytes(
-    read(PAYLOAD_PATH); checksum = false, validate = false
-)
+const MODEL = PaintMix.model_from_bytes(read(PAYLOAD_PATH); validate = false)
 
 "Compiled-in ABI version. Bump when a signature changes."
 Base.@ccallable function paintmix_abi_version()::Int32
@@ -49,8 +45,6 @@ struct ModelInfo
     grid_n::Int32
     channel_count::Int32
     flags::UInt32
-    forward_crc32::UInt32
-    inverse_crc32::UInt32
     model_id_lo::UInt64
     model_id_hi::UInt64
 end
@@ -58,7 +52,7 @@ end
 """
     paintmix_model_info() -> ModelInfo
 
-Grid size, payload checksums, generation flags, and the 16-byte model
+Grid size, generation flags, and the 16-byte model
 identifier (split into two little-endian `UInt64` halves) of the embedded
 tables.
 """
@@ -72,7 +66,7 @@ Base.@ccallable function paintmix_model_info()::ModelInfo
     end
     return ModelInfo(
         jlw_ok(), ABI_VERSION, Int32(MODEL.format_version), Int32(PaintMix.grid_n(MODEL)),
-        Int32(CHANNELS), MODEL.flags, MODEL.forward_crc32, MODEL.inverse_crc32, lo, hi,
+        Int32(CHANNELS), MODEL.flags, lo, hi,
     )
 end
 
@@ -106,31 +100,6 @@ end
 
 @inline function _finite3(c::NTuple{3,T}) where {T}
     return isfinite(c[1]) && isfinite(c[2]) && isfinite(c[3])
-end
-
-"""
-    paintmix_table_crc32(index, out) -> JLWStatus
-
-Recompute the CRC-32 of an embedded table from the bytes actually present in
-memory: `index` 0 is the inverse table, 1 is the forward table, and `out`
-receives one `UInt32`. The values must equal the `forward_crc32` and
-`inverse_crc32` fields of [`paintmix_model_info`](@ref); a mismatch means the
-payload did not survive trimming or relocation. This entrypoint exists for
-build and release verification, not for the mixing path.
-"""
-Base.@ccallable function paintmix_table_crc32(
-        index::Int32, out::CVector{:borrowed,UInt32}
-    )::JLWStatus
-    st = _check_vec(out, 1)
-    st == PM_OK || return _status(st)
-    if index == 0
-        unsafe_store!(out.data, PaintMix.crc32(MODEL.inverse.data), 1)
-    elseif index == 1
-        unsafe_store!(out.data, PaintMix.crc32(MODEL.forward.data), 1)
-    else
-        return jlw_error(PM_ERR_LENGTH, "table index must be 0 or 1")
-    end
-    return jlw_ok()
 end
 
 # --- encode and decode -----------------------------------------------------

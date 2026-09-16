@@ -1,7 +1,7 @@
 # Lookup-table kernel tests: index arithmetic, interpolation weights, and
 # the exact grid-endpoint rules.
 
-using Random: MersenneTwister
+using Random: Xoshiro
 
 const trilinear = PaintMix.trilinear
 
@@ -14,7 +14,7 @@ end
 @testset "trilinear matches an independent implementation" begin
     for n in (2, 3, 5, 8), seed in (1, 7)
         lut = random_model(seed, n).forward
-        rng = MersenneTwister(seed + 100)
+        rng = Xoshiro(seed + 100)
         for _ in 1:200
             x, y, z = rand(rng), rand(rng), rand(rng)
             got = trilinear(lut, x, y, z)

@@ -8,7 +8,7 @@
 module SyntheticFixtures
 
 using PaintMix
-using Random: MersenneTwister
+using Random: Xoshiro
 
 export quantize_simplex,
     project_to_simplex3,
@@ -117,10 +117,7 @@ function synthetic_model(
     payload = 3 * m^3
     fwd = _fill_forward!(Vector{UInt8}(undef, payload), m, forward)
     inv = _fill_inverse!(Vector{UInt8}(undef, payload), m, inverse)
-    model = PigmentModel(
-        id, ByteLUT(m, inv), ByteLUT(m, fwd), FORMAT_VERSION, flags,
-        crc32(fwd), crc32(inv),
-    )
+    model = PigmentModel(id, ByteLUT(m, inv), ByteLUT(m, fwd), FORMAT_VERSION, flags)
     return validate_model(model)
 end
 
@@ -183,7 +180,7 @@ the kernels and the payload round trip. Its inverse table always satisfies
 the simplex constraint.
 """
 function random_model(seed::Integer = 1, n::Integer = 5)
-    rng = MersenneTwister(seed)
+    rng = Xoshiro(seed)
     m = Int(n)
     payload = 3 * m^3
     fwd = rand(rng, UInt8, payload)
@@ -201,7 +198,6 @@ function random_model(seed::Integer = 1, n::Integer = 5)
     model = PigmentModel(
         id, ByteLUT(m, inv), ByteLUT(m, fwd), FORMAT_VERSION,
         FLAG_FORWARD_SIMPLEX_PROJECTED | FLAG_INVERSE_LARGEST_REMAINDER,
-        crc32(fwd), crc32(inv),
     )
     return validate_model(model)
 end

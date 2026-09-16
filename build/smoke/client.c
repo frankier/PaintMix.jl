@@ -215,9 +215,9 @@ int main(int argc, char **argv) {
         return 2;
     }
 
-    long long grid_n = 0, abi = 0, fwd_crc = 0, inv_crc = 0, id_lo = 0, id_hi = 0;
-    if (token_int(f, &grid_n) != 1 || token_int(f, &abi) != 1 || token_int(f, &fwd_crc) != 1 ||
-        token_int(f, &inv_crc) != 1 || token_int(f, &id_lo) != 1 || token_int(f, &id_hi) != 1) {
+    long long grid_n = 0, abi = 0, id_lo = 0, id_hi = 0;
+    if (token_int(f, &grid_n) != 1 || token_int(f, &abi) != 1 ||
+        token_int(f, &id_lo) != 1 || token_int(f, &id_hi) != 1) {
         fprintf(stderr, "truncated reference header\n");
         fclose(f);
         return 2;
@@ -230,10 +230,6 @@ int main(int argc, char **argv) {
         else ok();
         if (info.abi_version != (int32_t)abi) fail("model_info abi_version");
         else ok();
-        if ((long long)info.forward_crc32 != fwd_crc) fail("model_info forward_crc32");
-        else ok();
-        if ((long long)info.inverse_crc32 != inv_crc) fail("model_info inverse_crc32");
-        else ok();
         if ((long long)info.model_id_lo != id_lo || (long long)info.model_id_hi != id_hi) {
             fail("model_info model_id");
         } else {
@@ -242,29 +238,6 @@ int main(int argc, char **argv) {
     }
     if ((long long)paintmix_abi_version() != abi) fail("paintmix_abi_version");
     else ok();
-
-    /* Recompute the two embedded tables' checksums from the live bytes: this
-     * is the relocation check. A payload that trimming or the loader mangled
-     * cannot reproduce the header's checksums. */
-    {
-        uint32_t crc = 0;
-        CVector_borrowed_UInt32 carrier;
-        JLWStatus s;
-        carrier.dims[0] = 1;
-        carrier.data = &crc;
-        s = paintmix_table_crc32(0, carrier);
-        if (s.code != 0) fail("table_crc32 inverse status");
-        else if ((long long)crc != inv_crc) fail("inverse table bytes did not survive relocation");
-        else ok();
-        crc = 0;
-        s = paintmix_table_crc32(1, carrier);
-        if (s.code != 0) fail("table_crc32 forward status");
-        else if ((long long)crc != fwd_crc) fail("forward table bytes did not survive relocation");
-        else ok();
-        s = paintmix_table_crc32(7, carrier);
-        if (s.code != 2) fail("table_crc32 accepted a bad index");
-        else ok();
-    }
 
     /* mix */
     char section[64];

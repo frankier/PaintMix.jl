@@ -1,7 +1,7 @@
 # Steady-state allocation tests. Every kernel used by the compiled ABI must
 # allocate nothing once compiled, so bulk work can run inside a render loop.
 
-using Random: MersenneTwister
+using Random: Xoshiro
 
 @testset "steady-state allocations are zero" begin
     model = identity_model(16)
@@ -13,7 +13,7 @@ using Random: MersenneTwister
     dest64 = zeros(3)
     dest32 = zeros(Float32, 3)
     n = 64
-    rng = MersenneTwister(2)
+    rng = Xoshiro(2)
     as = rand(rng, 3n)
     bs = rand(rng, 3n)
     ts = rand(rng, n)

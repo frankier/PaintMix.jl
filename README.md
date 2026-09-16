@@ -70,8 +70,8 @@ Plan steps 1-6 are implemented:
     (`precompute/inputs/README.md`, `precompute/config/default.toml`);
   * the runtime: trilinear lookup on byte tables, latents with residuals,
     exact binary endpoints, bulk and weighted mixing, the `.pmx` format with
-    checksums and simplex validation, and the sRGB adapters;
-  * the compiled boundary: a 13-entrypoint C ABI, generated `paintmix.h` and
+    simplex validation, and the sRGB adapters;
+  * the compiled boundary: a 12-entrypoint C ABI, generated `paintmix.h` and
     `paintmix_py` bindings, and C and Python clients checked against Julia on
     both a tiny and a full-size (96 MiB) payload;
   * the precompute pipeline: spreadsheet import into DuckDB, the equations
@@ -110,7 +110,7 @@ in `precompute/output/release/<model-id>.toml`:
 | Padding on the simplex face | p99 0.0026, max 0.0081 | p99 ≤ 2/255 |
 | Round trip | float64 0, float32 3e-8 | ≤ 1e-12 / ≤ 2e-6 |
 
-Every hard invariant passes: the payload checksums, the simplex quantization,
+Every hard invariant passes: the simplex quantization,
 the exact round trip, the on-simplex padding, and the qualitative behavior
 (blue + yellow is a green, magenta + yellow an orange, white tints stay
 monotone).
@@ -139,7 +139,7 @@ Evidence collected so far:
 | --- | --- |
 | Release payload promoted with the quality override recorded | `precompute/output/release/` (ignored), `data/default/README.md` |
 | Full-size payload survives `juliac --trim`, relocates, and matches the file | `build/EMBEDDING.md` |
-| C and Python clients match Julia across randomized inputs and error cases | `build/smoke/`, 1786 checks each |
+| C and Python clients match Julia across randomized inputs and error cases | `build/smoke/`, all checks pass |
 | Zero steady-state allocations in every kernel | `test/test_allocations.jl`, `benchmarks/README.md` |
 | A fresh consumer environment installs only `PaintMix` | `test/consumer_env.jl` |
 | The compiled library links only against the Julia runtime | `ldd build/out/paintmix.so` |

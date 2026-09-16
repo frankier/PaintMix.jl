@@ -1,7 +1,7 @@
 # Latent algebra tests: residuals, round trips, endpoints, and the bulk and
 # weighted mixing kernels.
 
-using Random: MersenneTwister
+using Random: Xoshiro
 
 @testset "latent is an isbits value with tuple fields" begin
     @test isbitstype(Latent{Float32})
@@ -13,7 +13,7 @@ using Random: MersenneTwister
 end
 
 @testset "round trips cancel the table quantization" begin
-    rng = MersenneTwister(11)
+    rng = Xoshiro(11)
     for model in (identity_model(2), identity_model(16), random_model(9, 5)), T in (Float32, Float64)
         tol = T === Float32 ? 2.0f-6 : 1e-12
         for _ in 1:200
@@ -28,7 +28,7 @@ end
 end
 
 @testset "encode returns a simplex latent" begin
-    rng = MersenneTwister(3)
+    rng = Xoshiro(3)
     model = random_model(3, 6)
     for _ in 1:100
         z = encode(model, (rand(rng), rand(rng), rand(rng)))
@@ -101,7 +101,7 @@ end
 end
 
 @testset "bulk and scalar kernels agree" begin
-    rng = MersenneTwister(5)
+    rng = Xoshiro(5)
     model = random_model(5, 7)
     n = 50
     as = rand(rng, 3n)

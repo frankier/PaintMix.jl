@@ -36,4 +36,4 @@ neighboring pixels share colors far more than random ones do.
 
 The release payload must be regenerated before the load-time figure means
 anything for a real model: this run used a synthetic table with the same
-geometry, and CRC validation time depends only on size.
+geometry, and validation time depends only on size.

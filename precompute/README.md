@@ -111,7 +111,7 @@ reference solver run at 256³ at all.
 The release validation record is written to
 `precompute/output/release/<model-id>.toml`. For the promoted model it shows
 that the provisional LUT-versus-spectral quality targets are not met, while
-the hard invariants (checksums, simplex quantization, exact round trip,
+the hard invariants (simplex quantization, exact round trip,
 on-simplex padding, qualitative behavior) pass; the cause is the 8-bit
 concentration storage and the steep near-vertex Kubelka-Munk curve. See the
 root `README.md`. `generate.jl` refuses to promote a failing payload unless

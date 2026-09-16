@@ -139,8 +139,6 @@ mismatched payload.
   * `id` is the 16-byte model identifier from the payload header.
   * `flags` records generation rules, e.g.
     [`FLAG_FORWARD_SIMPLEX_PROJECTED`](@ref).
-  * `forward_crc32` and `inverse_crc32` are the checksums of the payloads as
-    loaded, so a caller can report exactly which bytes were used.
 
 Tables are valid on the whole cube `[0, 1]^3`. Vertices outside the
 concentration simplex are padding; see `data/default/README.md` for the
@@ -152,8 +150,6 @@ struct PigmentModel
     forward::ByteLUT
     format_version::UInt16
     flags::UInt32
-    forward_crc32::UInt32
-    inverse_crc32::UInt32
 end
 
 """

@@ -576,7 +576,7 @@ uuid = "02c30ab6-0f6b-4cce-b39c-6cfbbc18ec0f"
 version = "0.1.0"
 
 [[deps.PaintMixPrecompute]]
-deps = ["DataFrames", "Dates", "DuckDB", "ForwardDiff", "Optim", "PaintMix", "Printf", "SHA", "TOML"]
+deps = ["DataFrames", "Dates", "DuckDB", "ForwardDiff", "Optim", "PaintMix", "Printf", "Random", "SHA", "TOML"]
 path = "precompute"
 uuid = "eeffd428-b4c8-40bd-84d3-0fe91856487d"
 version = "0.1.0"

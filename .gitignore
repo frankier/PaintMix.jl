@@ -3,7 +3,7 @@
 !/Manifest.toml
 
 # Build products
-/build/out/
+/build/out*/
 /build/data/*.pmx
 /build/*-bundle/
 /build/build-env/Manifest.toml
@@ -11,7 +11,7 @@
 /benchmarks/Manifest.toml
 /precompute/test/Manifest.toml
 
-# Generated bindings are checked in, but virtualenvs and build trees are not
+# Generated build trees, virtualenvs, and packaging metadata are not committed
 /build/**/venv/
 /build/**/__pycache__/
 /build/**/*.egg-info/

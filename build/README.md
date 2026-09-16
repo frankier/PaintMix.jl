@@ -58,15 +58,12 @@ megabytes).
 
 ## Where the payload is validated
 
-The payload is checked once, in `compile.jl`, by `PaintMix.read_model`: both
-table CRC-32 values and the inverse table's simplex invariant. `library.jl`
-then embeds it with `checksum = false, validate = false`, because the image
-build and the ABI-metadata probe run unoptimized and the two O(n^3) loops
-cost minutes there; see [EMBEDDING.md](EMBEDDING.md) for the measurement.
-Every O(1) structural check still runs while the image is built, and
-`paintmix_table_crc32` lets a client recompute the checksums from the live
-bytes, so "the bytes that shipped are the bytes that were validated" is a
-checkable claim rather than an assumption.
+The payload is checked once, in `compile.jl`, by `PaintMix.read_model`: the
+inverse table's simplex invariant. `library.jl` then embeds it with
+`validate = false`, because the image build and the ABI-metadata probe run
+unoptimized and the O(n^3) loop costs minutes there; see
+[EMBEDDING.md](EMBEDDING.md) for the measurement. Every O(1) structural check
+still runs while the image is built.
 
 ## Smoke tests
 
@@ -74,4 +71,4 @@ checkable claim rather than an assumption.
 the same payload, then checks the compiled library from C (`client.c`, linked
 against `paintmix.h`) and from Python (`client.py`, importing the generated
 `paintmix_py` package). Both clients cover mixing, encoding, decoding,
-weighted mixing, the error contract, and the live-table checksum check.
+weighted mixing, the error contract, and the model-info identity.

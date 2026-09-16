@@ -89,12 +89,11 @@ function compile(opts)
     end
     # Validate here, in an optimized process, so the embedded model can skip
     # the byte loops in the unoptimized image-building interpreter. This is
-    # the check that makes `checksum = false` in library.jl honest.
+    # the check that makes `validate = false` in library.jl honest.
     model = read_model(DEFAULT_PAYLOAD)
     println(
         "Validated payload: $(filesize(DEFAULT_PAYLOAD)) bytes, n = $(grid_n(model)), " *
-            "id = $(model_id(model)), inverse crc = 0x$(string(model.inverse_crc32, base = 16, pad = 8)), " *
-            "forward crc = 0x$(string(model.forward_crc32, base = 16, pad = 8))",
+            "id = $(model_id(model))",
     )
 
     out = String(opts["out"])

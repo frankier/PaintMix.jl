@@ -12,7 +12,7 @@
 # Token stream (all whitespace separated):
 #
 #   PAINTMIX-REF 1
-#   <grid_n> <abi_version> <forward_crc32> <inverse_crc32> <id_lo> <id_hi>
+#   <grid_n> <abi_version> <id_lo> <id_hi>
 #   mix <count>
 #     <dtype> <a_r g b> <b_r g b> <t> <out_r g b>
 #   encode <count>
@@ -23,7 +23,7 @@
 # `dtype` is 0 for Float64 and 1 for Float32.
 
 using PaintMix
-using Random: MersenneTwister
+using Random: Xoshiro
 
 const BUILD_DIR = normpath(joinpath(@__DIR__, ".."))
 const DEFAULT_PAYLOAD = joinpath(BUILD_DIR, "data", "payload.pmx")
@@ -59,8 +59,8 @@ function main(args)
     mkpath(dirname(out))
     open(out, "w") do io
         println(io, "PAINTMIX-REF 1")
-        emit!(io, n, 1, model.forward_crc32, model.inverse_crc32, lo, hi)
-        rng = MersenneTwister(20240716)
+        emit!(io, n, 1, lo, hi)
+        rng = Xoshiro(20240716)
 
         println(io, "mix ", MIX_COUNT)
         for i in 1:MIX_COUNT

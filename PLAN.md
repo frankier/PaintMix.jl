@@ -102,7 +102,7 @@ Proposed public interface: `default_model()`, `encode(model, rgb)`, `decode(mode
 
 Reproduce the paper's baseline with two `256 x 256 x 256 x 3` UInt8 tables: 48 MiB each, 96 MiB total before headers. Make grid size and storage precision generator parameters, with small fixtures for CI. Do not reduce resolution for the release default without measured error results.
 
-Specify a versioned binary format with dimensions, channel order, linear-RGB convention, pigment order, byte scaling, interpolation convention, checksums, and model identifier. A simple payload uses channel-fast order:
+Specify a versioned binary format with dimensions, channel order, linear-RGB convention, pigment order, byte scaling, interpolation convention, and model identifier. A simple payload uses channel-fast order:
 
 ```text
 zero_based_offset = channel + 3 * (i + n * (j + n * k))
@@ -171,7 +171,7 @@ Generate the forward table directly from the fitted spectral model and the inver
 
 Benchmark a representative sample before a full run: `256^3` means 16,777,216 inverse problems. The paper's quoted 100 ms per solve would imply roughly 19.4 serial days at that rate, so report measured projected cost instead of promising a quick build. Provide small development grids and a full release profile.
 
-Export both tables together with a shared model ID, checksums, input hashes, surrogate parameters, Julia/package versions, random seeds, objective settings, precision, quantization/padding rules, and validation results. Promote candidates into `data/default/` only when checks pass. Ordinary installation must never trigger precompute.
+Export both tables together with a shared model ID, input hashes, surrogate parameters, Julia/package versions, random seeds, objective settings, precision, quantization/padding rules, and validation results. Promote candidates into `data/default/` only when checks pass. Ordinary installation must never trigger precompute.
 
 ## 5. Static compilation and JuliaLibWrapping
 
@@ -195,7 +195,7 @@ Separate fast runtime tests from expensive numerical/precompute tests and full r
 | Derivatives/solvers | Finite-difference gradient checks, positivity/simplex invariants, convergence/restart diagnostics, boundary-solution fixtures |
 | LUT kernel | Synthetic affine tables reproduce analytic interpolation; all cube endpoints and simplex boundary cases stay in bounds |
 | Algebra | Round-trip and same-color absolute error initially <= `2e-6` for Float32 and `1e-12` for Float64; exact explicit binary endpoints; reversal symmetry and weight-scale invariance within tolerance |
-| Quantization | All stored inverse concentrations form a valid simplex; checksums and metadata round-trip; no NaN/Inf values |
+| Quantization | All stored inverse concentrations form a valid simplex; metadata round-trips; no NaN/Inf values |
 | Model fidelity | Compare LUT and spectral mixing over pigment pairs, simplex faces, saturated/out-of-pigment-gamut RGB, near-black colors, random colors, and multi-color blends |
 | Visual behavior | Blue/yellow green mixtures, magenta/yellow oranges, white-tint hue/chroma curves, and repeated-mixing examples compared to reference curves |
 | Performance | Zero steady-state allocations in scalar and preallocated bulk kernels, throughput and latency with warm/cold caches, memory and artifact size |

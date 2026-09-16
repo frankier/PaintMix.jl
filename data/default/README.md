@@ -28,8 +28,8 @@ built from the four pigments and the CIE/D65 inputs recorded in
 Its validation record reports that the provisional LUT-versus-spectral
 quality targets in `PLAN.md` are *not* met: the mean encoded-sRGB channel
 error is 0.023 and the p99 is 0.25, against a p99 target of `2/255`. The hard
-invariants do pass — payload checksums, joint simplex quantization, the
-exact encoder/decoder round trip, the on-simplex padding error (p99 0.0026),
+invariants do pass — joint simplex quantization, the exact encoder/decoder
+round trip, the on-simplex padding error (p99 0.0026),
 and the qualitative mixing behavior. The tail comes from storing each
 concentration in one byte: near a pure pigment the concentration step is
 `1/255` while the Kubelka-Munk RGB curve moves by roughly 0.3, so the linear
@@ -61,10 +61,7 @@ there is exactly one definition of the format.
 | 40 | 1 | byte_scale | `0` = `b/255` |
 | 41 | 1 | interpolation | `0` = trilinear |
 | 42 | 1 | index_order | `0` = channel-fastest, `ch + 3 * (i + n * (j + n * k))` |
-| 43 | 1 | checksum | `1` = CRC-32/ISO-HDLC |
-| 44 | 4 | inverse_crc32 | |
-| 48 | 4 | forward_crc32 | |
-| 52 | 4 | reserved | zero |
+| 43 | 13 | reserved | zero |
 | 56 | 8 | inverse_offset | byte offset of the inverse payload |
 | 64 | 8 | inverse_bytes | `3 * n^3` |
 | 72 | 8 | forward_offset | |
@@ -108,5 +105,4 @@ These are the parts a consumer has to be told out of band:
     configuration hash, input checksums, surrogate parameters, Julia and
     package versions, seeds, objective settings, precision,
     quantization/padding rules, and validation results for the payload. The
-    header carries only `model_id` and the checksums; the sidecar carries the
-    story.
+    header carries only `model_id`; the sidecar carries the story.

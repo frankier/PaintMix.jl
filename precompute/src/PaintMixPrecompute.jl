@@ -31,6 +31,7 @@ using DuckDB
 using ForwardDiff: ForwardDiff
 using Optim: Optim
 using Printf: @printf, @sprintf
+using Random: AbstractRNG, Xoshiro
 using SHA: sha256
 using TOML: TOML
 
@@ -136,8 +137,6 @@ export ConfigError,
     write_sidecar,
     promote,
     promote_validated,
-    DeterministicRNG,
-    rand_float,
     spectral_encode,
     spectral_mix,
     quality_report,

@@ -26,37 +26,6 @@ const COLORSPACE_LINEAR_SRGB_D65 = 0x00
 const BYTE_SCALE_255 = 0x00
 const INTERP_TRILINEAR = 0x00
 const INDEX_CHANNEL_FAST = 0x00
-const CHECKSUM_CRC32 = 0x01
-
-const _CRC32_POLY = 0xEDB88320
-
-const _CRC32_TABLE = let t = Vector{UInt32}(undef, 256)
-    @inbounds for i in 0:255
-        c = UInt32(i)
-        for _ in 1:8
-            c = (c & one(UInt32)) == one(UInt32) ? (c >> 1) ⊻ _CRC32_POLY : c >> 1
-        end
-        t[i + 1] = c
-    end
-    Tuple(t)
-end
-
-"""
-    crc32(data, len = length(data)) -> UInt32
-
-CRC-32/ISO-HDLC (reflected, polynomial `0xEDB88320`, initial value
-`0xffffffff`, final XOR `0xffffffff`), the same function as `zlib.crc32`.
-
-Implemented here so the runtime has no dependencies. Used to checksum
-payloads, not to authenticate them.
-"""
-function crc32(data::AbstractVector{UInt8}, len::Integer = length(data))
-    c = typemax(UInt32)
-    @inbounds for i in 1:Int(len)
-        c = _CRC32_TABLE[((c ⊻ data[i]) & 0xff) + 1] ⊻ (c >> 8)
-    end
-    return c ⊻ typemax(UInt32)
-end
 
 # --- header fields ---------------------------------------------------------
 
@@ -111,9 +80,9 @@ end
     ModelHeader
 
 The decoded fixed-width header of a `.pmx` payload: format version, grid
-size, storage conventions, the model identifier, payload checksums, and
-payload offsets. Exposed for tests and tooling; `PigmentModel` keeps only
-what the mixing path needs.
+size, storage conventions, the model identifier, and payload offsets.
+Exposed for tests and tooling; `PigmentModel` keeps only what the mixing
+path needs.
 """
 struct ModelHeader
     format_version::UInt16
@@ -128,9 +97,6 @@ struct ModelHeader
     byte_scale::UInt8
     interpolation::UInt8
     index_order::UInt8
-    checksum::UInt8
-    inverse_crc32::UInt32
-    forward_crc32::UInt32
     inverse_offset::Int
     inverse_bytes::Int
     forward_offset::Int
@@ -147,8 +113,7 @@ _parse_header(b::AbstractVector{UInt8}) = ModelHeader(
     _hdr_u16(b, 8), _hdr_u16(b, 10), _hdr_u8(b, 12), _hdr_u8(b, 13),
     _hdr_u8(b, 14), _hdr_u8(b, 15), Int(_hdr_u32(b, 16)), _hdr_u32(b, 20),
     ntuple(i -> _hdr_u8(b, 23 + i), Val(16)),
-    _hdr_u8(b, 40), _hdr_u8(b, 41), _hdr_u8(b, 42), _hdr_u8(b, 43),
-    _hdr_u32(b, 44), _hdr_u32(b, 48),
+    _hdr_u8(b, 40), _hdr_u8(b, 41), _hdr_u8(b, 42),
     Int(_hdr_u64(b, 56)), Int(_hdr_u64(b, 64)),
     Int(_hdr_u64(b, 72)), Int(_hdr_u64(b, 80)),
 )
@@ -176,9 +141,6 @@ function _check_header(h::ModelHeader)
     ))
     h.index_order == INDEX_CHANNEL_FAST || throw(InvalidPayload(
         "index order $(h.index_order) is not channel-fast (0)"
-    ))
-    h.checksum == CHECKSUM_CRC32 || throw(InvalidPayload(
-        "checksum algorithm $(h.checksum) is not CRC-32 (1)"
     ))
     h.grid_n >= 1 || throw(InvalidPayload("grid size must be >= 1, got $(h.grid_n)"))
     expected = 3 * h.grid_n^3
@@ -212,9 +174,7 @@ function _header_bytes(model::PigmentModel)
     _put_u8!(b, 40, BYTE_SCALE_255)
     _put_u8!(b, 41, INTERP_TRILINEAR)
     _put_u8!(b, 42, INDEX_CHANNEL_FAST)
-    _put_u8!(b, 43, CHECKSUM_CRC32)
-    _put_u32!(b, 44, crc32(model.inverse.data))
-    _put_u32!(b, 48, crc32(model.forward.data))
+    # Bytes 43-55 are reserved and stay zero.
     # Payload order matches `write_model`: inverse first, then forward.
     _put_u64!(b, 56, HEADER_BYTES)
     _put_u64!(b, 64, payload)
@@ -224,27 +184,24 @@ function _header_bytes(model::PigmentModel)
 end
 
 """
-    model_from_bytes(bytes; validate = true, checksum = true) -> PigmentModel
+    model_from_bytes(bytes; validate = true) -> PigmentModel
 
 Parse a `.pmx` payload held in memory.
 
-`checksum` verifies both table CRC-32 values against the payload's own header;
-`validate` additionally checks that every inverse-table vertex satisfies the
-simplex constraint (`b1 + b2 + b3 <= 255`). Both default to `true`, which is
-what a runtime loader should use.
+`validate` checks that every inverse-table vertex satisfies the simplex
+constraint (`b1 + b2 + b3 <= 255`). It defaults to `true`, which is what a
+runtime loader should use.
 
-Making the checks optional exists for one caller: the compiled library embeds
+Making the check optional exists for one caller: the compiled library embeds
 bytes that its build driver has already validated, and re-verifying them
 inside the image-building interpreter (which runs without optimization) costs
-minutes on a release-sized payload. Turning the checks off is a statement
-that the bytes were verified elsewhere, not a relaxation of the format.
+minutes on a release-sized payload. Turning the check off is a statement that
+the bytes were verified elsewhere, not a relaxation of the format.
 
 Throws `PaintMix.InvalidPayload` on any structural problem. Tables are copied
 out of `bytes`, so the caller may release it afterwards.
 """
-function model_from_bytes(
-        bytes::AbstractVector{UInt8}; validate::Bool = true, checksum::Bool = true
-    )
+function model_from_bytes(bytes::AbstractVector{UInt8}; validate::Bool = true)
     length(bytes) >= HEADER_BYTES || throw(InvalidPayload(
         "payload is $(length(bytes)) bytes, shorter than the $HEADER_BYTES byte header"
     ))
@@ -259,21 +216,7 @@ function model_from_bytes(
     ))
     inverse = _copy_table(bytes, h.inverse_offset, h.inverse_bytes, h.grid_n)
     forward = _copy_table(bytes, h.forward_offset, h.forward_bytes, h.grid_n)
-    icrc = h.inverse_crc32
-    fcrc = h.forward_crc32
-    if checksum
-        icrc = crc32(inverse.data)
-        icrc == h.inverse_crc32 || throw(InvalidPayload(
-            "inverse table checksum mismatch: payload has $(h.inverse_crc32), computed $icrc"
-        ))
-        fcrc = crc32(forward.data)
-        fcrc == h.forward_crc32 || throw(InvalidPayload(
-            "forward table checksum mismatch: payload has $(h.forward_crc32), computed $fcrc"
-        ))
-    end
-    model = PigmentModel(
-        h.id, inverse, forward, h.format_version, h.flags, fcrc, icrc,
-    )
+    model = PigmentModel(h.id, inverse, forward, h.format_version, h.flags)
     validate && validate_model(model)
     return model
 end
@@ -332,7 +275,7 @@ end
     write_model(path::AbstractString, model)
 
 Serialize `model` in the `.pmx` format. The header is rewritten from the
-model's own bytes, so the stored checksums always match the stored payload.
+model's own bytes.
 """
 function write_model(io::IO, model::PigmentModel)
     validate_model(model)
@@ -363,7 +306,7 @@ end
 """
     read_model(path) -> PigmentModel
 
-Read, checksum, and validate a `.pmx` payload from disk.
+Read and validate a `.pmx` payload from disk.
 """
 read_model(path::AbstractString) = model_from_bytes(read(path))
 

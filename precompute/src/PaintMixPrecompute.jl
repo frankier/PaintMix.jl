@@ -25,7 +25,9 @@ reachable from the `PaintMix` mixing path.
 module PaintMixPrecompute
 
 import PaintMix
+using DataFrames: DataFrame, eachrow, nrow, rename!, select, stack
 using Dates: Dates
+using DuckDB
 using ForwardDiff: ForwardDiff
 using Optim: Optim
 using Printf: @printf, @sprintf

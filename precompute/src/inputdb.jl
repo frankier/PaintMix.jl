@@ -6,10 +6,11 @@
 # pipeline consumes; `open_database`/`save_database` move it to and from a
 # `.duckdb` file.
 #
-# The DuckDB dependency is deliberately not a Julia package dependency. The
-# database is read and written by shelling out to the `duckdb` command line
-# client, so `PaintMixPrecompute` keeps owning only Optim and ForwardDiff.
-# `precompute/scripts/import_inputs.jl` is the only writer.
+# Database access goes through DuckDB.jl and DataFrames.jl. DuckDB's own
+# spreadsheet and CSV readers turn the inputs into DataFrames, and the same
+# connection writes the normalized `.duckdb` file, so no external client or
+# hand-written parser is involved. The `excel` extension is installed on
+# first use, which needs network access once.
 #
 # Nothing here runs at PaintMix runtime.
 
@@ -168,278 +169,210 @@ function spectra_grid(db::InputDatabase)
     return sort([r.wavelength_nm for r in db.spectra if r.code == code && r.quantity == "K"])
 end
 
-# --- DuckDB command line client -------------------------------------------
+# --- DuckDB and DataFrame helpers -----------------------------------------
 
 """
-    duckdb_bin() -> String
+    _connect(path = ":memory:") -> DuckDB.DB
 
-The DuckDB command line client to use. Honors `PAINTMIX_DUCKDB` so a build
-can pin a specific binary; otherwise looks for `duckdb` on `PATH`.
+Open a DuckDB database, or a scratch in-memory one for reading a spreadsheet
+or CSV file.
 """
-function duckdb_bin()
-    return get(ENV, "PAINTMIX_DUCKDB", "duckdb")
-end
-
-function _duckdb(; read::Bool = false, input::Union{Nothing,String} = nothing, args::Vector{String})
-    bin = duckdb_bin()
-    cmd = `$bin $(args)`
-    out = IOBuffer()
-    err = IOBuffer()
-    if read
-        p = run(pipeline(ignorestatus(cmd), stdout = out, stderr = err))
-        p.exitcode == 0 || throw(InputError(
-            "duckdb failed ($(p.exitcode)): $(String(take!(err)))"
-        ))
-    else
-        p = input === nothing ?
-            run(pipeline(ignorestatus(cmd), stdout = out, stderr = err)) :
-            run(pipeline(ignorestatus(cmd), stdin = IOBuffer(input), stdout = out, stderr = err))
-        p.exitcode == 0 || throw(InputError(
-            "duckdb failed ($(p.exitcode)): $(String(take!(err)))"
-        ))
+function _connect(path::AbstractString = ":memory:")
+    return try
+        DuckDB.DB(path)
+    catch err
+        throw(InputError("cannot open DuckDB database $(path): $(sprint(showerror, err))"))
     end
-    return String(take!(out))
 end
 
-# Minimal RFC-4180-ish CSV reader for the `duckdb -csv -header` output.
-function _parse_csv(text::AbstractString)
-    rows = Vector{Vector{String}}()
-    fields = Vector{String}()
-    field = IOBuffer()
-    in_quotes = false
-    i = firstindex(text)
-    n = lastindex(text)
-    while i <= n
-        c = text[i]
-        if in_quotes
-            if c == '"'
-                nxt = i < n ? text[nextind(text, i)] : '\0'
-                if nxt == '"'
-                    write(field, '"')
-                    i = nextind(text, i)
-                else
-                    in_quotes = false
-                end
-            else
-                write(field, c)
-            end
-        elseif c == '"'
-            in_quotes = true
-        elseif c == ','
-            push!(fields, String(take!(field)))
-        elseif c == '\n'
-            push!(fields, String(take!(field)))
-            push!(rows, fields)
-            fields = Vector{String}()
-        elseif c == '\r'
-            # skip
-        else
-            write(field, c)
-        end
-        i = nextind(text, i)
-    end
-    if !isempty(fields) || position(field) > 0
-        push!(fields, String(take!(field)))
-        push!(rows, fields)
-    end
-    filter!(r -> !(length(r) == 1 && isempty(r[1])), rows)
-    return rows
-end
+_sql_str(s::AbstractString) = "'" * replace(String(s), "'" => "''") * "'"
 
-function _query_csv(db_path::AbstractString, sql::AbstractString; header::Bool = false)
-    args = String[db_path]
-    header || push!(args, "-noheader")
-    push!(args, "-csv", "-c", String(sql))
-    return _parse_csv(_duckdb(; read = true, args = args))
-end
+_query(con, sql::AbstractString) = DataFrame(DBInterface.execute(con, sql))
 
-function _f(s::AbstractString)
-    isempty(s) && throw(InputError("expected a number, got an empty field"))
+"""
+    _records(::Type{T}, df) -> Vector{T}
+
+Turn each row of `df` into a `T`. The column names must match the field names
+of `T`; use `rename!` first when the database column is spelled differently.
+"""
+_records(::Type{T}, df::DataFrame) where {T} = T[NamedTuple(row) for row in eachrow(df)]
+
+"""
+    _cell(value) -> String
+
+A trimmed spreadsheet cell as a string. Empty cells arrive as `missing`.
+"""
+_cell(::Missing) = ""
+_cell(value::AbstractString) = strip(value)
+
+function _float(s::AbstractString)
     v = tryparse(Float64, s)
     v === nothing && throw(InputError("cannot parse $(repr(s)) as a number"))
     return v
 end
 
-function _i(s::AbstractString)
-    v = tryparse(Int, s)
-    v === nothing && throw(InputError("cannot parse $(repr(s)) as an integer"))
-    return v
-end
-
-# --- reading ---------------------------------------------------------------
-
-"""
-    open_database(path) -> InputDatabase
-
-Read a `.duckdb` database produced by `import_inputs.jl` into memory.
-
-Requires the `duckdb` command line client; see [`duckdb_bin`](@ref).
-"""
-function open_database(path::AbstractString)
-    isfile(path) || throw(InputError(
-        "no input database at $path; run precompute/scripts/import_inputs.jl first"
-    ))
-    tables = Set(String(row[1]) for row in _query_csv(path,
-        "SELECT table_name FROM information_schema.tables WHERE table_schema = 'main'"))
-    for needed in ("source_files", "pigments", "spectra", "saunderson", "observer", "build_info")
-        needed in tables ||
-            throw(InputError("database $path has no table $needed"))
-    end
-
-    source_files = SourceFile[
-        (role = r[1], path = r[2], sha256 = r[3]) for r in _query_csv(path,
-            "SELECT role, path, sha256 FROM source_files ORDER BY role")
-    ]
-    pigments = PigmentRecord[
-        (slot = _i(r[1]), code = r[2], name = r[3], ci = r[4], column = r[5]) for r in
-            _query_csv(path, "SELECT slot, code, name, ci, column_name FROM pigments ORDER BY slot")
-    ]
-    spectra = SpectrumRecord[
-        (
-            code = r[1], quantity = r[2], wavelength_nm = _f(r[3]), value = _f(r[4]),
-            source_file = r[5], sheet = r[6], cell_range = r[7],
-        ) for r in _query_csv(path,
-            "SELECT code, quantity, wavelength_nm, value, source_file, sheet, cell_range " *
-                "FROM spectra ORDER BY code, quantity, wavelength_nm")
-    ]
-    saunderson_rows = _query_csv(path,
-        "SELECT k1, k2, source_file, sheet, note FROM saunderson LIMIT 1")
-    isempty(saunderson_rows) && throw(InputError("database has no Saunderson row"))
-    sr = only(saunderson_rows)
-    saunderson = (
-        k1 = _f(sr[1]), k2 = _f(sr[2]), source_file = sr[3], sheet = sr[4], note = sr[5],
-    )
-    observer = ObserverRecord[
-        (
-            wavelength_nm = _f(r[1]), x_bar = _f(r[2]), y_bar = _f(r[3]), z_bar = _f(r[4]),
-            d65 = _f(r[5]),
-        ) for r in _query_csv(path,
-            "SELECT wavelength_nm, x_bar, y_bar, z_bar, d65 FROM observer ORDER BY wavelength_nm")
-    ]
-    observer_source_row = _query_csv(path,
-        "SELECT path, sha256 FROM source_files WHERE role = 'observer' LIMIT 1")
-    observer_source = isempty(observer_source_row) ?
-        SourceFile(("observer", "precompute/inputs/cie_1931_2deg_d65_10nm.csv", "")) :
-        SourceFile((role = "observer", path = observer_source_row[1][1], sha256 = observer_source_row[1][2]))
-
-    build_info = Dict{String,String}(
-        r[1] => r[2] for r in _query_csv(path, "SELECT key, value FROM build_info")
-    )
-    db = InputDatabase(
-        source_files, pigments, spectra, saunderson, observer, observer_source, build_info,
-    )
-    return validate_database(db)
-end
-
 # --- writing ---------------------------------------------------------------
 
-_sql_quote(s::AbstractString) = "'" * replace(String(s), "'" => "''") * "'"
+function _write_table(con, name::AbstractString, df::DataFrame)
+    view = "src_" * name
+    DuckDB.register_data_frame(con, df, view)
+    try
+        DBInterface.execute(con, "CREATE TABLE $name AS SELECT * FROM \"$view\"")
+    finally
+        DuckDB.unregister_data_frame(con, view)
+    end
+    return nothing
+end
 
-_sql_literal(x::Real) = string(Float64(x))
-_sql_literal(s::AbstractString) = _sql_quote(s)
+function _source_file_records(db::InputDatabase)
+    files = copy(db.source_files)
+    any(f -> f.role == "observer", files) || push!(files, db.observer_source)
+    return files
+end
 
-function _insert_sql(table::AbstractString, columns::Vector{String}, row)
-    vals = join((_sql_literal(v) for v in row), ", ")
-    return "INSERT INTO $table(" * join(columns, ", ") * ") VALUES (" * vals * ");"
+function _build_info_frame(db::InputDatabase)
+    ks = sort!(collect(Base.keys(db.build_info)))
+    return DataFrame(key = ks, value = String[db.build_info[k] for k in ks])
 end
 
 """
     save_database(db, path)
 
 Write `db` to a fresh `.duckdb` database at `path`, replacing any file that
-already exists. The schema is flat and normalized just enough that each
-spectrum carries its file, sheet, and cell range.
+already exists. The schema is the flat table-per-record-type form
+[`open_database`](@ref) reads back.
 
-Requires the `duckdb` command line client.
+The observer table's own source is a row in `source_files`, so it need not be
+repeated on every sample.
 """
 function save_database(db::InputDatabase, path::AbstractString)
     validate_database(db)
     mkpath(dirname(path))
     isfile(path) && rm(path)
-    sql = IOBuffer()
-    write(sql, """
-    CREATE TABLE source_files(role VARCHAR, path VARCHAR, sha256 VARCHAR);
-    CREATE TABLE pigments(slot INTEGER, code VARCHAR, name VARCHAR, ci VARCHAR, column_name VARCHAR);
-    CREATE TABLE spectra(code VARCHAR, quantity VARCHAR, wavelength_nm DOUBLE, value DOUBLE,
-                         source_file VARCHAR, sheet VARCHAR, cell_range VARCHAR);
-    CREATE TABLE saunderson(k1 DOUBLE, k2 DOUBLE, source_file VARCHAR, sheet VARCHAR, note VARCHAR);
-    CREATE TABLE observer(wavelength_nm DOUBLE, x_bar DOUBLE, y_bar DOUBLE, z_bar DOUBLE, d65 DOUBLE);
-    CREATE TABLE build_info(key VARCHAR, value VARCHAR);
-    """)
-    for r in db.source_files
-        write(sql, _insert_sql("source_files", ["role", "path", "sha256"],
-            (r.role, r.path, r.sha256)), "\n")
+    con = _connect(path)
+    try
+        _write_table(con, "source_files", DataFrame(_source_file_records(db)))
+        _write_table(con, "pigments",
+            rename!(DataFrame(db.pigments), :column => :column_name))
+        _write_table(con, "spectra", DataFrame(db.spectra))
+        _write_table(con, "saunderson", DataFrame([db.saunderson]))
+        _write_table(con, "observer", DataFrame(db.observer))
+        _write_table(con, "build_info", _build_info_frame(db))
+    finally
+        DBInterface.close!(con)
     end
-    # The observer table's own source is a row in source_files, so it need not
-    # be repeated on every sample.
-    if !any(r -> r.role == "observer", db.source_files)
-        write(sql, _insert_sql("source_files", ["role", "path", "sha256"],
-            (db.observer_source.role, db.observer_source.path, db.observer_source.sha256)), "\n")
-    end
-    for p in db.pigments
-        write(sql, _insert_sql("pigments", ["slot", "code", "name", "ci", "column_name"],
-            (p.slot, p.code, p.name, p.ci, p.column)), "\n")
-    end
-    for r in db.spectra
-        write(sql, _insert_sql("spectra",
-            ["code", "quantity", "wavelength_nm", "value", "source_file", "sheet", "cell_range"],
-            (r.code, r.quantity, r.wavelength_nm, r.value, r.source_file, r.sheet, r.cell_range)), "\n")
-    end
-    s = db.saunderson
-    write(sql, _insert_sql("saunderson", ["k1", "k2", "source_file", "sheet", "note"],
-        (s.k1, s.k2, s.source_file, s.sheet, s.note)), "\n")
-    for r in db.observer
-        write(sql, _insert_sql("observer",
-            ["wavelength_nm", "x_bar", "y_bar", "z_bar", "d65"],
-            (r.wavelength_nm, r.x_bar, r.y_bar, r.z_bar, r.d65)), "\n")
-    end
-    for (k, v) in sort(collect(db.build_info); by = first)
-        write(sql, _insert_sql("build_info", ["key", "value"], (k, v)), "\n")
-    end
-    _duckdb(; input = String(take!(sql)), args = String[path])
     return path
+end
+
+# --- reading ---------------------------------------------------------------
+
+const _TABLES = ("source_files", "pigments", "spectra", "saunderson", "observer", "build_info")
+
+"""
+    open_database(path) -> InputDatabase
+
+Read a `.duckdb` database produced by `import_inputs.jl` into memory.
+"""
+function open_database(path::AbstractString)
+    isfile(path) || throw(InputError(
+        "no input database at $path; run precompute/scripts/import_inputs.jl first"
+    ))
+    con = _connect(path)
+    try
+        present = Set(String.(_query(con,
+            "SELECT table_name FROM information_schema.tables WHERE table_schema = 'main'").table_name))
+        for needed in _TABLES
+            needed in present || throw(InputError("database $path has no table $needed"))
+        end
+
+        source_files = _records(SourceFile, _query(con,
+            "SELECT role, path, sha256 FROM source_files ORDER BY role"))
+        pigments = _records(PigmentRecord, rename!(_query(con,
+                "SELECT slot, code, name, ci, column_name FROM pigments ORDER BY slot"),
+            :column_name => :column))
+        spectra = _records(SpectrumRecord, _query(con,
+            "SELECT code, quantity, wavelength_nm, value, source_file, sheet, cell_range " *
+                "FROM spectra ORDER BY code, quantity, wavelength_nm"))
+
+        saunderson_rows = _query(con,
+            "SELECT k1, k2, source_file, sheet, note FROM saunderson LIMIT 1")
+        nrow(saunderson_rows) == 1 || throw(InputError("database has no Saunderson row"))
+        saunderson = only(_records(SaundersonRecord, saunderson_rows))
+
+        observer = _records(ObserverRecord, _query(con,
+            "SELECT wavelength_nm, x_bar, y_bar, z_bar, d65 FROM observer ORDER BY wavelength_nm"))
+
+        observer_rows = _query(con,
+            "SELECT path, sha256 FROM source_files WHERE role = 'observer' LIMIT 1")
+        observer_source = nrow(observer_rows) == 0 ? SourceFile((
+                role = "observer",
+                path = "precompute/inputs/cie_1931_2deg_d65_10nm.csv",
+                sha256 = "",
+            )) : SourceFile((
+                role = "observer",
+                path = String(observer_rows.path[1]),
+                sha256 = String(observer_rows.sha256[1]),
+            ))
+
+        info = _query(con, "SELECT key, value FROM build_info")
+        build_info = Dict{String,String}(
+            String(info.key[i]) => String(info.value[i]) for i in 1:nrow(info)
+        )
+
+        db = InputDatabase(
+            source_files, pigments, spectra, saunderson, observer, observer_source,
+            build_info,
+        )
+        return validate_database(db)
+    finally
+        DBInterface.close!(con)
+    end
 end
 
 # --- spreadsheet import ----------------------------------------------------
 
-_column_index(letter::AbstractString) = Int(letter[1] - 'A') + 1
-
 """
-    _read_xlsx_rows(path, sheet, range) -> Vector{Vector{String}}
+    _load_excel!(con)
 
-Read a sheet range as raw strings through the DuckDB `excel` extension. The
-extension is loaded if present, and installed on first use; installation
-needs network access the first time only.
+Make DuckDB's `excel` extension available. The extension is installed on
+first use, which needs network access once.
 """
-function _read_xlsx_rows(path::AbstractString, sheet::AbstractString, range::AbstractString)
-    select = "SELECT row_number() OVER () AS rn, * FROM read_xlsx(" *
-        _sql_quote(path) * ", sheet=" * _sql_quote(sheet) *
-        ", all_varchar=true, header=false, range=" * _sql_quote(range) * ")"
+function _load_excel!(con)
     try
-        return _query_csv(":memory:", "LOAD excel; " * select)
-    catch err
-        err isa InputError || rethrow()
-        return _query_csv(":memory:", "INSTALL excel; LOAD excel; " * select)
+        DBInterface.execute(con, "LOAD excel")
+    catch
+        DBInterface.execute(con, "INSTALL excel; LOAD excel")
     end
+    return con
 end
 
-function _read_observer_csv(path::AbstractString)
-    rows = _parse_csv(read(path, String))
-    isempty(rows) && throw(InputError("observer file $path is empty"))
-    header = rows[1]
+"""
+    _read_xlsx(con, path, sheet, range) -> DataFrame
+
+Read a sheet range as raw strings, with a leading `rn` column holding the
+sheet row number. Every cell is a `String` or `missing`, so the caller does
+the parsing.
+"""
+function _read_xlsx(con, path::AbstractString, sheet::AbstractString, range::AbstractString)
+    return _query(con,
+        "SELECT row_number() OVER () AS rn, * FROM read_xlsx(" *
+            _sql_str(path) * ", sheet=" * _sql_str(sheet) *
+            ", all_varchar=true, header=false, range=" * _sql_str(range) * ")")
+end
+
+"""
+    _read_observer(con, path) -> Vector{ObserverRecord}
+
+Read the observer CSV, checking that its header is exactly the five expected
+columns.
+"""
+function _read_observer(con, path::AbstractString)
+    df = _query(con, "SELECT * FROM read_csv(" * _sql_str(path) * ", header = true)")
     expected = ["wavelength_nm", "x_bar", "y_bar", "z_bar", "d65"]
-    header == expected || throw(InputError(
-        "observer file $path has header $(join(header, ",")), expected $(join(expected, ","))"
+    names(df) == expected || throw(InputError(
+        "observer file $path has header $(join(names(df), ",")), expected $(join(expected, ","))"
     ))
-    out = ObserverRecord[]
-    for r in rows[2:end]
-        length(r) == 5 || throw(InputError("observer row has $(length(r)) fields, expected 5"))
-        push!(out, (
-            wavelength_nm = _f(r[1]), x_bar = _f(r[2]), y_bar = _f(r[3]),
-            z_bar = _f(r[4]), d65 = _f(r[5]),
-        ))
-    end
-    return out
+    return _records(ObserverRecord, df)
 end
 
 """
@@ -448,8 +381,6 @@ end
 Read the selected spreadsheet ranges and the observer CSV into an
 [`InputDatabase`](@ref). This is the only function that knows the workbook
 layout; `import_inputs.jl` and the tests both call it.
-
-Requires the `duckdb` command line client with the `excel` extension.
 """
 function load_spreadsheet_inputs(
         cfg::AbstractDict, cfg_path::AbstractString;
@@ -462,10 +393,6 @@ function load_spreadsheet_inputs(
     isfile(primary) || throw(InputError("primary input $primary does not exist"))
     isfile(observer_file) || throw(InputError("observer input $observer_file does not exist"))
 
-    sheet = inputs["primary_sheet"]
-    ks = _read_xlsx_rows(primary, sheet, "A1:Z82")
-    det = _read_xlsx_rows(primary, "Details", "E3:G25")
-
     primary_sha = bytes2hex(sha256(read(primary)))
     observer_sha = bytes2hex(sha256(read(observer_file)))
     cross = get(inputs, "reflectance_cross_check", nothing)
@@ -475,60 +402,78 @@ function load_spreadsheet_inputs(
 
     source_files = SourceFile[
         ("spectral_k_s", inputs["primary"], primary_sha),
-        ("observer", observer_file, observer_sha),
+        ("observer", inputs["observer_file"], observer_sha),
     ]
-    if cross_sha != ""
-        push!(source_files, ("reflectance_cross_check", cross, cross_sha))
+    cross_sha == "" || push!(source_files, ("reflectance_cross_check", cross, cross_sha))
+
+    sheet = inputs["primary_sheet"]
+    con = _connect()
+    local ks, details, observer, duckdb_version
+    try
+        _load_excel!(con)
+        ks = _read_xlsx(con, primary, sheet, "A1:Z82")
+        details = _read_xlsx(con, primary, "Details", "E3:G25")
+        observer = _read_observer(con, observer_file)
+        duckdb_version = try
+            String(only(_query(con, "SELECT version() AS version").version))
+        catch
+            "unknown"
+        end
+    finally
+        DBInterface.close!(con)
     end
 
-    # Details: map C.I. name to the source paint name. The range starts at
-    # column E, so the CSV row is [rn, E, F, G] and F/G are name/C.I.
+    # Details: map the C.I. name in column G to the source paint name in
+    # column F. The range starts at column E, so the frame has columns E, F,
+    # and G.
     ci_to_name = Dict{String,String}()
-    for r in det
-        length(r) >= 4 || continue
-        ci = strip(r[4])
-        ci == "" && continue
-        ci_to_name[ci] = strip(r[3])
+    for row in eachrow(details)
+        ci = _cell(row.G)
+        isempty(ci) && continue
+        ci_to_name[ci] = _cell(row.F)
     end
 
     pigments = PigmentRecord[]
-    spectra = SpectrumRecord[]
     for (slot, p) in enumerate(cfg["pigments"])
         code = String(p["code"])
         column = String(p["column"])
-        col = _column_index(column)
-        source_name = get(ci_to_name, String(p["ci"]), String(p["name"]))
         push!(pigments, (
-            slot = slot, code = code, name = source_name, ci = String(p["ci"]),
-            column = column,
+            slot = slot, code = code,
+            name = get(ci_to_name, String(p["ci"]), String(p["name"])),
+            ci = String(p["ci"]), column = column,
         ))
-        for (quantity, lo, hi) in (("K", 6, 43), ("S", 45, 82))
-            for r in ks
-                rn = _i(r[1])
-                lo <= rn <= hi || continue
-                wl_text = r[3]
-                (wl_text === nothing || isempty(strip(wl_text))) && continue
-                val = r[col + 1]
-                (val === nothing || isempty(strip(val))) && continue
-                push!(spectra, (
-                    code = code, quantity = quantity, wavelength_nm = _f(wl_text),
-                    value = _f(val), source_file = inputs["primary"], sheet = sheet,
-                    cell_range = "$(column)$(rn)",
-                ))
-            end
+    end
+    column_to_code = Dict(p.column => p.code for p in pigments)
+
+    # Melt the pigment columns of each quantity block into one long form, then
+    # drop the empty cells. `rn` is the sheet row number, so it is also the
+    # cell reference.
+    pigment_columns = String[p["column"] for p in cfg["pigments"]]
+    spectra = SpectrumRecord[]
+    for (quantity, rows) in (("K", 6:43), ("S", 45:82))
+        block = select(ks[rows, :], :rn, :B, pigment_columns...)
+        long = stack(block, pigment_columns;
+            variable_name = :column, value_name = :value)
+        for row in eachrow(long)
+            wavelength = _cell(row.B)
+            value = _cell(row.value)
+            (isempty(wavelength) || isempty(value)) && continue
+            column = String(row.column)
+            push!(spectra, (
+                code = column_to_code[column], quantity = quantity,
+                wavelength_nm = _float(wavelength), value = _float(value),
+                source_file = inputs["primary"], sheet = sheet,
+                cell_range = "$(column)$(row.rn)",
+            ))
         end
     end
+    sort!(spectra; by = r -> (r.code, r.quantity, r.wavelength_nm))
 
     saunderson = (
-        k1 = _f(ks[2][3]), k2 = _f(ks[2][4]), source_file = inputs["primary"],
-        sheet = sheet, note = "B2 and C2 of 'k and s data'; kins is ignored",
+        k1 = _float(_cell(ks.B[2])), k2 = _float(_cell(ks.C[2])),
+        source_file = inputs["primary"], sheet = sheet,
+        note = "B2 and C2 of 'k and s data'; kins is ignored",
     )
-    observer = _read_observer_csv(observer_file)
-    duckdb_version = try
-        strip(_duckdb(; read = true, args = String[":memory:", "-noheader", "-list", "-c", "SELECT version()"]))
-    catch
-        "unknown"
-    end
     build_info = Dict{String,String}(
         "julia_version" => string(VERSION),
         "duckdb_version" => replace(duckdb_version, "\n" => " "),

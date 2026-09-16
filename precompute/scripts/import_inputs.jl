@@ -12,8 +12,9 @@
 #   * `precompute/inputs/cie_1931_2deg_d65_10nm.csv`  observer and D65
 #
 # Each spectrum records its source file, sheet, and cell, so a value in the
-# database can always be traced back to the measurement. Requires the `duckdb`
-# command line client with the `excel` extension.
+# database can always be traced back to the measurement. The workbook is read
+# through DuckDB.jl, whose `excel` extension is installed on first use (which
+# needs network access once).
 
 using PaintMixPrecompute
 using Printf: @printf

@@ -6,7 +6,7 @@ the optimizer, the automatic differentiation, the spectral model, and the
 input data.
 
     precompute/
-      Project.toml        runtime-independent deps: Optim, ForwardDiff, PaintMix
+      Project.toml        runtime-independent deps: Optim, ForwardDiff, DuckDB, DataFrames, PaintMix
       config/default.toml settled conventions and generation parameters
       inputs/             selected sources, checksums, and the CIE observer
       src/
@@ -45,15 +45,15 @@ cached under `precompute/output/<profile>/` and reused only when the
 configuration hash, input checksums, grid size, and surrogate settings all
 match, so changing the configuration invalidates every cache.
 
-Requires the `duckdb` command line client with the `excel` extension for the
-import step. The extension is installed on first use, which needs network
-access once.
+The import step reads the workbook and the observer CSV through DuckDB.jl
+and DataFrames.jl, so no external client is needed. DuckDB's `excel`
+extension is installed on first use, which needs network access once.
 
 ## What each step does
 
 **Step 3 — spectral reference (`inputdb.jl`, `spectra.jl`,
 `kubelka_munk.jl`).** `import_inputs.jl` reads the selected ranges of
-`data/Final_artist_database.xlsx` through the DuckDB `excel` extension and
+`data/Final_artist_database.xlsx` through DuckDB's `excel` reader and
 writes a normalized database recording, for every sample, its file, sheet,
 and cell. `load_spectra` turns that into checked matrices;
 `build_quadrature` builds the trapezoidal weights, the D65 and CIE 1931

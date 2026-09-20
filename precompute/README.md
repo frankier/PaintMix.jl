@@ -71,6 +71,18 @@ all 15 nonempty pigment subsets, largest first, and stops early when the
 interior solve is exact. `unmix_bulk!` is the cheaper continuation path used
 by `inverse_slab!`.
 
+Both solvers share one Levenberg-Marquardt core, `lm_active!`, over the
+subset's softmax coordinates. The damped normal equations are at most 3 x 3,
+so they are solved with `StaticArrays` `SMatrix \ SVector` rather than by
+hand-rolled Gaussian elimination: the static LU is unrolled, allocates
+nothing, and measured about ten times faster per solve. `dRGB/dc` stays
+analytic: a `ForwardDiff` Jacobian costs about seven times more per call,
+because it pushes four partials through the whole wavelength loop, and the
+inverse table needs the Jacobian at every LM iteration. A test cross-checks
+`unmix_reference` against `LeastSquaresOptim.LevenbergMarquardt` on the same
+objective, driven by `ForwardDiff`, so the hand-written damping schedule,
+stationarity test, and Jacobian convention have an independent oracle.
+
 **Step 5 — tables and export (`tables.jl`, `export.jl`).**
 `generate_forward` evaluates `mix_rgb` at every concentration-grid vertex,
 padding off-simplex vertices by Euclidean projection onto the simplex.
@@ -102,11 +114,17 @@ On this machine (12 physical cores, `julia -t 14`, `surface_divisions = 20`):
 | Inverse table, coarse n = 64 plus fine polish | a few minutes; the fine pass is ~45 µs per vertex single-threaded |
 | Validation | < 1 s |
 
-The inverse solver is allocation-free in the hot path. An early version
-executed `forward_diff`-free but allocated roughly 12 MB per vertex through
-`ntuple` closures in the softmax kernel and a union-typed active set; fixing
-those cut the cost per vertex by about an order of magnitude and let the
-reference solver run at 256³ at all.
+The inverse solver is allocation-free in the hot path: `unmix_bulk!` and
+`_solve_adaptive!` allocate nothing per solve, and a test asserts it. Getting
+there took two rounds. An earlier round removed the `ntuple` closures in the
+softmax kernel. This round removed two remaining boxes: the active set now
+travels as a concrete `(count, NTuple{4,Int})` pair instead of a
+`Tuple{Int}` / `NTuple{2,Int}` / ... chain, and `_project_onto` captures an
+immutable reciprocal instead of the sum its loop mutates. Together those
+cost about 96 bytes per grid vertex on the bulk path, which is gigabytes of
+garbage at 256³. `unmix_reference` still allocates a little inside its
+subset recursion; the test bounds it as a regression guard rather than
+claiming zero.
 
 The release validation record is written to
 `precompute/output/release/<model-id>.toml`. For the promoted model it shows

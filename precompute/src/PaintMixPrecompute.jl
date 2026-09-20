@@ -33,6 +33,7 @@ using Optim: Optim
 using Printf: @printf, @sprintf
 using Random: AbstractRNG, Xoshiro
 using SHA: sha256
+using StaticArrays: SMatrix, SVector
 using TOML: TOML
 
 include("inputdb.jl")

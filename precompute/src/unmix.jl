@@ -59,9 +59,15 @@ end
 """
     SolverScratch
 
-Reusable buffers for one solver instance. One per thread: the kernels are
-allocation-free once a scratch exists, which is what makes 256^3 solves of
-16.7 million points practical.
+Reusable buffers for one solver instance. One per thread. The kernels are
+allocation-free once a scratch exists; the public solvers are too, and the
+precompute tests check that. That is what makes 256^3 solves of 16.7 million
+points practical.
+
+The linear algebra is deferred to StaticArrays (`SMatrix`/`SVector`) rather
+than being hand-rolled: the systems are at most 3 x 3, so `A \\ g` is
+unrolled and allocation-free. The buffers stay `Matrix`/`Vector` because they
+are written once per iteration by the generic `_jacobian4!` kernels.
 """
 mutable struct SolverScratch
     J::Matrix{Float64}     # 3 x 4 analytic dRGB/dc
@@ -123,24 +129,31 @@ end
 @inline _theta_plus(a::NTuple{3,T}, b::NTuple{3,T}) where {T} =
     (a[1] + b[1], a[2] + b[2], a[3] + b[3])
 
-# Damped normal matrix in row-major order, built without a closure so the
-# buffer entries stay on the stack. `lambda` scales the diagonal.
+# Damped normal matrix `A + lambda * diag(max(A_ii, floor))`, returned as an
+# `SMatrix` so the caller can solve it with `\`. `lambda` scales the
+# diagonal only; the floor keeps a zero diagonal entry from making the
+# system singular.
+@inline _damp_diag(a::T, λ::T) where {T} = a + λ * max(a, T(1.0e-12))
+
 @inline function _damped(sc::SolverScratch, λ::T, ::Val{1}) where {T}
-    return (sc.A[1, 1] + λ * max(sc.A[1, 1], T(1.0e-12)),)
+    a = sc.A
+    return SMatrix{1,1,T}(_damp_diag(a[1, 1], λ))
 end
 
 @inline function _damped(sc::SolverScratch, λ::T, ::Val{2}) where {T}
-    return (
-        sc.A[1, 1] + λ * max(sc.A[1, 1], T(1.0e-12)), sc.A[1, 2],
-        sc.A[2, 1], sc.A[2, 2] + λ * max(sc.A[2, 2], T(1.0e-12)),
+    a = sc.A
+    return SMatrix{2,2,T}(
+        _damp_diag(a[1, 1], λ), a[2, 1],
+        a[1, 2], _damp_diag(a[2, 2], λ),
     )
 end
 
 @inline function _damped(sc::SolverScratch, λ::T, ::Val{3}) where {T}
-    return (
-        sc.A[1, 1] + λ * max(sc.A[1, 1], T(1.0e-12)), sc.A[1, 2], sc.A[1, 3],
-        sc.A[2, 1], sc.A[2, 2] + λ * max(sc.A[2, 2], T(1.0e-12)), sc.A[2, 3],
-        sc.A[3, 1], sc.A[3, 2], sc.A[3, 3] + λ * max(sc.A[3, 3], T(1.0e-12)),
+    a = sc.A
+    return SMatrix{3,3,T}(
+        _damp_diag(a[1, 1], λ), a[2, 1], a[3, 1],
+        a[1, 2], _damp_diag(a[2, 2], λ), a[3, 2],
+        a[1, 3], a[2, 3], _damp_diag(a[3, 3], λ),
     )
 end
 
@@ -167,15 +180,6 @@ function _theta_from_c(active::NTuple{K,Int}, c::NTuple{4,T}) where {K,T}
         ci <= zero(T) && return T(-30)
         return log(max(ci, T(1.0e-300)) / max(last, T(1.0e-300)))
     end
-end
-
-@inline function _active_tuple(c::NTuple{4,T}, threshold::T) where {T}
-    v = Int[]
-    @inbounds for i in 1:4
-        c[i] > threshold && push!(v, i)
-    end
-    isempty(v) && push!(v, argmax(c))
-    return Tuple(v)
 end
 
 # Allocation-free active-set packing: returns `(n, i1, i2, i3, i4)` with the
@@ -212,8 +216,14 @@ end
     return n, i1, i2, i3, i4
 end
 
-@inline _active_from_pack(n::Int, i1::Int, i2::Int, i3::Int, i4::Int) =
-    n == 1 ? (i1,) : n == 2 ? (i1, i2) : n == 3 ? (i1, i2, i3) : (i1, i2, i3, i4)
+# Pack an active set into a concrete `NTuple{4,Int}`, zero padded. Keeping
+# the arity out of the type is deliberate: a `Tuple{Int}` / `NTuple{2,Int}`
+# / ... chain infers as `Tuple{Vararg{Int}}`, which made every active set a
+# boxed value and cost `unmix_bulk!` about 96 bytes per grid vertex. A
+# fixed-width tuple plus a separate count allocates nothing.
+@inline function _pad4(active::NTuple{K,Int}) where {K}
+    return ntuple(i -> i <= K ? active[i] : 0, Val(4))
+end
 
 @inline _drop_active(a::NTuple{2,Int}, j::Int) = j == 1 ? (a[2],) : (a[1],)
 @inline _drop_active(a::NTuple{3,Int}, j::Int) =
@@ -230,61 +240,22 @@ end
     return d1 * d1 + d2 * d2 + d3 * d3
 end
 
-# Solve a symmetric positive-definite system by Cramer's rule. The dimension
-# is at most 3 (the concentration simplex is 3-dimensional), so this is both
-# exact and branch-free enough to inline.
-@inline function _solve1(a11::T, b1::T) where {T}
-    abs(a11) < eps(T) && return ((zero(T),), false)
-    return ((b1 / a11,), true)
-end
-
-@inline function _solve2(a11::T, a12::T, a21::T, a22::T, b1::T, b2::T) where {T}
-    det = a11 * a22 - a12 * a21
-    abs(det) < eps(T) * max(abs(a11 * a22), one(T)) && return ((zero(T), zero(T)), false)
-    return ((b1 * a22 - a12 * b2) / det, (a11 * b2 - b1 * a21) / det), true
-end
-
-# Gaussian elimination with partial pivoting on a 3x3 system, written out
-# with scalars so it needs no allocation. Returns a 3-tuple or `nothing`.
-@inline function _gauss3(
-        a11::T, a12::T, a13::T, a21::T, a22::T, a23::T, a31::T, a32::T, a33::T,
-        b1::T, b2::T, b3::T,
-    ) where {T}
-    m1, m2, m3 = a11, a12, a13
-    n1, n2, n3 = a21, a22, a23
-    o1, o2, o3 = a31, a32, a33
-    r1, r2, r3 = b1, b2, b3
-    # Pivot row 1.
-    if abs(n1) > abs(m1) && abs(n1) >= abs(o1)
-        m1, m2, m3, n1, n2, n3 = n1, n2, n3, m1, m2, m3
-        r1, r2 = r2, r1
-    elseif abs(o1) > abs(m1)
-        m1, m2, m3, o1, o2, o3 = o1, o2, o3, m1, m2, m3
-        r1, r3 = r3, r1
+# Solve the damped normal equations. The dimension is at most three (the
+# concentration simplex is 3-dimensional), so StaticArrays' unrolled,
+# partially pivoted LU is allocation-free and measured about ten times
+# faster per solve than the hand-rolled elimination it replaced. A singular
+# system comes back as `nothing`: `\` yields `NaN`/`Inf` rather than
+# throwing, so the finiteness check is what detects it, and the caller
+# treats that as a rejected step.
+@inline function _solve_damped(A::SMatrix{M,M,T}, g::SVector{M,T}) where {M,T}
+    if M == 1 && abs(A[1, 1]) < eps(T)
+        return nothing
     end
-    abs(m1) < floatmin(T) && return nothing
-    f = n1 / m1
-    n2 -= f * m2
-    n3 -= f * m3
-    r2 -= f * r1
-    f = o1 / m1
-    o2 -= f * m2
-    o3 -= f * m3
-    r3 -= f * r1
-    # Pivot row 2.
-    if abs(o2) > abs(n2)
-        n2, n3, o2, o3 = o2, o3, n2, n3
-        r2, r3 = r3, r2
+    x = A \ g
+    @inbounds for i in 1:M
+        isfinite(x[i]) || return nothing
     end
-    abs(n2) < floatmin(T) && return nothing
-    f = o2 / n2
-    o3 -= f * n3
-    r3 -= f * r2
-    abs(o3) < floatmin(T) && return nothing
-    x3 = r3 / o3
-    x2 = (r2 - n3 * x3) / n2
-    x1 = (r1 - m2 * x2 - m3 * x3) / m1
-    return (x1, x2, x3)
+    return x
 end
 
 # --- Levenberg-Marquardt on one active face --------------------------------
@@ -358,17 +329,10 @@ function lm_active!(
         δ = _zeros_tuple(Val(M), T)
         for _ in 1:12
             A = _damped(sc, λ, Val(M))
-            sol = if M == 1
-                _solve1(A[1], -sc.g[1])
-            elseif M == 2
-                _solve2(A[1], A[2], A[3], A[4], -sc.g[1], -sc.g[2])
-            else
-                r = _gauss3(A[1], A[2], A[3], A[4], A[5], A[6], A[7], A[8], A[9],
-                    -sc.g[1], -sc.g[2], -sc.g[3])
-                r === nothing ? ((zero(T), zero(T), zero(T)), false) : (r, true)
-            end
-            sol[2] || break
-            δ = sol[1]
+            g = SVector{M,T}(ntuple(i -> -sc.g[i], Val(M)))
+            x = _solve_damped(A, g)
+            x === nothing && break
+            δ = ntuple(i -> x[i], Val(M))
             θt = _theta_plus(θ, δ)
             pt = _softmax_k((θt..., zero(T)))
             ct = _c_from_active(active, pt)
@@ -418,12 +382,13 @@ function _polish!(
 end
 
 """
-    _solve_adaptive!(sc, model, rgb, seed, settings) -> (c, sse, active, iters, converged)
+    _solve_adaptive!(sc, model, rgb, seed, settings) -> (c, sse, n, active, iters, converged)
 
 Solve from `seed`, then repeatedly drop the smallest concentration while it
 is below `settings.face_threshold` and re-solve on the reduced face. This is
 what keeps boundary optima from being approached through saturating softmax
-logits.
+logits. `active` is a zero-padded `NTuple{4,Int}` whose first `n` entries are
+the active pigment indices.
 """
 function _solve_adaptive!(
         sc::SolverScratch, model, rgb::NTuple{3,T},
@@ -441,15 +406,15 @@ function _solve_adaptive!(
 end
 
 # Recursion on the active-set size keeps every frame specialized on `K`, so
-# the reduced face is a concrete tuple type rather than a union. This is the
-# difference between the bulk solve allocating tens of kilobytes per vertex
-# and allocating nothing.
+# the reduced face is a concrete tuple type rather than a union. The *return*
+# value carries the active set as a fixed-width `(n, NTuple{4,Int})` pair,
+# which is what keeps the boundary of the solver allocation-free.
 function _adaptive_face!(
         sc::SolverScratch, model, rgb::NTuple{3,T},
         active::NTuple{K,Int}, c::NTuple{4,T}, settings::UnmixSettings,
     ) where {T,K}
     c, sse, iters, converged = _polish!(sc, model, rgb, active, c, settings)
-    K == 1 && return c, sse, active, iters, converged
+    K == 1 && return c, sse, K, _pad4(active), iters, converged
     smallest = 0
     smallest_val = T(Inf)
     for (j, idx) in enumerate(active)
@@ -458,11 +423,12 @@ function _adaptive_face!(
             smallest = j
         end
     end
-    smallest_val > settings.face_threshold && return c, sse, active, iters, converged
+    smallest_val > settings.face_threshold &&
+        return c, sse, K, _pad4(active), iters, converged
     reduced = _drop_active(active, smallest)
-    c2, sse2, active2, iters2, converged2 =
+    c2, sse2, n2, a2, iters2, converged2 =
         _adaptive_face!(sc, model, rgb, reduced, c, settings)
-    return c2, sse2, active2, iters + iters2, converged | converged2
+    return c2, sse2, n2, a2, iters + iters2, converged | converged2
 end
 
 # --- public solvers --------------------------------------------------------
@@ -489,8 +455,8 @@ function unmix_reference(
         (T(0.25), T(0.25), T(0.25), T(0.25)), T(Inf), 0, false, 0,
     )
     _reference_pass!(state, scratch, model, rgb, settings, _all_subsets())
-    active_out, nactive = _pad_active(_active_tuple(state.c, zero(T)))
-    return UnmixResult(state.c, state.sse, active_out, nactive, state.iters,
+    nactive, a1, a2, a3, a4 = _active_pack(state.c, zero(T))
+    return UnmixResult(state.c, state.sse, (a1, a2, a3, a4), nactive, state.iters,
         state.converged, state.restarts)
 end
 
@@ -504,12 +470,19 @@ mutable struct _ReferenceState{T<:AbstractFloat}
     restarts::Int
 end
 
+# Walk the fixed subset tuple one element at a time. The tuple is
+# heterogeneous, so the element type has to stay in the signature: with an
+# abstract `subsets::Tuple`, `first(subsets)` infers as `Any`, every active
+# set is boxed, and a reference solve allocates some hundreds of bytes. With
+# `S<:Tuple` each level specializes on what is left of the tuple, so the
+# active set stays concrete. The early exit matters: once the interior solve
+# is exact there is no reason to enumerate the faces.
 function _reference_pass!(
         state::_ReferenceState, sc::SolverScratch, model, rgb::NTuple{3,T},
-        settings::UnmixSettings, subsets::Tuple,
-    ) where {T}
+        settings::UnmixSettings, subsets::S,
+    ) where {T,S<:Tuple}
     state.sse < T(1.0e-18) && return nothing
-    _subset_pass!(state, sc, model, rgb, subsets[1], settings)
+    _subset_pass!(state, sc, model, rgb, first(subsets), settings)
     return _reference_pass!(state, sc, model, rgb, settings, Base.tail(subsets))
 end
 
@@ -562,10 +535,14 @@ function _project_onto(active::NTuple{K,Int}, c::NTuple{4,T}) where {K,T}
     @inbounds for idx in active
         s += c[idx]
     end
-    if s <= 0
-        return _uniform_on(active, T)
+    s <= 0 && return _uniform_on(active, T)
+    # `inv_s` is assigned once, so the closure below captures an immutable
+    # binding. Capturing `s` itself would box it, because `s` is mutated by
+    # the loop above.
+    inv_s = inv(s)
+    return ntuple(Val(4)) do i
+        _findpos(active, i) == 0 ? zero(T) : c[i] * inv_s
     end
-    return ntuple(i -> _findpos(active, i) == 0 ? zero(T) : c[i] / s, Val(4))
 end
 
 # Deterministic perturbation, not RNG: restart `r` shifts the uniform seed in
@@ -579,11 +556,6 @@ function _random_on(active::NTuple{K,Int}, r::Int) where {K}
     end
     s = sum(raw)
     return ntuple(i -> raw[i] / s, Val(4))
-end
-
-@inline function _pad_active(active::Tuple)
-    n = length(active)
-    return ntuple(i -> i <= n ? active[i] : 0, Val(4)), n
 end
 
 # The 15 nonempty subsets of {1,2,3,4}, in a fixed order. The full simplex
@@ -613,18 +585,18 @@ function unmix_bulk!(
     best_c = seeds[1]
     best_sse = T(Inf)
     n0, a1, a2, a3, a4 = _active_pack(seeds[1], settings.face_threshold)
-    best_active = _pad_active(_active_from_pack(n0, a1, a2, a3, a4))[1]
+    best_active = (a1, a2, a3, a4)
     best_n = n0
     total_iters = 0
     converged = false
     for seed in seeds
-        c, s, active, it, conv = _solve_adaptive!(sc, model, rgb, seed, settings)
+        c, s, n, a, it, conv = _solve_adaptive!(sc, model, rgb, seed, settings)
         total_iters += it
         converged |= conv
         if s < best_sse
             best_c, best_sse = c, s
-            best_active = _pad_active(active)[1]
-            best_n = length(active)
+            best_active = a
+            best_n = n
         end
     end
     return UnmixResult(best_c, best_sse, best_active, best_n, total_iters, converged, N)

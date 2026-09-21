@@ -1,0 +1,16 @@
+#:schema https://www.schemastore.org/prek.json
+# Git hooks for local development, run with `prek` (https://prek.j178.dev):
+#
+#   prek install        # wire the hooks into .git/hooks
+#   prek run --all-files
+#
+# The Runic hook builds its own Julia environment, so the runtime package
+# keeps an empty `[deps]` section. Keep `Runic@1` in sync with the
+# `version: '1'` input of `fredrikekre/runic-action` in
+# `.github/workflows/ci.yml`.
+[[repos]]
+repo = "https://github.com/fredrikekre/runic-pre-commit"
+rev = "v2.2.0"
+hooks = [
+  { id = "runic", additional_dependencies = ["Runic@1"] },
+]

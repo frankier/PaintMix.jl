@@ -69,3 +69,16 @@ bash build/smoke/run.sh                                      # C + Python vs Jul
 
 Test with synthetic tables. The measurement workbooks and the release payload
 are untracked; tests that need them must skip when they are absent.
+
+## Formatting
+
+Run Runic.jl like so:
+
+```sh
+runic --check --diff .  # check
+runic --inplace .      # apply
+```
+
+`prek run --all-files` runs the same check through `prek.toml`. CI runs
+`fredrikekre/runic-action`. Both install Runic in their own environment, so
+neither touches the runtime project's empty `[deps]` section.

@@ -30,7 +30,7 @@ using Dates: Dates
 using DuckDB
 using ForwardDiff: ForwardDiff
 using Optim: Optim
-using Printf: @printf, @sprintf
+using Printf: @sprintf
 using Random: AbstractRNG, Xoshiro
 using SHA: sha256
 using StaticArrays: SMatrix, SVector
@@ -74,8 +74,6 @@ export ConfigError,
     pigment_parameters,
     mix_rgb,
     mix_rgb_params,
-    eval_mix,
-    eval_jacobian4!,
     mix_rgb_simplex,
     mix_rgb_jacobian!,
     km_reflectance,
@@ -88,7 +86,6 @@ export ConfigError,
     inv_softplus,
     SurfaceQuadrature,
     surface_quadrature,
-    surface_colors,
     surface_targets,
     Epush,
     Epull,
@@ -118,7 +115,6 @@ export ConfigError,
     generate_forward,
     generate_inverse,
     inverse_slab!,
-    inverse_table_slab!,
     reference_slab!,
     coarse_seed,
     coarse_to_fine_slab!,

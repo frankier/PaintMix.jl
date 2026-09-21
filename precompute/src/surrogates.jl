@@ -64,16 +64,6 @@ function _surface_quadrature(d::Int)
 end
 
 """
-    surface_colors(model, sq) -> Vector{NTuple{3,T}}
-
-`mix_Q(c)` at every quadrature sample. Used for diagnostics and for the
-`E_push`/`E_pull` reference implementations.
-"""
-function surface_colors(model::SpectralModel{T}, sq::SurfaceQuadrature) where {T}
-    return [mix_rgb(model, c) for c in sq.points]
-end
-
-"""
     surface_targets(model, sq) -> Vector{NTuple{3,Float64}}
 
 Oklab coordinates of `mix_P*(c)` at every quadrature sample. The pull targets
@@ -211,8 +201,7 @@ measured coefficient is below the configured floor.
     return log(expm1(max(y, T(1.0e-12))))
 end
 
-@inline _unpack_absorb(θ::Real, epsilon::Real) = epsilon + softplus(θ)
-@inline _unpack_scatter(θ::Real, epsilon::Real) = epsilon + softplus(θ)
+@inline _unpack(θ::Real, epsilon::Real) = epsilon + softplus(θ)
 
 """
     SurrogateFit{T}
@@ -260,8 +249,8 @@ function theta_parameters(theta::AbstractVector{T}, W::Integer, epsilon::Real) w
     K = Matrix{T}(undef, 4, W)
     S = Matrix{T}(undef, 4, W)
     @inbounds for i in 1:4, j in 1:W
-        K[i, j] = _unpack_absorb(theta[(i - 1) * W + j], epsilon)
-        S[i, j] = _unpack_scatter(theta[4W + (i - 1) * W + j], epsilon)
+        K[i, j] = _unpack(theta[(i - 1) * W + j], epsilon)
+        S[i, j] = _unpack(theta[4W + (i - 1) * W + j], epsilon)
     end
     return K, S
 end
@@ -277,8 +266,8 @@ function theta_parameters_wl(theta::AbstractVector{T}, W::Integer, epsilon::Real
     K = Matrix{T}(undef, W, 4)
     S = Matrix{T}(undef, W, 4)
     @inbounds for i in 1:4, j in 1:W
-        K[j, i] = _unpack_absorb(theta[(i - 1) * W + j], epsilon)
-        S[j, i] = _unpack_scatter(theta[4W + (i - 1) * W + j], epsilon)
+        K[j, i] = _unpack(theta[(i - 1) * W + j], epsilon)
+        S[j, i] = _unpack(theta[4W + (i - 1) * W + j], epsilon)
     end
     return K, S
 end

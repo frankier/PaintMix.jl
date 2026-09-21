@@ -152,9 +152,7 @@ sidecar.
   * **Inverse objective.** The spectral model and the float forward table
     are both available as evaluators (`SpectralModel` and
     `ForwardFloatLUT`); the production profile solves against the spectral
-    model with `reference_slab!`. `inverse_table_slab!` is the cheaper,
-    table-based alternative, kept because it is the same code path with a
-    different evaluator and is covered by tests.
+    model with `reference_slab!`.
   * **Observer tables.** The source workbook carries no observer data, so the
     CIE 1931 2-degree functions and D65 are an explicit input file with its
     own checksum. See `inputs/README.md`.

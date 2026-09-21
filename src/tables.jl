@@ -232,23 +232,19 @@ end
 """
     validate_model(model; simplex = true) -> model
 
-Check the invariants the mixing kernels rely on: both tables have `3n^3`
-bytes, every byte pattern is a value (trivially true for `UInt8`, so this
-exists for clarity), and — when `simplex` is set — every inverse-table
-vertex stores three concentrations whose sum cannot exceed 255, which is
-what makes the reconstructed fourth concentration non-negative.
+Check the invariants the mixing kernels rely on beyond what the constructors
+already enforce: the two tables share an edge length `n`, and — when
+`simplex` is set — every inverse-table vertex stores three concentrations
+whose sum cannot exceed 255, which is what makes the reconstructed fourth
+concentration non-negative.
+
+The `3n^3` byte lengths are enforced by [`ByteLUT`](@ref) at construction,
+so they are not rechecked here.
 
 Returns `model`, or throws `ArgumentError` describing the first violation.
 """
 function validate_model(model::PigmentModel; simplex::Bool = true)
     n = grid_n(model)
-    length(model.forward.data) == 3 * n^3 || throw(ArgumentError(
-        "forward table has $(length(model.forward.data)) bytes, expected $(3 * n^3)"
-    ))
-    length(model.inverse.data) == 3 * n^3 || throw(ArgumentError(
-        "inverse table has $(length(model.inverse.data)) bytes, expected $(3 * n^3)"
-    ))
-    model.forward.n == n || throw(ArgumentError("table sizes disagree"))
     model.inverse.n == n || throw(ArgumentError("table sizes disagree"))
     if simplex
         _check_simplex(model.inverse, n)
@@ -294,10 +290,6 @@ write_model(path::AbstractString, model::PigmentModel) =
 Serialize `model` into a new byte vector.
 """
 function model_to_bytes(model::PigmentModel)
-    return _header_bytes_and_payload(model)
-end
-
-function _header_bytes_and_payload(model::PigmentModel)
     out = IOBuffer(; sizehint = HEADER_BYTES + 6 * grid_n(model)^3)
     write_model(out, model)
     return take!(out)

@@ -158,17 +158,6 @@ function validate_database(db::InputDatabase)
     return db
 end
 
-"""
-    spectra_grid(db) -> Vector{Float64}
-
-The common wavelength grid read from the absorption table of the first
-pigment. Used to check every other quantity against it.
-"""
-function spectra_grid(db::InputDatabase)
-    code = db.pigments[1].code
-    return sort([r.wavelength_nm for r in db.spectra if r.code == code && r.quantity == "K"])
-end
-
 # --- DuckDB and DataFrame helpers -----------------------------------------
 
 """

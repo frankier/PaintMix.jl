@@ -16,6 +16,11 @@ const ROOT = normpath(joinpath(@__DIR__, "..", ".."))
 
 include("fixtures.jl")
 
+# The evaluator interface is exercised through these aliases so the tests do
+# not reach into the module's internals.
+const eval_mix = PaintMixPrecompute._mix
+const eval_jacobian4! = PaintMixPrecompute._jacobian4!
+
 @testset "PaintMixPrecompute" begin
     @testset "default configuration is valid" begin
         cfg = load_config()
@@ -470,12 +475,12 @@ include("fixtures.jl")
     @testset "provenance text is deterministic and convention-sensitive" begin
         cfg = load_config()
         inputs = Dict{String,String}("config" => "c", "spectral_k_s" => "k")
-        a = provenance_text(cfg, "c", inputs, nothing)
-        b = provenance_text(cfg, "c", inputs, nothing)
+        a = provenance_text(cfg, "c", inputs)
+        b = provenance_text(cfg, "c", inputs)
         @test a == b
         cfg2 = deepcopy(cfg)
         cfg2["quantization"]["rule"] = "other"
-        @test provenance_text(cfg2, "c", inputs, nothing) != a
+        @test provenance_text(cfg2, "c", inputs) != a
     end
 
     @testset "acceptance gates read the reports" begin

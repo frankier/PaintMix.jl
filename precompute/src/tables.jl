@@ -520,7 +520,8 @@ needs it to size its output before any solve has run.
 _scalar_type(::SpectralModel{T}) where {T} = T
 _scalar_type(::ForwardFloatLUT{T}) where {T} = T
 
-@inline function _axis_f(f::T, n::Int) where {T<:AbstractFloat}    i = unsafe_trunc(Int, f)
+@inline function _axis_f(f::T, n::Int) where {T<:AbstractFloat}
+    i = unsafe_trunc(Int, f)
     i > n - 2 && (i = n - 2)
     return i, f - T(i)
 end
@@ -648,53 +649,6 @@ Wrap an already-generated float forward table as an evaluator.
 """
 forward_float_lut(n::Integer, data::AbstractVector{T}) where {T<:AbstractFloat} =
     ForwardFloatLUT{T}(Int(n), convert(Vector{T}, data))
-
-"""
-    inverse_table_slab!(dest, lut, n, k, scratch, settings, seedrow, prevrow, use_reference)
-
-Like [`inverse_slab!`](@ref) but inverting a [`ForwardFloatLUT`](@ref).
-
-When `use_reference` is set, each vertex is solved by the full active-face
-enumeration, which is robust against the local minima the cheap adaptive
-solver can fall into. The float table makes that affordable.
-"""
-function inverse_table_slab!(
-        dest::AbstractVector{T}, lut::ForwardFloatLUT{T}, n::Int, k::Int,
-        scratch::SolverScratch, settings::UnmixSettings{T},
-        seedrow::Vector{NTuple{4,T}}, prevrow::Vector{NTuple{4,T}},
-        use_reference::Bool,
-    ) where {T}
-    d = n - 1
-    z = T(k) / d
-    uniform = (T(0.25), T(0.25), T(0.25), T(0.25))
-    cur = seedrow
-    prev = prevrow
-    @inbounds for j in 0:(n - 1)
-        y = T(j) / d
-        for i in 0:(n - 1)
-            x = T(i) / d
-            rgb = (x, y, z)
-            c = if use_reference
-                unmix_reference(lut, rgb; settings = settings, scratch = scratch).c
-            elseif j > 0 && i > 0
-                unmix_bulk!(scratch, lut, rgb, (cur[i], prev[i + 1]), settings).c
-            elseif j > 0
-                unmix_bulk!(scratch, lut, rgb, (prev[i + 1],), settings).c
-            elseif i > 0
-                unmix_bulk!(scratch, lut, rgb, (cur[i],), settings).c
-            else
-                unmix_bulk!(scratch, lut, rgb, (uniform,), settings).c
-            end
-            cur[i + 1] = c
-            o = _table_offset(n, i, j, k)
-            dest[o + 1] = c[1]
-            dest[o + 2] = c[2]
-            dest[o + 3] = c[3]
-        end
-        cur, prev = prev, cur
-    end
-    return nothing
-end
 
 # --- coarse-to-fine inverse ------------------------------------------------
 #

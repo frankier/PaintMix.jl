@@ -16,14 +16,14 @@ function _model_id_from(text::AbstractString)
 end
 
 """
-    provenance_text(cfg, cfg_hash, inputs, fit) -> String
+    provenance_text(cfg, cfg_hash, inputs) -> String
 
 The canonical string the model id hashes. Every convention that changes the
 bytes must appear here, so two payloads with the same id are the same model.
 """
 function provenance_text(
-        cfg::AbstractDict, cfg_hash::AbstractString, inputs::Dict{String,String},
-        surrogate::Union{Nothing,SurrogateFit}; grid_n::Integer = Int(cfg["grid"]["release_n"]),
+        cfg::AbstractDict, cfg_hash::AbstractString, inputs::Dict{String,String};
+        grid_n::Integer = Int(cfg["grid"]["release_n"]),
     )
     io = IOBuffer()
     print(io, "paintmix-format-v1\n")
@@ -40,19 +40,7 @@ function provenance_text(
     for key in sort(collect(keys(inputs)))
         print(io, "input:", key, "=", inputs[key], "\n")
     end
-    if surrogate !== nothing
-        print(io, "surrogate_k=", _hash_matrix(surrogate.K), "\n")
-        print(io, "surrogate_s=", _hash_matrix(surrogate.S), "\n")
-    end
     return String(take!(io))
-end
-
-function _hash_matrix(M::AbstractMatrix)
-    io = IOBuffer()
-    for x in M
-        print(io, @sprintf("%.17g;", Float64(x)))
-    end
-    return bytes2hex(sha256(take!(io)))[1:16]
 end
 
 """
@@ -83,7 +71,7 @@ function build_provenance(
         "inputs" => inputs,
         "pigments" => [
             Dict{String,Any}(
-                "slot" => cfg["pigments"][i]["code"] == pigment_codes(cfg)[i] ? i : i,
+                "slot" => i,
                 "code" => pigment_codes(cfg)[i],
                 "name" => cfg["pigments"][i]["name"],
                 "ci" => cfg["pigments"][i]["ci"],
@@ -199,7 +187,7 @@ function build_model(ft::FloatTables, cfg::AbstractDict, provenance::AbstractDic
         String(k) => String(v) for (k, v) in provenance["inputs"]
     )
     text = provenance_text(
-        cfg, provenance["config_hash"], inputs, nothing;
+        cfg, provenance["config_hash"], inputs;
         grid_n = Int(get(get(provenance, "grid", Dict{String,Any}()), "n", cfg["grid"]["release_n"])),
     )
     id = _model_id_from(text)

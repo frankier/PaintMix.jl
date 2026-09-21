@@ -97,20 +97,6 @@ end
 end
 
 """
-    mix_ks(model, c) -> (k, s)
-
-Equation (1): the concentration-weighted absorption and scattering at one
-wavelength. Exposed for tests and diagnostics; the kernels inline their own
-weighted sums.
-"""
-@inline function mix_ks(m::SpectralModel{T}, c::NTuple{4,S}, l::Integer) where {T<:AbstractFloat,S<:Real}
-    c1, c2, c3, c4 = c
-    @inbounds k = c1 * m.K[l, 1] + c2 * m.K[l, 2] + c3 * m.K[l, 3] + c4 * m.K[l, 4]
-    @inbounds s = c1 * m.S[l, 1] + c2 * m.S[l, 2] + c3 * m.S[l, 3] + c4 * m.S[l, 4]
-    return k, s
-end
-
-"""
     mix_rgb_jacobian!(J, model, c)
 
 The analytic `3 x 4` Jacobian `d mix(c) / d c` into the first `3 x 4` block of
@@ -183,17 +169,6 @@ const _OKLAB_M2 = (
 )
 
 """
-    signed_cbrt(x)
-
-A real cube root that accepts negative arguments, which Oklab's LMS
-transform needs for out-of-gamut linear RGB.
-
-The derivative is singular at zero. That is inherent to `cbrt`, not an
-implementation artifact, and the tests check gradients away from it.
-"""
-@inline signed_cbrt(x::T) where {T<:Real} = cbrt(x)
-
-"""
     linear_srgb_to_oklab(rgb) -> NTuple{3}
 
 Convert linear-light sRGB to Oklab. Accepts out-of-gamut values; the LMS
@@ -205,9 +180,12 @@ cube root is signed so that negatives propagate.
     l = m[1] * r + m[2] * g + m[3] * b
     mm = m[4] * r + m[5] * g + m[6] * b
     s = m[7] * r + m[8] * g + m[9] * b
-    l_ = signed_cbrt(l)
-    m_ = signed_cbrt(mm)
-    s_ = signed_cbrt(s)
+    # `cbrt` accepts negative arguments, which out-of-gamut linear RGB needs.
+    # Its derivative is singular at zero; that is inherent, and the tests
+    # check gradients away from it.
+    l_ = cbrt(l)
+    m_ = cbrt(mm)
+    s_ = cbrt(s)
     n = _OKLAB_M2
     return (
         n[1] * l_ + n[2] * m_ + n[3] * s_,
@@ -318,8 +296,3 @@ entries sum to zero, so this convention is exact for both evaluators.
 @inline function _jacobian4!(J::AbstractMatrix, m::SpectralModel, c::NTuple{4,T}) where {T<:Real}
     return mix_rgb_jacobian!(J, m, c)
 end
-
-# Thin exported aliases so tests and reports can exercise the evaluator
-# interface without reaching into the module's internals.
-eval_mix(ev, c) = _mix(ev, c)
-eval_jacobian4!(J, ev, c) = _jacobian4!(J, ev, c)

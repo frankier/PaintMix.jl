@@ -24,8 +24,7 @@ jobs:
 
       # `runic-action` installs Runic in its own `@runic` environment, so the
       # runtime package keeps an empty `[deps]` section. It uses the Julia that
-      # ships with the runner image, hence no `setup-julia` step. Keep the
-      # version in sync with `Runic@1` in `prek.toml`.
+      # ships with the runner image, hence no `setup-julia` step.
       - uses: fredrikekre/runic-action@v1
         with:
           version: '1'

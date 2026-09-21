@@ -4,13 +4,17 @@
 #   prek install        # wire the hooks into .git/hooks
 #   prek run --all-files
 #
-# The Runic hook builds its own Julia environment, so the runtime package
-# keeps an empty `[deps]` section. Keep `Runic@1` in sync with the
-# `version: '1'` input of `fredrikekre/runic-action` in
-# `.github/workflows/ci.yml`.
+# The Runic hook builds its own Julia environment (`language: julia`, see the
+# hook repo's `Project.toml`), so the runtime package keeps an empty `[deps]`
+# section. Do not pin Runic via `additional_dependencies`: prek passes those
+# strings straight to `Pkg.add`, which rejects `Runic@<version>`. CI runs
+# `fredrikekre/runic-action` instead.
+#
+# `--check --diff` reports unformatted files and exits non-zero instead of
+# rewriting them, matching the CI check.
 [[repos]]
 repo = "https://github.com/fredrikekre/runic-pre-commit"
 rev = "v2.2.0"
 hooks = [
-  { id = "runic", additional_dependencies = ["Runic@1"] },
+  { id = "runic", args = ["--check", "--diff"] },
 ]

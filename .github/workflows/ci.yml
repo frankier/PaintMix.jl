@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# Superseded runs on the same ref are pointless: cancel them.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  runtime:
+    name: runtime tests (Julia ${{ matrix.julia-version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      # `1.13` is the minimum supported release; `1` tracks the newest stable
+      # minor so that a later 1.x regression shows up here. The runtime
+      # package has no non-stdlib dependencies, so these runs stay cheap.
+      matrix:
+        julia-version: ['1.13', '1']
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: ${{ matrix.julia-version }}
+
+      - uses: julia-actions/cache@v2
+
+      - name: Instantiate the workspace
+        run: julia --project=. -e 'using Pkg; Pkg.instantiate()'
+
+      - name: Run runtime tests
+        run: julia --project=. -e 'using Pkg; Pkg.test()'
+
+  precompute:
+    name: precompute tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1.13'
+
+      - uses: julia-actions/cache@v2
+
+      # The test project owns the optimizer, AD, and DuckDB dependencies; the
+      # runtime package never sees them. Tests that need the measurement
+      # workbooks skip when the (untracked) inputs are absent.
+      - name: Instantiate the precompute test project
+        working-directory: precompute/test
+        run: julia --project=. -e 'using Pkg; Pkg.instantiate()'
+
+      - name: Run precompute tests
+        working-directory: precompute/test
+        run: julia --project=. -e 'include("runtests.jl")'
+
+  consumer:
+    name: dependency isolation
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1.13'
+
+      - uses: julia-actions/cache@v2
+
+      # `develop`ing PaintMix alone into a fresh environment must not pull in
+      # the precompute or build toolchains.
+      - name: Check a fresh consumer environment
+        run: julia --project=test test/consumer_env.jl

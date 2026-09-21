@@ -87,7 +87,7 @@ end
 # grid vertices cannot leave the simplex in exact arithmetic, so this only
 # repairs floating-point excursions; for a pathological input it is still a
 # deterministic projection rather than an error.
-@inline function _repair_simplex(c1::T, c2::T, c3::T) where {T<:AbstractFloat}
+@inline function _repair_simplex(c1::T, c2::T, c3::T) where {T <: AbstractFloat}
     a = max(c1, zero(T))
     b = max(c2, zero(T))
     c = max(c3, zero(T))
@@ -108,12 +108,12 @@ fourth concentration is implied; only the first three index the table.
 """
 @inline function forward_rgb(
         model::PigmentModel, c1::T, c2::T, c3::T
-    ) where {T<:AbstractFloat}
+    ) where {T <: AbstractFloat}
     r1, r2, r3 = _repair_simplex(c1, c2, c3)
     return trilinear(model.forward, r1, r2, r3)
 end
 
-@inline forward_rgb(model::PigmentModel, c::Concentrations{T}) where {T<:AbstractFloat} =
+@inline forward_rgb(model::PigmentModel, c::Concentrations{T}) where {T <: AbstractFloat} =
     forward_rgb(model, c[1], c[2], c[3])
 
 """
@@ -131,7 +131,7 @@ instead of losing the byte quantization.
 latent belongs to `model` and must not be combined with latents from another
 model.
 """
-@inline function encode(model::PigmentModel, rgb::RGB{T}) where {T<:AbstractFloat}
+@inline function encode(model::PigmentModel, rgb::RGB{T}) where {T <: AbstractFloat}
     _check(rgb)
     x, y, z = rgb
     c1, c2, c3 = trilinear(model.inverse, x, y, z)
@@ -153,14 +153,14 @@ The fourth concentration is reconstructed as `1 - c1 - c2 - c3` rather than
 read from the latent, so that interpolation drift cannot move the point off
 the simplex.
 """
-@inline function decode(model::PigmentModel, z::Latent{T}) where {T<:AbstractFloat}
+@inline function decode(model::PigmentModel, z::Latent{T}) where {T <: AbstractFloat}
     c1, c2, c3, _ = z.c
     m = forward_rgb(model, c1, c2, c3)
     r = z.r
     return (m[1] + r[1], m[2] + r[2], m[3] + r[3])
 end
 
-@inline function _latent_lerp(a::Latent{T}, b::Latent{T}, t::T) where {T<:AbstractFloat}
+@inline function _latent_lerp(a::Latent{T}, b::Latent{T}, t::T) where {T <: AbstractFloat}
     s = one(T) - t
     c = ntuple(i -> s * a.c[i] + t * b.c[i], Val(4))
     r = ntuple(i -> s * a.r[i] + t * b.r[i], Val(3))
@@ -180,7 +180,7 @@ converted to `T`, the color scalar type.
 """
 function mix(
         model::PigmentModel, a::RGB{T}, b::RGB{T}, t::T
-    ) where {T<:AbstractFloat}
+    ) where {T <: AbstractFloat}
     _check(a)
     _check(b)
     _check_fraction(t)
@@ -194,7 +194,7 @@ end
 
 function mix(
         model::PigmentModel, a::RGB{T}, b::RGB{T}, t::Real
-    ) where {T<:AbstractFloat}
+    ) where {T <: AbstractFloat}
     return mix(model, a, b, T(t))
 end
 
@@ -206,7 +206,7 @@ Write [`mix`](@ref) into the first three elements of `dest`. The caller owns
 """
 function mix!(
         dest::AbstractVector{T}, model::PigmentModel, a::RGB{T}, b::RGB{T}, t::T
-    ) where {T<:AbstractFloat}
+    ) where {T <: AbstractFloat}
     length(dest) >= 3 || throw(ArgumentError("dest must hold at least 3 elements"))
     c = mix(model, a, b, t)
     @inbounds begin
@@ -231,7 +231,7 @@ function bulk_mix_kernel!(
         dest::AbstractVector{T}, model::PigmentModel,
         as::AbstractVector{T}, bs::AbstractVector{T}, ts::AbstractVector{T},
         count::Integer
-    ) where {T<:AbstractFloat}
+    ) where {T <: AbstractFloat}
     n = Int(count)
     n < 0 && return PM_ERR_LENGTH
     length(dest) >= 3n || return PM_ERR_LENGTH
@@ -245,8 +245,10 @@ function bulk_mix_kernel!(
         isfinite(ts[i]) || return PM_ERR_NONFINITE
     end
     @inbounds for i in 1:n
-        c = mix(model, (as[3i - 2], as[3i - 1], as[3i]),
-            (bs[3i - 2], bs[3i - 1], bs[3i]), ts[i])
+        c = mix(
+            model, (as[3i - 2], as[3i - 1], as[3i]),
+            (bs[3i - 2], bs[3i - 1], bs[3i]), ts[i]
+        )
         dest[3i - 2] = c[1]
         dest[3i - 1] = c[2]
         dest[3i] = c[3]
@@ -263,7 +265,7 @@ buffer lengths: `as`, `bs`, and `dest` hold `3n` elements and `ts` holds `n`.
 function bulk_mix!(
         dest::AbstractVector{T}, model::PigmentModel,
         as::AbstractVector{T}, bs::AbstractVector{T}, ts::AbstractVector{T}
-    ) where {T<:AbstractFloat}
+    ) where {T <: AbstractFloat}
     n = length(ts)
     (length(as) == 3n && length(bs) == 3n && length(dest) == 3n) || throw(
         DimensionMismatch(
@@ -294,7 +296,7 @@ function weighted_mix_kernel!(
         dest::AbstractVector{T}, model::PigmentModel,
         colors::AbstractVector{T}, weights::AbstractVector{T},
         count::Integer
-    ) where {T<:AbstractFloat}
+    ) where {T <: AbstractFloat}
     n = Int(count)
     n < 0 && return PM_ERR_LENGTH
     length(dest) >= 3 || return PM_ERR_LENGTH
@@ -341,10 +343,12 @@ function weighted_mix_kernel!(
         ar3 += w * zi.r[3]
     end
     inv = one(T) / total
-    z = decode(model, Latent(
-        (ac1 * inv, ac2 * inv, ac3 * inv, ac4 * inv),
-        (ar1 * inv, ar2 * inv, ar3 * inv),
-    ))
+    z = decode(
+        model, Latent(
+            (ac1 * inv, ac2 * inv, ac3 * inv, ac4 * inv),
+            (ar1 * inv, ar2 * inv, ar3 * inv),
+        )
+    )
     @inbounds begin
         dest[1] = z[1]
         dest[2] = z[2]
@@ -362,7 +366,7 @@ Throwing wrapper around [`weighted_mix_kernel!`](@ref). `colors` holds
 function weighted_mix!(
         dest::AbstractVector{T}, model::PigmentModel,
         colors::AbstractVector{T}, weights::AbstractVector{T}
-    ) where {T<:AbstractFloat}
+    ) where {T <: AbstractFloat}
     n = length(weights)
     length(colors) == 3n || throw(
         DimensionMismatch("colors must hold 3n channels for n = $n weights")
@@ -386,7 +390,7 @@ pairwise mixing loses the residual of the accumulated mixture.
 function weighted_mix(
         model::PigmentModel, colors::AbstractVector{<:RGB{T}},
         weights::AbstractVector{T}
-    ) where {T<:AbstractFloat}
+    ) where {T <: AbstractFloat}
     n = length(colors)
     length(weights) == n || throw(
         DimensionMismatch("got $(length(colors)) colors but $(length(weights)) weights")
@@ -410,21 +414,21 @@ end
 
 [`encode`](@ref) against [`default_model`](@ref).
 """
-encode(rgb::RGB{T}) where {T<:AbstractFloat} = encode(default_model(), rgb)
+encode(rgb::RGB{T}) where {T <: AbstractFloat} = encode(default_model(), rgb)
 
 """
     decode(latent) -> RGB
 
 [`decode`](@ref) against [`default_model`](@ref).
 """
-decode(z::Latent{T}) where {T<:AbstractFloat} = decode(default_model(), z)
+decode(z::Latent{T}) where {T <: AbstractFloat} = decode(default_model(), z)
 
 """
     mix(a, b, t) -> RGB
 
 [`mix`](@ref) against [`default_model`](@ref).
 """
-mix(a::RGB{T}, b::RGB{T}, t::Real) where {T<:AbstractFloat} =
+mix(a::RGB{T}, b::RGB{T}, t::Real) where {T <: AbstractFloat} =
     mix(default_model(), a, b, T(t))
 
 """
@@ -432,5 +436,5 @@ mix(a::RGB{T}, b::RGB{T}, t::Real) where {T<:AbstractFloat} =
 
 [`weighted_mix`](@ref) against [`default_model`](@ref).
 """
-weighted_mix(colors::AbstractVector{<:RGB{T}}, weights::AbstractVector{T}) where {T<:AbstractFloat} =
+weighted_mix(colors::AbstractVector{<:RGB{T}}, weights::AbstractVector{T}) where {T <: AbstractFloat} =
     weighted_mix(default_model(), colors, weights)

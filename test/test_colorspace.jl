@@ -9,12 +9,12 @@
     # why the byte adapter, not this function, owns the clamping rule.
     @test maximum(abs.(srgb_from_linear((1.0, 1.0, 1.0)) .- 1.0)) <= 2 * eps(1.0)
     # Mid-encoded-gray is the classic 0.2159 linear value.
-    @test linear_from_srgb((0.5, 0.5, 0.5))[1] ≈ 0.21404114048223255 atol = 1e-12
+    @test linear_from_srgb((0.5, 0.5, 0.5))[1] ≈ 0.21404114048223255 atol = 1.0e-12
     @test srgb_from_linear((0.21404114048223255, 0.21404114048223255, 0.21404114048223255))[1] ≈
-        0.5 atol = 1e-12
+        0.5 atol = 1.0e-12
     # The linear segment below 0.04045 is continuous with the power segment.
-    for t in (0.0, 1e-6, 0.03, 0.04044, 0.04046, 0.5, 0.9, 1.0)
-        @test srgb_from_linear(linear_from_srgb((t, t, t)))[1] ≈ t atol = 1e-12
+    for t in (0.0, 1.0e-6, 0.03, 0.04044, 0.04046, 0.5, 0.9, 1.0)
+        @test srgb_from_linear(linear_from_srgb((t, t, t)))[1] ≈ t atol = 1.0e-12
     end
 end
 
@@ -46,9 +46,9 @@ end
 
 @testset "Float32 adapters stay in Float32" begin
     c = linear_from_srgb8((0x80, 0x40, 0x00))
-    @test c isa NTuple{3,Float32}
+    @test c isa NTuple{3, Float32}
     @test srgb8_from_linear(c) == (0x80, 0x40, 0x00)
     e = srgb_from_linear(c)
-    @test e isa NTuple{3,Float32}
-    @test maximum(abs.(linear_from_srgb(e) .- c)) <= 1e-6
+    @test e isa NTuple{3, Float32}
+    @test maximum(abs.(linear_from_srgb(e) .- c)) <= 1.0e-6
 end

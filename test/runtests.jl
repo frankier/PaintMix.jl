@@ -17,7 +17,7 @@ using .SyntheticFixtures
         # dependencies; test/consumer_env.jl checks a fresh consumer
         # environment, and this catches the change that would break it.
         project = Pkg.TOML.parsefile(joinpath(pkgdir(PaintMix), "Project.toml"))
-        @test isempty(get(project, "deps", Dict{String,Any}()))
+        @test isempty(get(project, "deps", Dict{String, Any}()))
     end
     include("test_lookup.jl")
     include("test_mixing.jl")

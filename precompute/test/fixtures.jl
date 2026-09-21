@@ -45,14 +45,18 @@ function synthetic_database(cfg::AbstractDict; rng_seed::Integer = 1)
             frac = (j - 1) / max(length(grid) - 1, 1)
             k = i == 4 ? 0.01 + 0.005 * frac : 0.05 + 2.5 * exp(-((frac - (i - 1) / 3)^2) / 0.05)
             s = i == 4 ? 1.0 + 0.1 * frac : 0.2 + 0.1 * frac
-            push!(spectra, (
-                code = code, quantity = "K", wavelength_nm = wl, value = k,
-                source_file = "synthetic", sheet = "synthetic", cell_range = "synthetic",
-            ))
-            push!(spectra, (
-                code = code, quantity = "S", wavelength_nm = wl, value = s,
-                source_file = "synthetic", sheet = "synthetic", cell_range = "synthetic",
-            ))
+            push!(
+                spectra, (
+                    code = code, quantity = "K", wavelength_nm = wl, value = k,
+                    source_file = "synthetic", sheet = "synthetic", cell_range = "synthetic",
+                )
+            )
+            push!(
+                spectra, (
+                    code = code, quantity = "S", wavelength_nm = wl, value = s,
+                    source_file = "synthetic", sheet = "synthetic", cell_range = "synthetic",
+                )
+            )
         end
     end
     observer = ObserverRecord[]
@@ -60,10 +64,12 @@ function synthetic_database(cfg::AbstractDict; rng_seed::Integer = 1)
         x = 1.0 - abs((wl - 450) / 250)
         y = 1.0 - abs((wl - 550) / 250)
         z = 1.0 - abs((wl - 500) / 250)
-        push!(observer, (
-            wavelength_nm = wl, x_bar = max(x, 0.01), y_bar = max(y, 0.01),
-            z_bar = max(z, 0.01), d65 = 1.0,
-        ))
+        push!(
+            observer, (
+                wavelength_nm = wl, x_bar = max(x, 0.01), y_bar = max(y, 0.01),
+                z_bar = max(z, 0.01), d65 = 1.0,
+            )
+        )
     end
     pigments = [
         (
@@ -77,7 +83,7 @@ function synthetic_database(cfg::AbstractDict; rng_seed::Integer = 1)
     )
     db = InputDatabase(
         [("synthetic", "synthetic.xlsx", repeat("0", 64))], pigments, spectra, saunderson,
-        observer, ("observer", "synthetic.csv", repeat("1", 64)), Dict{String,String}("tool" => "test"),
+        observer, ("observer", "synthetic.csv", repeat("1", 64)), Dict{String, String}("tool" => "test"),
     )
     return validate_database(db)
 end

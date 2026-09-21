@@ -26,8 +26,8 @@ The weights are the *concentration*-space measure, not the RGB surface area
 element. See [`rgb_surface_weights`](@ref) for that diagnostic and
 `precompute/README.md` for why the fit uses this simpler, smooth measure.
 """
-struct SurfaceQuadrature{T<:AbstractFloat}
-    points::Vector{NTuple{4,T}}
+struct SurfaceQuadrature{T <: AbstractFloat}
+    points::Vector{NTuple{4, T}}
     weights::Vector{T}
     face::Vector{Int}
 end
@@ -44,7 +44,7 @@ surface_quadrature(cfg::AbstractDict) =
 
 function _surface_quadrature(d::Int)
     d >= 1 || throw(ArgumentError("surface quadrature needs at least one division"))
-    points = NTuple{4,Float64}[]
+    points = NTuple{4, Float64}[]
     faces = Int[]
     step = 1 / d
     for f in 1:4
@@ -157,16 +157,16 @@ function quadrature_report(model::SpectralModel, sq::SurfaceQuadrature)
     total_j = sum(jac)
     ratios = [total_j > 0 ? (uni[i] * total_j) / (jac[i] * total_u) : NaN for i in eachindex(uni)]
     nu = count(!isnan, ratios)
-    return Dict{String,Any}(
+    return Dict{String, Any}(
         "samples" => length(uni),
         "weighting" => "concentration-simplex-area",
-        "rgb_surface_jacobian" => Dict{String,Any}(
+        "rgb_surface_jacobian" => Dict{String, Any}(
             "total" => total_j,
             "mean" => total_j / length(jac),
             "max" => maximum(jac),
             "min" => minimum(jac),
         ),
-        "normalized_ratio" => Dict{String,Any}(
+        "normalized_ratio" => Dict{String, Any}(
             "mean" => nu == 0 ? 0.0 : sum(r for r in ratios if !isnan(r)) / nu,
             "min" => nu == 0 ? 0.0 : minimum(r for r in ratios if !isnan(r)),
             "max" => nu == 0 ? 0.0 : maximum(r for r in ratios if !isnan(r)),
@@ -186,7 +186,7 @@ end
 `log(1 + exp(x))`, written in the stable form
 `max(x, 0) + log1p(exp(-abs(x)))` so large magnitudes do not overflow.
 """
-@inline function softplus(x::T) where {T<:Real}
+@inline function softplus(x::T) where {T <: Real}
     return max(x, zero(T)) + log1p(exp(-abs(x)))
 end
 
@@ -197,7 +197,7 @@ The inverse of [`softplus`](@ref): `log(expm1(y))`, with `y` floored at a
 small positive value so the initial parameters are finite even when a
 measured coefficient is below the configured floor.
 """
-@inline function inv_softplus(y::T) where {T<:Real}
+@inline function inv_softplus(y::T) where {T <: Real}
     return log(expm1(max(y, T(1.0e-12))))
 end
 
@@ -215,12 +215,12 @@ The fitted surrogates plus the record of how they were obtained.
   * `diagnostics`: worst violations and perceptual deviations.
   * `quadrature`: the [`SurfaceQuadrature`](@ref) used.
 """
-struct SurrogateFit{T<:AbstractFloat}
+struct SurrogateFit{T <: AbstractFloat}
     K::Matrix{T}
     S::Matrix{T}
     theta::Vector{T}
-    history::Vector{Dict{String,Any}}
-    diagnostics::Dict{String,Any}
+    history::Vector{Dict{String, Any}}
+    diagnostics::Dict{String, Any}
     quadrature::SurfaceQuadrature{T}
 end
 
@@ -346,7 +346,7 @@ function fit_surrogates(
     targets = surface_targets(base, sq)
 
     θ = initial_theta(spectra, epsilon)
-    history = Vector{Dict{String,Any}}()
+    history = Vector{Dict{String, Any}}()
     W = size(base.K, 1)
     push_tol = Float64(get(s, "push_tolerance", 1.0e-8))
 
@@ -370,7 +370,7 @@ function fit_surrogates(
         θ = Vector{Float64}(Optim.minimizer(result))
         K, S = theta_parameters(θ, W, epsilon)
         model = with_parameters(base, K, S)
-        entry = Dict{String,Any}(
+        entry = Dict{String, Any}(
             "step" => step,
             "alpha" => α,
             "iterations" => Optim.iterations(result),
@@ -424,7 +424,7 @@ function surrogate_diagnostics(model::SpectralModel, base::SpectralModel, sq::Su
         d = oklab_distance_squared(linear_srgb_to_oklab(rgb), denser_targets[i])
         worst_pull = max(worst_pull, d)
     end
-    return Dict{String,Any}(
+    return Dict{String, Any}(
         "Epush_fit" => push_fit,
         "Epull_fit" => pull_fit,
         "Epush_dense" => push_dense,

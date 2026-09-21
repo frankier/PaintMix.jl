@@ -22,7 +22,7 @@ The canonical string the model id hashes. Every convention that changes the
 bytes must appear here, so two payloads with the same id are the same model.
 """
 function provenance_text(
-        cfg::AbstractDict, cfg_hash::AbstractString, inputs::Dict{String,String};
+        cfg::AbstractDict, cfg_hash::AbstractString, inputs::Dict{String, String};
         grid_n::Integer = Int(cfg["grid"]["release_n"]),
     )
     io = IOBuffer()
@@ -55,7 +55,7 @@ function build_provenance(
         cfg::AbstractDict, cfg_path::AbstractString, db::InputDatabase,
         fit::SurrogateFit, validation::AbstractDict; grid_n::Integer = Int(cfg["grid"]["release_n"]),
     )
-    inputs = Dict{String,String}(
+    inputs = Dict{String, String}(
         "config" => config_hash(cfg_path),
         "observer" => db.observer_source.sha256,
     )
@@ -63,32 +63,32 @@ function build_provenance(
         inputs[f.role] = f.sha256
     end
     K, S = fit.K, fit.S
-    return Dict{String,Any}(
+    return Dict{String, Any}(
         "schema_version" => 1,
         "generated_utc" => string(Dates.now()),
         "config_path" => abspath(cfg_path),
         "config_hash" => config_hash(cfg_path),
         "inputs" => inputs,
         "pigments" => [
-            Dict{String,Any}(
+            Dict{String, Any}(
                 "slot" => i,
                 "code" => pigment_codes(cfg)[i],
                 "name" => cfg["pigments"][i]["name"],
                 "ci" => cfg["pigments"][i]["ci"],
             ) for i in 1:4
         ],
-        "grid" => Dict{String,Any}(
+        "grid" => Dict{String, Any}(
             "n" => grid_n,
             "storage" => cfg["grid"]["storage"],
             "byte_scale" => cfg["grid"]["byte_scale"],
             "interpolation" => cfg["grid"]["interpolation"],
             "index_order" => cfg["grid"]["index_order"],
         ),
-        "quantization" => Dict{String,Any}(
+        "quantization" => Dict{String, Any}(
             "rule" => cfg["quantization"]["rule"],
             "padding" => cfg["quantization"]["padding"],
         ),
-        "surrogate" => Dict{String,Any}(
+        "surrogate" => Dict{String, Any}(
             "epsilon" => cfg["surrogate"]["epsilon"],
             "alpha_initial" => cfg["surrogate"]["alpha_initial"],
             "alpha_final" => cfg["surrogate"]["alpha_final"],
@@ -101,17 +101,17 @@ function build_provenance(
             "diagnostics" => fit.diagnostics,
             "theta" => fit.theta,
         ),
-        "parameters" => Dict{String,Any}(
+        "parameters" => Dict{String, Any}(
             "absorption" => _matrix_rows(K),
             "scattering" => _matrix_rows(S),
         ),
-        "unmix" => Dict{String,Any}(
+        "unmix" => Dict{String, Any}(
             "strategy" => cfg["unmix"]["strategy"],
             "objective" => cfg["unmix"]["objective"],
             "restarts" => cfg["unmix"]["restarts"],
             "max_iterations" => cfg["unmix"]["max_iterations"],
         ),
-        "environment" => Dict{String,Any}(
+        "environment" => Dict{String, Any}(
             "julia_version" => string(VERSION),
             "threads" => Threads.nthreads(),
             "paintmix_version" => _pkg_version(PaintMix),
@@ -183,12 +183,12 @@ Quantize the candidates, derive the model id from the provenance, and set
 the generation flags. Does not touch the filesystem.
 """
 function build_model(ft::FloatTables, cfg::AbstractDict, provenance::AbstractDict)
-    inputs = Dict{String,String}(
+    inputs = Dict{String, String}(
         String(k) => String(v) for (k, v) in provenance["inputs"]
     )
     text = provenance_text(
         cfg, provenance["config_hash"], inputs;
-        grid_n = Int(get(get(provenance, "grid", Dict{String,Any}()), "n", cfg["grid"]["release_n"])),
+        grid_n = Int(get(get(provenance, "grid", Dict{String, Any}()), "n", cfg["grid"]["release_n"])),
     )
     id = _model_id_from(text)
     inverse, forward = quantize_tables(ft, cfg)
@@ -215,7 +215,7 @@ function export_model(
     id = PaintMix.model_id(model)
     sidecar = joinpath(out_dir, "$(id).toml")
     write_sidecar(sidecar, provenance, model, ft)
-    return Dict{String,Any}(
+    return Dict{String, Any}(
         "model" => model,
         "model_id" => id,
         "payload_path" => payload_path,
@@ -231,7 +231,7 @@ acceptance gates can be audited after the fact.
 """
 function write_sidecar(path::AbstractString, provenance::AbstractDict, model, ft)
     doc = deepcopy(provenance)
-    doc["model"] = Dict{String,Any}(
+    doc["model"] = Dict{String, Any}(
         "id" => PaintMix.model_id(model),
         "format_version" => Int(PaintMix.FORMAT_VERSION),
         "grid_n" => PaintMix.grid_n(model),
@@ -253,15 +253,18 @@ Copy a candidate payload into the packaged location, but only after reading
 it back, checking its id, and running `PaintMix.validate_model`. Returns the
 loaded and validated model.
 """
-function promote(candidate_payload::AbstractString, target::AbstractString;
-        expected_id::Union{Nothing,AbstractString} = nothing,
+function promote(
+        candidate_payload::AbstractString, target::AbstractString;
+        expected_id::Union{Nothing, AbstractString} = nothing,
     )
     model = PaintMix.read_model(candidate_payload)
     if expected_id !== nothing
         got = PaintMix.model_id(model)
-        got == expected_id || throw(InputError(
-            "candidate $candidate_payload has model id $got, expected $expected_id"
-        ))
+        got == expected_id || throw(
+            InputError(
+                "candidate $candidate_payload has model id $got, expected $expected_id"
+            )
+        )
     end
     mkpath(dirname(target))
     cp(candidate_payload, target; force = true)
@@ -274,14 +277,17 @@ end
 Promote only when every acceptance gate in `gates` is `true`. The gates are
 named in the error so a refusal is actionable.
 """
-function promote_validated(result::AbstractDict, cfg::AbstractDict, validation::AbstractDict;
+function promote_validated(
+        result::AbstractDict, cfg::AbstractDict, validation::AbstractDict;
         target::AbstractString, gates::AbstractDict,
     )
     failed = String[k for (k, v) in gates if !v]
-    isempty(failed) || throw(InputError(
-        "refusing to promote $(result["model_id"]): failed acceptance gates " *
-            join(failed, ", ") * "; see $(result["sidecar_path"])"
-    ))
+    isempty(failed) || throw(
+        InputError(
+            "refusing to promote $(result["model_id"]): failed acceptance gates " *
+                join(failed, ", ") * "; see $(result["sidecar_path"])"
+        )
+    )
     validation isa AbstractDict ||
         throw(InputError("validation record must be a dictionary"))
     return promote(result["payload_path"], target; expected_id = result["model_id"])

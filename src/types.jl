@@ -11,7 +11,7 @@ A linear-light sRGB color as a 3-tuple of `T`, nominally in `[0, 1]`.
 Values outside that range are legal and meaningful: see [`mix`](@ref) and
 [`decode`](@ref), neither of which clips.
 """
-const RGB{T<:AbstractFloat} = NTuple{3,T}
+const RGB{T <: AbstractFloat} = NTuple{3, T}
 
 """
     RGB8
@@ -19,7 +19,7 @@ const RGB{T<:AbstractFloat} = NTuple{3,T}
 An encoded-sRGB color as three bytes. Byte colors carry the sRGB transfer
 function; convert with [`linear_from_srgb8`](@ref) before mixing.
 """
-const RGB8 = NTuple{3,UInt8}
+const RGB8 = NTuple{3, UInt8}
 
 """
     Concentrations{T}
@@ -28,7 +28,7 @@ Four pigment concentrations as a tuple, non-negative and summing to one.
 The index order is fixed by the model's table layout; see
 [`PigmentModel`](@ref).
 """
-const Concentrations{T<:AbstractFloat} = NTuple{4,T}
+const Concentrations{T <: AbstractFloat} = NTuple{4, T}
 
 """
     Latent{T}
@@ -56,9 +56,9 @@ ABI representation.
 reconstructs it from the first three so that the simplex stays consistent
 even after floating-point interpolation.
 """
-struct Latent{T<:AbstractFloat}
-    c::NTuple{4,T}
-    r::NTuple{3,T}
+struct Latent{T <: AbstractFloat}
+    c::NTuple{4, T}
+    r::NTuple{3, T}
 end
 
 """
@@ -145,7 +145,7 @@ concentration simplex are padding; see `data/default/README.md` for the
 documented padding rule.
 """
 struct PigmentModel
-    id::NTuple{16,UInt8}
+    id::NTuple{16, UInt8}
     inverse::ByteLUT
     forward::ByteLUT
     format_version::UInt16

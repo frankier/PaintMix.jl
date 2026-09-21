@@ -27,7 +27,7 @@ const PROFILES = Dict(
 A model with deterministic pseudo-random forward values and an inverse table
 whose every vertex satisfies the simplex constraint by construction.
 """
-function dummy_model(n::Integer; seed::UInt64 = 0x7061696e74)
+function dummy_model(n::Integer; seed::UInt64 = 0x0000007061696e74)
     m = Int(n)
     payload = 3 * m^3
     rng = Xoshiro(seed)

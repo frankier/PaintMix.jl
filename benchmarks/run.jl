@@ -44,7 +44,7 @@ function synthetic_model(n::Integer)
 end
 
 function parse_args(args)
-    opts = Dict{String,Any}("payload" => nothing, "n" => 256, "samples" => 100_000)
+    opts = Dict{String, Any}("payload" => nothing, "n" => 256, "samples" => 100_000)
     i = 1
     while i <= length(args)
         a = args[i]
@@ -75,12 +75,13 @@ function timeit(f; target::Float64 = 0.05)
         for _ in 1:n
             f()
         end
-        elapsed = (time_ns() - t0) / 1e9
+        elapsed = (time_ns() - t0) / 1.0e9
         if elapsed >= target || n >= 10^9
             return elapsed / n, n
         end
         n *= 4
     end
+    return
 end
 
 # `elements` is how many colors one call processes, so a batch kernel reports
@@ -91,7 +92,7 @@ function report(label, f; elements::Int = 1)
     per_element = per_call / elements
     @printf(
         "%-38s %10.4f us/call  %8.1f ns/color  %8.2f Mcolor/s  %5d allocs  (%d iters)\n",
-        label, per_call * 1e6, per_element * 1e9, elements / per_call * 1e-6, allocs, n,
+        label, per_call * 1.0e6, per_element * 1.0e9, elements / per_call * 1.0e-6, allocs, n,
     )
     return nothing
 end

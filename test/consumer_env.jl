@@ -27,7 +27,9 @@ const FORBIDDEN = ["Optim", "ForwardDiff", "JuliaLibWrapping", "JuliaC", "JLWInt
     @test "PaintMix" in names
     found = intersect(names, FORBIDDEN)
     @test isempty(found)
-    println("consumer environment resolved $(length(names)) packages: ",
-        join(names, ", "))
+    println(
+        "consumer environment resolved $(length(names)) packages: ",
+        join(names, ", ")
+    )
     @test length(names) <= 6  # PaintMix and a handful of stdlibs
 end

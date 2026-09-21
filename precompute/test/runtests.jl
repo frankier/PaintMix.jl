@@ -202,8 +202,10 @@ const eval_jacobian4! = PaintMixPrecompute._jacobian4!
     end
 
     @testset "projection onto the simplex" begin
-        for c in ((0.25, 0.25, 0.25, 0.25), (1.0, 1.0, 1.0, 1.0), (-1.0, 0.5, 0.5, 0.5),
-                  (2.0, -1.0, 0.0, 0.0))
+        for c in (
+                (0.25, 0.25, 0.25, 0.25), (1.0, 1.0, 1.0, 1.0), (-1.0, 0.5, 0.5, 0.5),
+                (2.0, -1.0, 0.0, 0.0),
+            )
             p = project_to_simplex(c)
             @test sum(p) ≈ 1.0 atol = 1.0e-12
             @test all(>=(0), p)
@@ -216,8 +218,10 @@ const eval_jacobian4! = PaintMixPrecompute._jacobian4!
     end
 
     @testset "joint simplex quantization" begin
-        for c in ((0.25, 0.25, 0.25, 0.25), (1.0, 0.0, 0.0, 0.0), (0.0, 0.0, 0.0, 1.0),
-                  (1 / 3, 1 / 3, 1 / 3, 0.0), (0.001, 0.001, 0.001, 0.997))
+        for c in (
+                (0.25, 0.25, 0.25, 0.25), (1.0, 0.0, 0.0, 0.0), (0.0, 0.0, 0.0, 1.0),
+                (1 / 3, 1 / 3, 1 / 3, 0.0), (0.001, 0.001, 0.001, 0.997),
+            )
             b = quantize_simplex(c)
             @test length(b) == 3
             @test all(x -> 0 <= Int(x) <= 255, b)
@@ -280,9 +284,11 @@ const eval_jacobian4! = PaintMixPrecompute._jacobian4!
         cfg, _, _, _, model = synthetic_model()
         settings = unmix_settings(cfg)
         scratch = SolverScratch()
-        for c in ((1.0, 0.0, 0.0, 0.0), (0.0, 1.0, 0.0, 0.0), (0.0, 0.0, 1.0, 0.0),
-                  (0.0, 0.0, 0.0, 1.0), (0.25, 0.25, 0.25, 0.25), (0.5, 0.0, 0.5, 0.0),
-                  (0.6, 0.2, 0.1, 0.1))
+        for c in (
+                (1.0, 0.0, 0.0, 0.0), (0.0, 1.0, 0.0, 0.0), (0.0, 0.0, 1.0, 0.0),
+                (0.0, 0.0, 0.0, 1.0), (0.25, 0.25, 0.25, 0.25), (0.5, 0.0, 0.5, 0.0),
+                (0.6, 0.2, 0.1, 0.1),
+            )
             rgb = mix_rgb(model, c)
             r = unmix_reference(model, rgb; settings = settings, scratch = scratch)
             @test r.sse < 1.0e-16
@@ -311,9 +317,11 @@ const eval_jacobian4! = PaintMixPrecompute._jacobian4!
         @test unmix_reference(model, rgb; settings = settings, scratch = scratch) isa
             PaintMixPrecompute.UnmixResult
         @test (@allocated unmix_bulk!(scratch, model, rgb, (seed,), settings)) == 0
-        @test (@allocated PaintMixPrecompute._solve_adaptive!(
-            scratch, model, rgb, seed, settings,
-        )) == 0
+        @test (
+            @allocated PaintMixPrecompute._solve_adaptive!(
+                scratch, model, rgb, seed, settings,
+            )
+        ) == 0
         # The reference path still allocates a little inside its subset
         # recursion (measured 80 bytes). The bound is a regression guard, not
         # a claim of zero: the old union-typed active set cost 768.
@@ -358,8 +366,10 @@ const eval_jacobian4! = PaintMixPrecompute._jacobian4!
         end
         # Colors the model produces: a zero-residual solution exists, so both
         # solvers should report the same concentrations.
-        for c in ((0.25, 0.25, 0.25, 0.25), (0.4, 0.3, 0.2, 0.1),
-                  (0.7, 0.1, 0.1, 0.1), (0.55, 0.25, 0.15, 0.05))
+        for c in (
+                (0.25, 0.25, 0.25, 0.25), (0.4, 0.3, 0.2, 0.1),
+                (0.7, 0.1, 0.1, 0.1), (0.55, 0.25, 0.15, 0.05),
+            )
             rgb = mix_rgb(model, c)
             ref = unmix_reference(model, rgb; settings = settings, scratch = scratch)
             oc, ossr = oracle_unmix(model, rgb)
@@ -392,10 +402,10 @@ const eval_jacobian4! = PaintMixPrecompute._jacobian4!
             s = Int(inv.data[3v + 1]) + Int(inv.data[3v + 2]) + Int(inv.data[3v + 3])
             @test s <= 255
         end
-        provenance = Dict{String,Any}(
+        provenance = Dict{String, Any}(
             "config_hash" => repeat("0", 64),
-            "inputs" => Dict{String,String}("config" => repeat("0", 64)),
-            "grid" => Dict{String,Any}("n" => n),
+            "inputs" => Dict{String, String}("config" => repeat("0", 64)),
+            "grid" => Dict{String, Any}("n" => n),
         )
         m = build_model(ft, cfg, provenance)
         bytes = PaintMix.model_to_bytes(m)
@@ -474,7 +484,7 @@ const eval_jacobian4! = PaintMixPrecompute._jacobian4!
 
     @testset "provenance text is deterministic and convention-sensitive" begin
         cfg = load_config()
-        inputs = Dict{String,String}("config" => "c", "spectral_k_s" => "k")
+        inputs = Dict{String, String}("config" => "c", "spectral_k_s" => "k")
         a = provenance_text(cfg, "c", inputs)
         b = provenance_text(cfg, "c", inputs)
         @test a == b
@@ -485,19 +495,19 @@ const eval_jacobian4! = PaintMixPrecompute._jacobian4!
 
     @testset "acceptance gates read the reports" begin
         cfg = load_config()
-        reports = Dict{String,Any}(
-            "quality" => Dict{String,Any}(
-                "channel_error" => Dict{String,Any}("p99" => 0.001, "max" => 0.002),
-                "oklab_error" => Dict{String,Any}("p99" => 0.001, "max" => 0.002),
+        reports = Dict{String, Any}(
+            "quality" => Dict{String, Any}(
+                "channel_error" => Dict{String, Any}("p99" => 0.001, "max" => 0.002),
+                "oklab_error" => Dict{String, Any}("p99" => 0.001, "max" => 0.002),
             ),
-            "padding" => Dict{String,Any}(
-                "by_depth" => Dict{String,Any}("0.0" => Dict{String,Any}("p99" => 0.001)),
+            "padding" => Dict{String, Any}(
+                "by_depth" => Dict{String, Any}("0.0" => Dict{String, Any}("p99" => 0.001)),
             ),
-            "roundtrip" => Dict{String,Any}(
-                "float32" => Dict{String,Any}("max" => 1.0e-8),
-                "float64" => Dict{String,Any}("max" => 1.0e-14),
+            "roundtrip" => Dict{String, Any}(
+                "float32" => Dict{String, Any}("max" => 1.0e-8),
+                "float64" => Dict{String, Any}("max" => 1.0e-14),
             ),
-            "quantization" => Dict{String,Any}("invalid_vertices" => 0),
+            "quantization" => Dict{String, Any}("invalid_vertices" => 0),
         )
         gates = acceptance_gates(cfg, reports)
         @test all(values(gates))

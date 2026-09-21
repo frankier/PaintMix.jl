@@ -31,7 +31,7 @@ const BUILD_DIR = @__DIR__
 const DEFAULT_PAYLOAD = joinpath(BUILD_DIR, "data", "payload.pmx")
 
 function parse_args(args)
-    opts = Dict{String,Any}(
+    opts = Dict{String, Any}(
         "payload" => DEFAULT_PAYLOAD,
         "profile" => nothing,
         "out" => joinpath(BUILD_DIR, "out"),

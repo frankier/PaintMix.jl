@@ -195,10 +195,12 @@ function validate_config(cfg::AbstractDict)
         all(v -> v isa Real && isfinite(v), row) ||
             throw(ConfigError("color.xyz_to_rgb entries must be finite numbers"))
     end
-    color["storage_transfer"] == "linear" || throw(ConfigError(
-        "color.storage_transfer must be \"linear\": encoded sRGB must never be " *
-            "combined with linear-light residuals"
-    ))
+    color["storage_transfer"] == "linear" || throw(
+        ConfigError(
+            "color.storage_transfer must be \"linear\": encoded sRGB must never be " *
+                "combined with linear-light residuals"
+        )
+    )
 
     spectra = _section(cfg, "spectra")
     lo = _positive(spectra, "wavelength_min_nm")
@@ -206,9 +208,11 @@ function validate_config(cfg::AbstractDict)
     step = _positive(spectra, "wavelength_step_nm")
     hi > lo || throw(ConfigError("spectra.wavelength_max_nm must exceed the minimum"))
     count = (hi - lo) / step + 1
-    isinteger(count) || throw(ConfigError(
-        "spectra grid ($lo:$step:$hi) does not contain an integer number of samples"
-    ))
+    isinteger(count) || throw(
+        ConfigError(
+            "spectra grid ($lo:$step:$hi) does not contain an integer number of samples"
+        )
+    )
     count >= 4 || throw(ConfigError("spectra grid needs at least 4 samples"))
 
     saunderson = _section(cfg, "saunderson")
@@ -220,9 +224,11 @@ function validate_config(cfg::AbstractDict)
     0 <= saunderson["k2"] < 1 || throw(ConfigError("saunderson.k2 must be in [0, 1)"))
 
     pigments = get(cfg, "pigments", nothing)
-    pigments isa AbstractVector && length(pigments) == 4 || throw(ConfigError(
-        "exactly four pigments are required: the latent vector has four concentrations"
-    ))
+    pigments isa AbstractVector && length(pigments) == 4 || throw(
+        ConfigError(
+            "exactly four pigments are required: the latent vector has four concentrations"
+        )
+    )
     codes = String[]
     for p in pigments
         p isa AbstractDict || throw(ConfigError("each [[pigments]] entry must be a table"))
@@ -251,9 +257,11 @@ function validate_config(cfg::AbstractDict)
     alpha = get(surrogate, "alpha_initial", nothing)
     alpha isa Real && alpha > 0 || throw(ConfigError("surrogate.alpha_initial must be positive"))
     divisions = get(surrogate, "surface_divisions", nothing)
-    divisions isa Integer && divisions >= 1 || throw(ConfigError(
-        "surrogate.surface_divisions must be an integer >= 1"
-    ))
+    divisions isa Integer && divisions >= 1 || throw(
+        ConfigError(
+            "surrogate.surface_divisions must be an integer >= 1"
+        )
+    )
 
     inputs = _section(cfg, "inputs")
     for key in ("primary", "observer_file", "database", "checksums")
@@ -262,9 +270,11 @@ function validate_config(cfg::AbstractDict)
     end
 
     unmix = _section(cfg, "unmix")
-    unmix["objective"] == "rgb-least-squares" || throw(ConfigError(
-        "unmix.objective must remain \"rgb-least-squares\"; changing it is a model variant"
-    ))
+    unmix["objective"] == "rgb-least-squares" || throw(
+        ConfigError(
+            "unmix.objective must remain \"rgb-least-squares\"; changing it is a model variant"
+        )
+    )
     tol = get(unmix, "tolerance", nothing)
     tol isa Real && tol > 0 || throw(ConfigError("unmix.tolerance must be positive"))
     face = get(unmix, "face_threshold", nothing)

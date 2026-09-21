@@ -112,7 +112,7 @@ function main(args)
             colors = if dtype32
                 [
                     (rand(rng, Float32), rand(rng, Float32), rand(rng, Float32))
-                    for _ in 1:count
+                        for _ in 1:count
                 ]
             else
                 [(rand(rng), rand(rng), rand(rng)) for _ in 1:count]

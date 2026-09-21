@@ -24,7 +24,7 @@ equation (9) with the reference solver, then store the residual against the
 *same* spectral model. This is the reference the byte tables approximate.
 """
 function spectral_encode(
-        model::SpectralModel{T}, rgb::NTuple{3,T};
+        model::SpectralModel{T}, rgb::NTuple{3, T};
         settings::UnmixSettings{T} = UnmixSettings{T}(100, T(1.0e-10), T(1.0e-6), 4),
         scratch::SolverScratch = SolverScratch(),
     ) where {T}
@@ -41,8 +41,8 @@ Reference `kmerp`: lerp the spectral latents and decode through `mix` of the
 spectral model. Callers cache the encodings of `a` and `b`.
 """
 @inline function spectral_mix(
-        model::SpectralModel{T}, ca::NTuple{4,T}, ra::NTuple{3,T},
-        cb::NTuple{4,T}, rb::NTuple{3,T}, t::T,
+        model::SpectralModel{T}, ca::NTuple{4, T}, ra::NTuple{3, T},
+        cb::NTuple{4, T}, rb::NTuple{3, T}, t::T,
     ) where {T}
     s = one(T) - t
     c = ntuple(i -> s * ca[i] + t * cb[i], Val(4))
@@ -61,7 +61,7 @@ pigment vertices and white, a spread of random colors, and some near-black
 and near-white samples where residuals dominate.
 """
 function corpus(rng::AbstractRNG, count::Integer)
-    colors = NTuple{3,Float64}[]
+    colors = NTuple{3, Float64}[]
     for r in (0.0, 1.0), g in (0.0, 1.0), b in (0.0, 1.0)
         push!(colors, (r, g, b))
     end
@@ -93,7 +93,7 @@ function quality_report(
     scratch = SolverScratch()
     rng = Xoshiro(seed)
     points = corpus(rng, colors)
-    latents = Vector{Tuple{NTuple{4,T},NTuple{3,T}}}(undef, length(points))
+    latents = Vector{Tuple{NTuple{4, T}, NTuple{3, T}}}(undef, length(points))
     for (i, rgb) in enumerate(points)
         latents[i] = spectral_encode(spectral, rgb; settings = settings, scratch = scratch)
     end
@@ -123,32 +123,34 @@ function quality_report(
         ga = PaintMix.srgb_from_linear(ntuple(i -> clamp(Float64(got[i]), 0.0, 1.0), 3))
         ra = PaintMix.srgb_from_linear(ntuple(i -> clamp(ref[i], 0.0, 1.0), 3))
         push!(enc, maximum(abs.(collect(ga) .- collect(ra))))
-        d = oklab_distance_squared(linear_srgb_to_oklab((Float64(got[1]), Float64(got[2]), Float64(got[3]))),
-            linear_srgb_to_oklab(ref))
+        d = oklab_distance_squared(
+            linear_srgb_to_oklab((Float64(got[1]), Float64(got[2]), Float64(got[3]))),
+            linear_srgb_to_oklab(ref)
+        )
         push!(ok, sqrt(d))
         if m > worst[1]
             worst = (m, a, b, t)
         end
     end
-    return Dict{String,Any}(
+    return Dict{String, Any}(
         "pairs" => pairs,
         "corpus_colors" => length(points),
-        "channel_error" => Dict{String,Any}(
+        "channel_error" => Dict{String, Any}(
             "mean" => sum(ch) / length(ch),
             "p99" => _pctl(ch, 0.99),
             "max" => maximum(ch),
         ),
-        "encoded_channel_error" => Dict{String,Any}(
+        "encoded_channel_error" => Dict{String, Any}(
             "mean" => sum(enc) / length(enc),
             "p99" => _pctl(enc, 0.99),
             "max" => maximum(enc),
         ),
-        "oklab_error" => Dict{String,Any}(
+        "oklab_error" => Dict{String, Any}(
             "mean" => sum(ok) / length(ok),
             "p99" => _pctl(ok, 0.99),
             "max" => maximum(ok),
         ),
-        "worst_channel_sample" => Dict{String,Any}(
+        "worst_channel_sample" => Dict{String, Any}(
             "error" => worst[1],
             "a" => collect(worst[2]),
             "b" => collect(worst[3]),
@@ -173,7 +175,7 @@ function padding_report(
         face_samples::Integer = 60, inside_depths = (0.0, 1.0e-3, 5.0e-3, 2.0e-2),
     ) where {T}
     n = PaintMix.grid_n(model)
-    errs = Dict{Float64,Vector{Float64}}(d => Float64[] for d in inside_depths)
+    errs = Dict{Float64, Vector{Float64}}(d => Float64[] for d in inside_depths)
     worst = (0.0, (0.0, 0.0, 0.0, 0.0), 0.0)
     for face in 1:4
         free = [i for i in 1:4 if i != face]
@@ -193,10 +195,12 @@ function padding_report(
                 c = (c[1] / s, c[2] / s, c[3] / s, c[4] / s)
                 ref = mix_rgb(spectral, c)
                 got = PaintMix.forward_rgb(model, T(c[1]), T(c[2]), T(c[3]))
-                e = maximum((
-                    abs(Float64(got[1]) - ref[1]), abs(Float64(got[2]) - ref[2]),
-                    abs(Float64(got[3]) - ref[3]),
-                ))
+                e = maximum(
+                    (
+                        abs(Float64(got[1]) - ref[1]), abs(Float64(got[2]) - ref[2]),
+                        abs(Float64(got[3]) - ref[3]),
+                    )
+                )
                 push!(errs[depth], e)
                 if e > worst[1]
                     worst = (e, c, depth)
@@ -204,18 +208,18 @@ function padding_report(
             end
         end
     end
-    return Dict{String,Any}(
+    return Dict{String, Any}(
         "grid_n" => n,
         "padding_rule" => cfg["quantization"]["padding"],
         "samples_per_depth" => 4 * (face_samples + 1) * (face_samples + 2) ÷ 2,
-        "by_depth" => Dict{String,Any}(
-            string(d) => Dict{String,Any}(
+        "by_depth" => Dict{String, Any}(
+            string(d) => Dict{String, Any}(
                 "max" => maximum(v),
                 "p99" => _pctl(v, 0.99),
                 "mean" => sum(v) / length(v),
             ) for (d, v) in errs
         ),
-        "worst" => Dict{String,Any}(
+        "worst" => Dict{String, Any}(
             "error" => worst[1],
             "c" => collect(worst[2]),
             "depth" => worst[3],
@@ -241,18 +245,32 @@ function roundtrip_report(
         a32 = (Float32(rgb[1]), Float32(rgb[2]), Float32(rgb[3]))
         z32 = PaintMix.encode(model, a32)
         back32 = PaintMix.decode(model, z32)
-        push!(err32, maximum(abs.((Float64(back32[1]) - rgb[1], Float64(back32[2]) - rgb[2],
-            Float64(back32[3]) - rgb[3]))))
+        push!(
+            err32, maximum(
+                abs.(
+                    (
+                        Float64(back32[1]) - rgb[1], Float64(back32[2]) - rgb[2],
+                        Float64(back32[3]) - rgb[3],
+                    )
+                )
+            )
+        )
         z64 = PaintMix.encode(model, rgb)
         back64 = PaintMix.decode(model, z64)
-        push!(err64, maximum(abs.((
-            back64[1] - rgb[1], back64[2] - rgb[2], back64[3] - rgb[3],
-        ))))
+        push!(
+            err64, maximum(
+                abs.(
+                    (
+                        back64[1] - rgb[1], back64[2] - rgb[2], back64[3] - rgb[3],
+                    )
+                )
+            )
+        )
     end
-    return Dict{String,Any}(
+    return Dict{String, Any}(
         "samples" => length(points),
-        "float32" => Dict{String,Any}("max" => maximum(err32), "mean" => sum(err32) / length(err32)),
-        "float64" => Dict{String,Any}("max" => maximum(err64), "mean" => sum(err64) / length(err64)),
+        "float32" => Dict{String, Any}("max" => maximum(err32), "mean" => sum(err32) / length(err32)),
+        "float64" => Dict{String, Any}("max" => maximum(err64), "mean" => sum(err64) / length(err64)),
     )
 end
 
@@ -276,7 +294,7 @@ function quantization_report(model::PaintMix.PigmentModel, cfg::AbstractDict)
         sums[s + 1] += 1
     end
     n255 = count(==(255), sums)
-    return Dict{String,Any}(
+    return Dict{String, Any}(
         "vertices" => n^3,
         "invalid_vertices" => bad,
         "sum_255_fraction" => n255 / n^3,
@@ -299,14 +317,14 @@ function acceptance_gates(cfg::AbstractDict, reports::AbstractDict)
     p = reports["padding"]
     rt = reports["roundtrip"]
     quant = reports["quantization"]
-    targets = get(cfg, "validation", Dict{String,Any}())
+    targets = get(cfg, "validation", Dict{String, Any}())
     qe = get(q, "encoded_channel_error", q["channel_error"])
     p99_target = get(targets, "lut_channel_p99", 2 / 255)
     max_target = get(targets, "lut_channel_max", 8 / 255)
     oklab_target = get(targets, "lut_oklab_p99", 0.01)
     rt32 = get(targets, "roundtrip_f32", 2.0e-6)
     rt64 = get(targets, "roundtrip_f64", 1.0e-12)
-    return Dict{String,Bool}(
+    return Dict{String, Bool}(
         "lut_vs_spectral_channel_p99" => qe["p99"] <= p99_target,
         "lut_vs_spectral_channel_max" => qe["max"] <= max_target,
         "lut_vs_spectral_oklab_p99" => q["oklab_error"]["p99"] <= oklab_target,
@@ -358,22 +376,26 @@ function continuity_report(
                     worst_jump = (jump, (Float64(rgb[1]), Float64(rgb[2]), Float64(rgb[3])))
                 end
                 back = PaintMix.decode(model, z)
-                push!(decode_err, maximum(abs.(
-                    (Float64(back[1]) - rgb[1], Float64(back[2]) - rgb[2], Float64(back[3]) - rgb[3]),
-                )))
+                push!(
+                    decode_err, maximum(
+                        abs.(
+                            (Float64(back[1]) - rgb[1], Float64(back[2]) - rgb[2], Float64(back[3]) - rgb[3]),
+                        )
+                    )
+                )
             end
             prev = z
         end
     end
-    return Dict{String,Any}(
+    return Dict{String, Any}(
         "lines" => lines,
         "points_per_line" => points,
-        "concentration_jump" => Dict{String,Any}(
+        "concentration_jump" => Dict{String, Any}(
             "mean" => sum(jumps) / length(jumps),
             "p99" => _pctl(jumps, 0.99),
             "max" => maximum(jumps),
         ),
-        "decode_error" => Dict{String,Any}(
+        "decode_error" => Dict{String, Any}(
             "p99" => _pctl(decode_err, 0.99),
             "max" => maximum(decode_err),
         ),
@@ -424,11 +446,13 @@ function behavior_report(
     tints = [PaintMix.mix(model, Tf.(blue), Tf.(white), Float32(t)) for t in (0.0, 0.25, 0.5, 0.75, 1.0)]
     lightness = [luma(c) for c in tints]
     same = maximum(abs.(collect(PaintMix.mix(model, Tf.(blue), Tf.(blue), 0.37)) .- blue))
-    reversal = maximum(abs.(
-        collect(PaintMix.mix(model, Tf.(blue), Tf.(yellow), 0.3)) .-
-            collect(PaintMix.mix(model, Tf.(yellow), Tf.(blue), 0.7)),
-    ))
-    return Dict{String,Any}(
+    reversal = maximum(
+        abs.(
+            collect(PaintMix.mix(model, Tf.(blue), Tf.(yellow), 0.3)) .-
+                collect(PaintMix.mix(model, Tf.(yellow), Tf.(blue), 0.7)),
+        )
+    )
+    return Dict{String, Any}(
         "spectral_blue_yellow_50_50" => collect(green_spec),
         "runtime_blue_yellow_50_50" => collect(Float64.(green)),
         "blue_yellow_channel_error" => maximum(abs.(collect(Float64.(green)) .- collect(green_spec))),

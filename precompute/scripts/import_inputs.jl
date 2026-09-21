@@ -22,7 +22,7 @@ using Printf: @printf
 const ROOT = normpath(joinpath(@__DIR__, "..", ".."))
 
 function parse_args(args)
-    opts = Dict{String,Any}(
+    opts = Dict{String, Any}(
         "config" => PaintMixPrecompute.DEFAULT_CONFIG_PATH,
         "db" => nothing,
         "force" => false,
@@ -37,13 +37,15 @@ function parse_args(args)
         elseif a == "--force"
             opts["force"] = true
         elseif a == "--help" || a == "-h"
-            print("""
-            usage: import_inputs.jl [options]
+            print(
+                """
+                usage: import_inputs.jl [options]
 
-              --config PATH   configuration file (default: config/default.toml)
-              --db PATH       output database (default: from the configuration)
-              --force         overwrite an existing database
-            """)
+                  --config PATH   configuration file (default: config/default.toml)
+                  --db PATH       output database (default: from the configuration)
+                  --force         overwrite an existing database
+                """
+            )
             exit(0)
         else
             error("unknown argument $a")

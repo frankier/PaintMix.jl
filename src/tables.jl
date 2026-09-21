@@ -93,7 +93,7 @@ struct ModelHeader
     color_space::UInt8
     grid_n::Int
     flags::UInt32
-    id::NTuple{16,UInt8}
+    id::NTuple{16, UInt8}
     byte_scale::UInt8
     interpolation::UInt8
     index_order::UInt8
@@ -119,37 +119,55 @@ _parse_header(b::AbstractVector{UInt8}) = ModelHeader(
 )
 
 function _check_header(h::ModelHeader)
-    h.format_version == FORMAT_VERSION || throw(InvalidPayload(
-        "unsupported format version $(h.format_version), runtime understands $(FORMAT_VERSION)"
-    ))
-    h.header_bytes >= HEADER_BYTES || throw(InvalidPayload(
-        "header_bytes $(h.header_bytes) is smaller than the $HEADER_BYTES byte header"
-    ))
-    h.storage == STORAGE_U8 || throw(InvalidPayload(
-        "storage type $(h.storage) is not supported by this runtime (only u8 = 0)"
-    ))
+    h.format_version == FORMAT_VERSION || throw(
+        InvalidPayload(
+            "unsupported format version $(h.format_version), runtime understands $(FORMAT_VERSION)"
+        )
+    )
+    h.header_bytes >= HEADER_BYTES || throw(
+        InvalidPayload(
+            "header_bytes $(h.header_bytes) is smaller than the $HEADER_BYTES byte header"
+        )
+    )
+    h.storage == STORAGE_U8 || throw(
+        InvalidPayload(
+            "storage type $(h.storage) is not supported by this runtime (only u8 = 0)"
+        )
+    )
     h.channels == 3 || throw(InvalidPayload("channel count must be 3, got $(h.channels)"))
     h.table_count == 2 || throw(InvalidPayload("table count must be 2, got $(h.table_count)"))
-    h.color_space == COLORSPACE_LINEAR_SRGB_D65 || throw(InvalidPayload(
-        "color space $(h.color_space) is not linear-light sRGB with D65 (0)"
-    ))
-    h.byte_scale == BYTE_SCALE_255 || throw(InvalidPayload(
-        "byte scaling $(h.byte_scale) is not b/255 (0)"
-    ))
-    h.interpolation == INTERP_TRILINEAR || throw(InvalidPayload(
-        "interpolation $(h.interpolation) is not trilinear (0)"
-    ))
-    h.index_order == INDEX_CHANNEL_FAST || throw(InvalidPayload(
-        "index order $(h.index_order) is not channel-fast (0)"
-    ))
+    h.color_space == COLORSPACE_LINEAR_SRGB_D65 || throw(
+        InvalidPayload(
+            "color space $(h.color_space) is not linear-light sRGB with D65 (0)"
+        )
+    )
+    h.byte_scale == BYTE_SCALE_255 || throw(
+        InvalidPayload(
+            "byte scaling $(h.byte_scale) is not b/255 (0)"
+        )
+    )
+    h.interpolation == INTERP_TRILINEAR || throw(
+        InvalidPayload(
+            "interpolation $(h.interpolation) is not trilinear (0)"
+        )
+    )
+    h.index_order == INDEX_CHANNEL_FAST || throw(
+        InvalidPayload(
+            "index order $(h.index_order) is not channel-fast (0)"
+        )
+    )
     h.grid_n >= 1 || throw(InvalidPayload("grid size must be >= 1, got $(h.grid_n)"))
     expected = 3 * h.grid_n^3
-    h.inverse_bytes == expected || throw(InvalidPayload(
-        "inverse table has $(h.inverse_bytes) bytes, expected $expected for n = $(h.grid_n)"
-    ))
-    h.forward_bytes == expected || throw(InvalidPayload(
-        "forward table has $(h.forward_bytes) bytes, expected $expected for n = $(h.grid_n)"
-    ))
+    h.inverse_bytes == expected || throw(
+        InvalidPayload(
+            "inverse table has $(h.inverse_bytes) bytes, expected $expected for n = $(h.grid_n)"
+        )
+    )
+    h.forward_bytes == expected || throw(
+        InvalidPayload(
+            "forward table has $(h.forward_bytes) bytes, expected $expected for n = $(h.grid_n)"
+        )
+    )
     return nothing
 end
 
@@ -202,18 +220,22 @@ Throws `PaintMix.InvalidPayload` on any structural problem. Tables are copied
 out of `bytes`, so the caller may release it afterwards.
 """
 function model_from_bytes(bytes::AbstractVector{UInt8}; validate::Bool = true)
-    length(bytes) >= HEADER_BYTES || throw(InvalidPayload(
-        "payload is $(length(bytes)) bytes, shorter than the $HEADER_BYTES byte header"
-    ))
+    length(bytes) >= HEADER_BYTES || throw(
+        InvalidPayload(
+            "payload is $(length(bytes)) bytes, shorter than the $HEADER_BYTES byte header"
+        )
+    )
     for (i, m) in enumerate(_MAGIC)
         bytes[i] == m || throw(InvalidPayload("bad magic: not a PaintMix payload"))
     end
     h = _parse_header(bytes)
     _check_header(h)
     total = max(h.inverse_offset + h.inverse_bytes, h.forward_offset + h.forward_bytes)
-    length(bytes) >= total || throw(InvalidPayload(
-        "payload is $(length(bytes)) bytes, but the header places tables up to byte $total"
-    ))
+    length(bytes) >= total || throw(
+        InvalidPayload(
+            "payload is $(length(bytes)) bytes, but the header places tables up to byte $total"
+        )
+    )
     inverse = _copy_table(bytes, h.inverse_offset, h.inverse_bytes, h.grid_n)
     forward = _copy_table(bytes, h.forward_offset, h.forward_bytes, h.grid_n)
     model = PigmentModel(h.id, inverse, forward, h.format_version, h.flags)
@@ -258,10 +280,12 @@ function _check_simplex(lut::ByteLUT, n::Int)
     @inbounds for v in 0:(vertices - 1)
         base = 3v + 1
         s = Int(d[base]) + Int(d[base + 1]) + Int(d[base + 2])
-        s <= 255 || throw(ArgumentError(
-            "inverse table vertex $v stores concentrations summing to $s > 255; " *
-                "the implied fourth concentration would be negative"
-        ))
+        s <= 255 || throw(
+            ArgumentError(
+                "inverse table vertex $v stores concentrations summing to $s > 255; " *
+                    "the implied fourth concentration would be negative"
+            )
+        )
     end
     return nothing
 end
@@ -315,7 +339,7 @@ function default_payload_path()
     return joinpath(root, "data", "default", "default.pmx")
 end
 
-const _DEFAULT_MODEL = Ref{Union{Nothing,PigmentModel}}(nothing)
+const _DEFAULT_MODEL = Ref{Union{Nothing, PigmentModel}}(nothing)
 
 """
     default_model() -> PigmentModel
@@ -330,10 +354,12 @@ function default_model()
     m = _DEFAULT_MODEL[]
     m === nothing || return m
     path = default_payload_path()
-    isfile(path) || throw(ArgumentError(
-        "no default pigment model at $path; build one with " *
-            "`precompute/scripts/generate.jl` and promote it into data/default/"
-    ))
+    isfile(path) || throw(
+        ArgumentError(
+            "no default pigment model at $path; build one with " *
+                "`precompute/scripts/generate.jl` and promote it into data/default/"
+        )
+    )
     loaded = read_model(path)
     _DEFAULT_MODEL[] = loaded
     return loaded

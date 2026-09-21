@@ -19,7 +19,7 @@ end
             x, y, z = rand(rng), rand(rng), rand(rng)
             got = trilinear(lut, x, y, z)
             ref = reference_trilinear(lut, x, y, z)
-            @test maximum(abs.(got .- ref)) <= 1e-15
+            @test maximum(abs.(got .- ref)) <= 1.0e-15
         end
     end
 end
@@ -35,7 +35,7 @@ end
         # A grid plane must reproduce the stored value: no interpolation
         # error. Division and multiplication by 1/255 may differ by one ulp,
         # so the check is exact to within that.
-        @test maximum(abs.(got .- want)) <= 1e-15
+        @test maximum(abs.(got .- want)) <= 1.0e-15
     end
 end
 
@@ -44,14 +44,14 @@ end
         lut = model.forward
         for (x, y, z) in (
                 (1.0, 1.0, 1.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0),
-                (1.0, 1.0, 0.0), (0.5, 1.0, 1.0), (1e-300, 1.0, 0.0),
+                (1.0, 1.0, 0.0), (0.5, 1.0, 1.0), (1.0e-300, 1.0, 0.0),
             )
             @test all(isfinite, trilinear(lut, x, y, z))
             @test trilinear(lut, x, y, z) == trilinear(lut, x, y, z)
         end
         # Weight one on the last plane must equal the last vertex exactly.
         last = ntuple(ch -> Float64(reference_vertex(lut, n - 1, n - 1, n - 1, ch - 1)) / 255, Val(3))
-        @test maximum(abs.(trilinear(lut, 1.0, 1.0, 1.0) .- last)) <= 1e-15
+        @test maximum(abs.(trilinear(lut, 1.0, 1.0, 1.0) .- last)) <= 1.0e-15
     end
 end
 
@@ -59,7 +59,7 @@ end
     lut = random_model(4, 4).forward
     @test trilinear(lut, -0.5, 0.25, 0.75) == trilinear(lut, 0.0, 0.25, 0.75)
     @test trilinear(lut, 0.25, 2.0, 0.75) == trilinear(lut, 0.25, 1.0, 0.75)
-    @test trilinear(lut, 0.25, 0.75, -1e9) == trilinear(lut, 0.25, 0.75, 0.0)
+    @test trilinear(lut, 0.25, 0.75, -1.0e9) == trilinear(lut, 0.25, 0.75, 0.0)
 end
 
 @testset "affine tables interpolate analytically" begin
@@ -78,8 +78,8 @@ end
 @testset "Float32 tables stay in Float32" begin
     lut = random_model(5, 4).forward
     got = trilinear(lut, 0.3f0, 0.6f0, 0.1f0)
-    @test got isa NTuple{3,Float32}
-    @test maximum(abs.(got .- trilinear(lut, 0.3, 0.6, 0.1))) <= 1e-6
-    @test PaintMix.vertex(lut, 1, 2, 3) isa NTuple{3,UInt8}
+    @test got isa NTuple{3, Float32}
+    @test maximum(abs.(got .- trilinear(lut, 0.3, 0.6, 0.1))) <= 1.0e-6
+    @test PaintMix.vertex(lut, 1, 2, 3) isa NTuple{3, UInt8}
     @test_throws BoundsError PaintMix.vertex(lut, 4, 0, 0)
 end

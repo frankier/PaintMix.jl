@@ -30,7 +30,7 @@ by largest-remainder rounding, with ties broken by index.
 Independent rounding would let the first three exceed 255 and imply a
 negative fourth; here the fourth is always `255 - b1 - b2 - b3 >= 0`.
 """
-function quantize_simplex(c::NTuple{4,<:Real})
+function quantize_simplex(c::NTuple{4, <:Real})
     scaled = ntuple(i -> max(Float64(c[i]), 0.0) * 255.0, Val(4))
     floors = ntuple(i -> floor(Int, scaled[i]), Val(4))
     total = sum(floors)
@@ -110,7 +110,7 @@ concentrations on the simplex; they are quantized with
 """
 function synthetic_model(
         forward, inverse; n::Integer = 2,
-        id::NTuple{16,UInt8} = ntuple(_ -> 0x00, Val(16)),
+        id::NTuple{16, UInt8} = ntuple(_ -> 0x00, Val(16)),
         flags::UInt32 = FLAG_FORWARD_SIMPLEX_PROJECTED | FLAG_INVERSE_LARGEST_REMAINDER
     )
     m = Int(n)

@@ -15,7 +15,7 @@ end
 @testset "round trips cancel the table quantization" begin
     rng = Xoshiro(11)
     for model in (identity_model(2), identity_model(16), random_model(9, 5)), T in (Float32, Float64)
-        tol = T === Float32 ? 2.0f-6 : 1e-12
+        tol = T === Float32 ? 2.0f-6 : 1.0e-12
         for _ in 1:200
             x = T(rand(rng))
             y = T(rand(rng))
@@ -54,7 +54,7 @@ end
     @test mix(model, a, b, 2.0) === b
     @test mix(model, a, b, 0) === a
     @test mix(model, a, b, 1) === b
-    @test mix(model, a, b, 1 // 2) isa NTuple{3,Float64}
+    @test mix(model, a, b, 1 // 2) isa NTuple{3, Float64}
 end
 
 @testset "mixing is symmetric under swapping the arguments" begin
@@ -62,7 +62,7 @@ end
     a = (0.31, 0.62, 0.07)
     b = (0.11, 0.22, 0.73)
     for t in (0.1, 0.25, 0.5, 0.9)
-        @test maximum(abs.(mix(model, a, b, t) .- mix(model, b, a, 1 - t))) <= 1e-12
+        @test maximum(abs.(mix(model, a, b, t) .- mix(model, b, a, 1 - t))) <= 1.0e-12
     end
 end
 
@@ -73,7 +73,7 @@ end
     a = (0.9, 0.2, 0.4)
     b = (0.05, 0.8, 0.3)
     m = mix(model, a, b, 0.35)
-    @test maximum(abs.(decode(model, encode(model, m)) .- m)) <= 1e-12
+    @test maximum(abs.(decode(model, encode(model, m)) .- m)) <= 1.0e-12
 end
 
 @testset "decode does not clip" begin
@@ -110,8 +110,10 @@ end
     dest = fill(NaN, 3n)
     @test bulk_mix!(dest, model, as, bs, ts) === dest
     for i in 1:n
-        want = mix(model, (as[3i - 2], as[3i - 1], as[3i]),
-            (bs[3i - 2], bs[3i - 1], bs[3i]), ts[i])
+        want = mix(
+            model, (as[3i - 2], as[3i - 1], as[3i]),
+            (bs[3i - 2], bs[3i - 1], bs[3i]), ts[i]
+        )
         @test (dest[3i - 2], dest[3i - 1], dest[3i]) == want
     end
 end
@@ -123,14 +125,14 @@ end
     # Two colors reduce to the binary mix.
     @test maximum(
         abs.(weighted_mix(model, [a, b], [1 - 0.3, 0.3]) .- mix(model, a, b, 0.3))
-    ) <= 1e-12
+    ) <= 1.0e-12
     # Scale invariance.
     @test maximum(
         abs.(
             weighted_mix(model, [a, b], [2.0, 5.0]) .-
                 weighted_mix(model, [a, b], [20.0, 50.0])
         )
-    ) <= 1e-12
+    ) <= 1.0e-12
     # A single positive weight returns that input color unchanged.
     @test weighted_mix(model, [a, b], [0.0, 3.0]) === b
     colors = [(0.1, 0.2, 0.3), (0.7, 0.1, 0.2), (0.05, 0.05, 0.9)]
@@ -143,7 +145,7 @@ end
     weighted_mix!(dest, model, flat, [1.0, 1.0, 1.0])
     @test maximum(
         abs.((dest[1], dest[2], dest[3]) .- weighted_mix(model, colors, [1.0, 1.0, 1.0]))
-    ) <= 1e-15
+    ) <= 1.0e-15
     @test all(isfinite, weighted_mix(model, colors, [1.0, 0.5, 2.5]))
 end
 
@@ -202,8 +204,8 @@ end
     b = (0.1f0, 0.2f0, 0.3f0)
     z = encode(model, a)
     @test z isa Latent{Float32}
-    @test decode(model, z) isa NTuple{3,Float32}
-    @test mix(model, a, b, 0.5f0) isa NTuple{3,Float32}
+    @test decode(model, z) isa NTuple{3, Float32}
+    @test mix(model, a, b, 0.5f0) isa NTuple{3, Float32}
     @test maximum(abs.(decode(model, z) .- a)) <= 2.0f-6
     as = Float32[0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
     dest = zeros(Float32, 6)

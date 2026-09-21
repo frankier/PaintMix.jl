@@ -83,7 +83,7 @@ struct InputDatabase
     saunderson::SaundersonRecord
     observer::Vector{ObserverRecord}
     observer_source::SourceFile
-    build_info::Dict{String,String}
+    build_info::Dict{String, String}
 end
 
 """
@@ -133,10 +133,12 @@ function validate_database(db::InputDatabase)
             for r in rows
                 isfinite(r.wavelength_nm) ||
                     throw(InputError("$code $quantity has a non-finite wavelength"))
-                isfinite(r.value) && r.value > 0 || throw(InputError(
-                    "$code $quantity at $(r.wavelength_nm) nm must be finite and positive, " *
-                        "got $(r.value)"
-                ))
+                isfinite(r.value) && r.value > 0 || throw(
+                    InputError(
+                        "$code $quantity at $(r.wavelength_nm) nm must be finite and positive, " *
+                            "got $(r.value)"
+                    )
+                )
             end
         end
     end
@@ -241,8 +243,10 @@ function save_database(db::InputDatabase, path::AbstractString)
     con = _connect(path)
     try
         _write_table(con, "source_files", DataFrame(_source_file_records(db)))
-        _write_table(con, "pigments",
-            rename!(DataFrame(db.pigments), :column => :column_name))
+        _write_table(
+            con, "pigments",
+            rename!(DataFrame(db.pigments), :column => :column_name)
+        )
         _write_table(con, "spectra", DataFrame(db.spectra))
         _write_table(con, "saunderson", DataFrame([db.saunderson]))
         _write_table(con, "observer", DataFrame(db.observer))
@@ -263,48 +267,82 @@ const _TABLES = ("source_files", "pigments", "spectra", "saunderson", "observer"
 Read a `.duckdb` database produced by `import_inputs.jl` into memory.
 """
 function open_database(path::AbstractString)
-    isfile(path) || throw(InputError(
-        "no input database at $path; run precompute/scripts/import_inputs.jl first"
-    ))
+    isfile(path) || throw(
+        InputError(
+            "no input database at $path; run precompute/scripts/import_inputs.jl first"
+        )
+    )
     con = _connect(path)
     try
-        present = Set(String.(_query(con,
-            "SELECT table_name FROM information_schema.tables WHERE table_schema = 'main'").table_name))
+        present = Set(
+            String.(
+                _query(
+                    con,
+                    "SELECT table_name FROM information_schema.tables WHERE table_schema = 'main'"
+                ).table_name
+            )
+        )
         for needed in _TABLES
             needed in present || throw(InputError("database $path has no table $needed"))
         end
 
-        source_files = _records(SourceFile, _query(con,
-            "SELECT role, path, sha256 FROM source_files ORDER BY role"))
-        pigments = _records(PigmentRecord, rename!(_query(con,
-                "SELECT slot, code, name, ci, column_name FROM pigments ORDER BY slot"),
-            :column_name => :column))
-        spectra = _records(SpectrumRecord, _query(con,
-            "SELECT code, quantity, wavelength_nm, value, source_file, sheet, cell_range " *
-                "FROM spectra ORDER BY code, quantity, wavelength_nm"))
+        source_files = _records(
+            SourceFile, _query(
+                con,
+                "SELECT role, path, sha256 FROM source_files ORDER BY role"
+            )
+        )
+        pigments = _records(
+            PigmentRecord, rename!(
+                _query(
+                    con,
+                    "SELECT slot, code, name, ci, column_name FROM pigments ORDER BY slot"
+                ),
+                :column_name => :column
+            )
+        )
+        spectra = _records(
+            SpectrumRecord, _query(
+                con,
+                "SELECT code, quantity, wavelength_nm, value, source_file, sheet, cell_range " *
+                    "FROM spectra ORDER BY code, quantity, wavelength_nm"
+            )
+        )
 
-        saunderson_rows = _query(con,
-            "SELECT k1, k2, source_file, sheet, note FROM saunderson LIMIT 1")
+        saunderson_rows = _query(
+            con,
+            "SELECT k1, k2, source_file, sheet, note FROM saunderson LIMIT 1"
+        )
         nrow(saunderson_rows) == 1 || throw(InputError("database has no Saunderson row"))
         saunderson = only(_records(SaundersonRecord, saunderson_rows))
 
-        observer = _records(ObserverRecord, _query(con,
-            "SELECT wavelength_nm, x_bar, y_bar, z_bar, d65 FROM observer ORDER BY wavelength_nm"))
+        observer = _records(
+            ObserverRecord, _query(
+                con,
+                "SELECT wavelength_nm, x_bar, y_bar, z_bar, d65 FROM observer ORDER BY wavelength_nm"
+            )
+        )
 
-        observer_rows = _query(con,
-            "SELECT path, sha256 FROM source_files WHERE role = 'observer' LIMIT 1")
-        observer_source = nrow(observer_rows) == 0 ? SourceFile((
-                role = "observer",
-                path = "precompute/inputs/cie_1931_2deg_d65_10nm.csv",
-                sha256 = "",
-            )) : SourceFile((
-                role = "observer",
-                path = String(observer_rows.path[1]),
-                sha256 = String(observer_rows.sha256[1]),
-            ))
+        observer_rows = _query(
+            con,
+            "SELECT path, sha256 FROM source_files WHERE role = 'observer' LIMIT 1"
+        )
+        observer_source = nrow(observer_rows) == 0 ? SourceFile(
+                (
+                    role = "observer",
+                    path = "precompute/inputs/cie_1931_2deg_d65_10nm.csv",
+                    sha256 = "",
+                )
+            ) : SourceFile(
+                (
+                    role = "observer",
+                    path = String(observer_rows.path[1]),
+                    sha256 = String(observer_rows.sha256[1]),
+                )
+            )
 
         info = _query(con, "SELECT key, value FROM build_info")
-        build_info = Dict{String,String}(
+        build_info = Dict{String, String}(
             String(info.key[i]) => String(info.value[i]) for i in 1:nrow(info)
         )
 
@@ -343,10 +381,12 @@ sheet row number. Every cell is a `String` or `missing`, so the caller does
 the parsing.
 """
 function _read_xlsx(con, path::AbstractString, sheet::AbstractString, range::AbstractString)
-    return _query(con,
+    return _query(
+        con,
         "SELECT row_number() OVER () AS rn, * FROM read_xlsx(" *
             _sql_str(path) * ", sheet=" * _sql_str(sheet) *
-            ", all_varchar=true, header=false, range=" * _sql_str(range) * ")")
+            ", all_varchar=true, header=false, range=" * _sql_str(range) * ")"
+    )
 end
 
 """
@@ -358,9 +398,11 @@ columns.
 function _read_observer(con, path::AbstractString)
     df = _query(con, "SELECT * FROM read_csv(" * _sql_str(path) * ", header = true)")
     expected = ["wavelength_nm", "x_bar", "y_bar", "z_bar", "d65"]
-    names(df) == expected || throw(InputError(
-        "observer file $path has header $(join(names(df), ",")), expected $(join(expected, ","))"
-    ))
+    names(df) == expected || throw(
+        InputError(
+            "observer file $path has header $(join(names(df), ",")), expected $(join(expected, ","))"
+        )
+    )
     return _records(ObserverRecord, df)
 end
 
@@ -415,7 +457,7 @@ function load_spreadsheet_inputs(
     # Details: map the C.I. name in column G to the source paint name in
     # column F. The range starts at column E, so the frame has columns E, F,
     # and G.
-    ci_to_name = Dict{String,String}()
+    ci_to_name = Dict{String, String}()
     for row in eachrow(details)
         ci = _cell(row.G)
         isempty(ci) && continue
@@ -426,11 +468,13 @@ function load_spreadsheet_inputs(
     for (slot, p) in enumerate(cfg["pigments"])
         code = String(p["code"])
         column = String(p["column"])
-        push!(pigments, (
-            slot = slot, code = code,
-            name = get(ci_to_name, String(p["ci"]), String(p["name"])),
-            ci = String(p["ci"]), column = column,
-        ))
+        push!(
+            pigments, (
+                slot = slot, code = code,
+                name = get(ci_to_name, String(p["ci"]), String(p["name"])),
+                ci = String(p["ci"]), column = column,
+            )
+        )
     end
     column_to_code = Dict(p.column => p.code for p in pigments)
 
@@ -441,19 +485,23 @@ function load_spreadsheet_inputs(
     spectra = SpectrumRecord[]
     for (quantity, rows) in (("K", 6:43), ("S", 45:82))
         block = select(ks[rows, :], :rn, :B, pigment_columns...)
-        long = stack(block, pigment_columns;
-            variable_name = :column, value_name = :value)
+        long = stack(
+            block, pigment_columns;
+            variable_name = :column, value_name = :value
+        )
         for row in eachrow(long)
             wavelength = _cell(row.B)
             value = _cell(row.value)
             (isempty(wavelength) || isempty(value)) && continue
             column = String(row.column)
-            push!(spectra, (
-                code = column_to_code[column], quantity = quantity,
-                wavelength_nm = _float(wavelength), value = _float(value),
-                source_file = inputs["primary"], sheet = sheet,
-                cell_range = "$(column)$(row.rn)",
-            ))
+            push!(
+                spectra, (
+                    code = column_to_code[column], quantity = quantity,
+                    wavelength_nm = _float(wavelength), value = _float(value),
+                    source_file = inputs["primary"], sheet = sheet,
+                    cell_range = "$(column)$(row.rn)",
+                )
+            )
         end
     end
     sort!(spectra; by = r -> (r.code, r.quantity, r.wavelength_nm))
@@ -463,7 +511,7 @@ function load_spreadsheet_inputs(
         source_file = inputs["primary"], sheet = sheet,
         note = "B2 and C2 of 'k and s data'; kins is ignored",
     )
-    build_info = Dict{String,String}(
+    build_info = Dict{String, String}(
         "julia_version" => string(VERSION),
         "duckdb_version" => replace(duckdb_version, "\n" => " "),
         "tool" => "precompute/scripts/import_inputs.jl",

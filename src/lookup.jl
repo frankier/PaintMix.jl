@@ -10,7 +10,7 @@
 
 # 0-based cell index and in-cell weight for one axis, given `f = x * (n - 1)`
 # already clamped to `[0, n - 1]`.
-@inline function _axis(f::T, n::Int) where {T<:AbstractFloat}
+@inline function _axis(f::T, n::Int) where {T <: AbstractFloat}
     i = unsafe_trunc(Int, f)
     # `x == 1` lands exactly on the last grid plane; use the last valid cell
     # with weight one instead of reading past the end of the buffer.
@@ -20,16 +20,16 @@
     return i, f - T(i)
 end
 
-@inline function _channel3(d::Vector{UInt8}, base::Int)::NTuple{3,UInt8}
+@inline function _channel3(d::Vector{UInt8}, base::Int)::NTuple{3, UInt8}
     return @inbounds (d[base], d[base + 1], d[base + 2])
 end
 
-@inline function _lerp3(a::NTuple{3,T}, b::NTuple{3,T}, w::T) where {T<:AbstractFloat}
+@inline function _lerp3(a::NTuple{3, T}, b::NTuple{3, T}, w::T) where {T <: AbstractFloat}
     s = one(T) - w
     return (s * a[1] + w * b[1], s * a[2] + w * b[2], s * a[3] + w * b[3])
 end
 
-@inline function _scale3(v::NTuple{3,UInt8}, s::T) where {T<:AbstractFloat}
+@inline function _scale3(v::NTuple{3, UInt8}, s::T) where {T <: AbstractFloat}
     return (s * T(v[1]), s * T(v[2]), s * T(v[3]))
 end
 
@@ -45,7 +45,7 @@ use it.
 """
 @inline function trilinear(
         lut::ByteLUT, x::T, y::T, z::T
-    ) where {T<:AbstractFloat}
+    ) where {T <: AbstractFloat}
     n = lut.n
     d = lut.data
     s = one(T) / T(255)

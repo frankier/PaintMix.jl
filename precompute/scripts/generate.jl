@@ -51,7 +51,7 @@ function usage()
 end
 
 function parse_args(args)
-    opts = Dict{String,Any}(
+    opts = Dict{String, Any}(
         "config" => PaintMixPrecompute.DEFAULT_CONFIG_PATH,
         "profile" => "dev",
         "out" => nothing,
@@ -106,7 +106,7 @@ profiles share conventions, inputs, and the unmix settings.
 """
 function profile_config(cfg::AbstractDict, profile::AbstractString)
     out = deepcopy(cfg)
-    g = get(cfg, "generation", Dict{String,Any}())
+    g = get(cfg, "generation", Dict{String, Any}())
     if profile == "dev"
         s = out["surrogate"]
         s["surface_divisions"] =
@@ -151,13 +151,13 @@ function table_hash(fit_hash_value, cfg, profile, solver)
     print(io, "grid_n=", cfg["grid"]["release_n"], "\n")
     print(io, "quantization=", repr(cfg["quantization"]), "\n")
     print(io, "unmix=", repr(cfg["unmix"]), "\n")
-    print(io, "generation=", repr(get(cfg, "generation", Dict{String,Any}())), "\n")
+    print(io, "generation=", repr(get(cfg, "generation", Dict{String, Any}())), "\n")
     print(io, "solver=", solver, "\n")
     return bytes2hex(sha256(take!(io)))
 end
 
 function save_surrogate(path, fit, cfg, hash, W)
-    doc = Dict{String,Any}(
+    doc = Dict{String, Any}(
         "schema_version" => 1,
         "job_hash" => hash,
         "codes" => collect(pigment_codes(cfg)),
@@ -175,8 +175,8 @@ function save_surrogate(path, fit, cfg, hash, W)
 end
 
 # TOML returns `Vector{Any}` of `Dict{String,Any}` for an array of tables.
-_as_dicts(v) = Dict{String,Any}[
-    Dict{String,Any}(String(k) => x for (k, x) in pairs(d)) for d in v
+_as_dicts(v) = Dict{String, Any}[
+    Dict{String, Any}(String(k) => x for (k, x) in pairs(d)) for d in v
 ]
 
 function load_surrogate(path, cfg, hash, W)
@@ -193,7 +193,7 @@ function load_surrogate(path, cfg, hash, W)
     S = reshape(Float64[Float64(x) for x in doc["scattering"]], 4, W)
     return SurrogateFit(
         K, S, theta, _as_dicts(get(doc, "history", Any[])),
-        Dict{String,Any}(String(k) => v for (k, v) in pairs(get(doc, "diagnostics", Dict{String,Any}()))),
+        Dict{String, Any}(String(k) => v for (k, v) in pairs(get(doc, "diagnostics", Dict{String, Any}()))),
         surface_quadrature(cfg),
     )
 end
@@ -282,7 +282,7 @@ function main(args)
 
         settings = unmix_settings(pcfg)
         if opts["solver"] == "coarse"
-            g = get(pcfg, "generation", Dict{String,Any}())
+            g = get(pcfg, "generation", Dict{String, Any}())
             coarse_n = min(
                 opts["coarse"] === nothing ? Int(get(g, "coarse_n", 64)) : parse(Int, string(opts["coarse"])),
                 max(2, n ÷ 2),
@@ -316,7 +316,7 @@ function main(args)
 
         ft = FloatTables(n, forward, inverse)
         provenance = build_provenance(
-            pcfg, cfg_path, db, fit, Dict{String,Any}(); grid_n = n
+            pcfg, cfg_path, db, fit, Dict{String, Any}(); grid_n = n
         )
         provenance["profile"] = profile
         result = export_model(ft, pcfg, provenance; out_dir = out)
@@ -326,10 +326,10 @@ function main(args)
         @printf("reusing payload %s\n", payload_path)
         model = PaintMix.read_model(payload_path)
         provenance = build_provenance(
-            pcfg, cfg_path, db, fit, Dict{String,Any}(); grid_n = n
+            pcfg, cfg_path, db, fit, Dict{String, Any}(); grid_n = n
         )
         provenance["profile"] = profile
-        result = Dict{String,Any}(
+        result = Dict{String, Any}(
             "model" => model,
             "model_id" => PaintMix.model_id(model),
             "payload_path" => payload_path,
@@ -343,7 +343,7 @@ function main(args)
     @printf("validating\n")
     model = result["model"]
     t0 = time()
-    reports = Dict{String,Any}(
+    reports = Dict{String, Any}(
         "quality" => quality_report(model, surrogate, cfg),
         "padding" => padding_report(model, surrogate, cfg),
         "roundtrip" => roundtrip_report(model, cfg),
@@ -365,7 +365,7 @@ function main(args)
         gates[name] = ok
     end
     provenance["validation"] = reports
-    provenance["acceptance_gates"] = Dict{String,Any}(k => v for (k, v) in gates)
+    provenance["acceptance_gates"] = Dict{String, Any}(k => v for (k, v) in gates)
     write_sidecar(result["sidecar_path"], provenance, model, ft)
     @printf("  sidecar updated with validation results\n")
     opts["stage"] == "validate" && return nothing

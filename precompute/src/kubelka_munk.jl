@@ -15,7 +15,7 @@ Equation (2) in the cancellation-free form
 which is algebraically identical to the paper's `1 + q - sqrt(q^2 + 2q)` but
 does not lose precision when `q` is small.
 """
-@inline function km_reflectance(q::T) where {T<:Real}
+@inline function km_reflectance(q::T) where {T <: Real}
     return one(T) / (one(T) + q + sqrt(q * q + 2 * q))
 end
 
@@ -25,7 +25,7 @@ end
 Equation (6): the modified reflectance that accounts for surface reflection.
 The paper's convention has no added specular term, so `kins` does not appear.
 """
-@inline function saunderson(R::T, k1, k2) where {T<:Real}
+@inline function saunderson(R::T, k1, k2) where {T <: Real}
     oneT = one(T)
     return ((oneT - k1) * (oneT - k2) * R) / (oneT - k2 * R)
 end
@@ -41,7 +41,7 @@ and the pinned XYZ-to-linear-sRGB matrix.
 on the simplex boundary pass an exact zero. Nothing is clipped: mixtures of
 the original pigments may legitimately produce channels outside `[0, 1]`.
 """
-@inline function mix_rgb(m::SpectralModel{T}, c::NTuple{4,S}) where {T<:AbstractFloat,S<:Real}
+@inline function mix_rgb(m::SpectralModel{T}, c::NTuple{4, S}) where {T <: AbstractFloat, S <: Real}
     return mix_rgb_params(m.K, m.S, m.k1, m.k2, m.quad, c)
 end
 
@@ -54,8 +54,8 @@ with a `Float64` quadrature, so it cannot build a `SpectralModel`.
 """
 @inline function mix_rgb_params(
         K::AbstractMatrix, S::AbstractMatrix, k1, k2,
-        q::Quadrature, c::NTuple{4,S2},
-    ) where {S2<:Real}
+        q::Quadrature, c::NTuple{4, S2},
+    ) where {S2 <: Real}
     Tacc = promote_type(S2, eltype(K), eltype(S), eltype(q.weights), typeof(k1), typeof(k2))
     W = length(q.weights)
     c1, c2, c3, c4 = c
@@ -92,7 +92,7 @@ end
 """
 @inline function mix_rgb_simplex(
         m::SpectralModel{T}, c1::S, c2::S, c3::S
-    ) where {T<:AbstractFloat,S<:Real}
+    ) where {T <: AbstractFloat, S <: Real}
     return mix_rgb(m, (c1, c2, c3, one(S) - c1 - c2 - c3))
 end
 
@@ -105,8 +105,8 @@ by the bulk inverse solver and as the reference for finite-difference checks
 of the `ForwardDiff` path.
 """
 function mix_rgb_jacobian!(
-        J::AbstractMatrix{T}, m::SpectralModel{T}, c::NTuple{4,T}
-    ) where {T<:AbstractFloat}
+        J::AbstractMatrix{T}, m::SpectralModel{T}, c::NTuple{4, T}
+    ) where {T <: AbstractFloat}
     size(J, 1) >= 3 && size(J, 2) >= 4 ||
         throw(ArgumentError("Jacobian buffer must be at least 3 x 4, got $(size(J))"))
     K = m.K
@@ -163,9 +163,9 @@ const _OKLAB_M1 = (
     0.0883024619, 0.2817188376, 0.6299787005,
 )
 const _OKLAB_M2 = (
-    0.2104542553, 0.7936177850, -0.0040720468,
-    1.9779984951, -2.4285922050, 0.4505937099,
-    0.0259040371, 0.7827717662, -0.8086757660,
+    0.2104542553, 0.793617785, -0.0040720468,
+    1.9779984951, -2.428592205, 0.4505937099,
+    0.0259040371, 0.7827717662, -0.808675766,
 )
 
 """
@@ -174,7 +174,7 @@ const _OKLAB_M2 = (
 Convert linear-light sRGB to Oklab. Accepts out-of-gamut values; the LMS
 cube root is signed so that negatives propagate.
 """
-@inline function linear_srgb_to_oklab(rgb::NTuple{3,S}) where {S<:Real}
+@inline function linear_srgb_to_oklab(rgb::NTuple{3, S}) where {S <: Real}
     r, g, b = rgb
     m = _OKLAB_M1
     l = m[1] * r + m[2] * g + m[3] * b
@@ -199,14 +199,14 @@ end
 
 Squared Euclidean Oklab distance, the integrand of equation (17).
 """
-@inline function oklab_distance_squared(a::NTuple{3,S}, b::NTuple{3,S}) where {S<:Real}
+@inline function oklab_distance_squared(a::NTuple{3, S}, b::NTuple{3, S}) where {S <: Real}
     d1 = a[1] - b[1]
     d2 = a[2] - b[2]
     d3 = a[3] - b[3]
     return d1 * d1 + d2 * d2 + d3 * d3
 end
 
-@inline function oklab_distance_squared(a::NTuple{3,S}, b::NTuple{3,S2}) where {S<:Real,S2<:Real}
+@inline function oklab_distance_squared(a::NTuple{3, S}, b::NTuple{3, S2}) where {S <: Real, S2 <: Real}
     d1 = a[1] - b[1]
     d2 = a[2] - b[2]
     d3 = a[3] - b[3]
@@ -225,7 +225,7 @@ Outside it is the Euclidean distance to the cube, computed as a square root.
 The fit itself never calls this: [`cube_outside_penalty`](@ref) is the
 squared form and avoids the root.
 """
-function cube_signed_distance(p::NTuple{3,S}) where {S<:Real}
+function cube_signed_distance(p::NTuple{3, S}) where {S <: Real}
     inside = true
     d = zero(S)
     @inbounds for i in 1:3
@@ -255,7 +255,7 @@ It is written as a sum of squared per-channel violations, which is exactly
 `phi(p)^2` outside the cube but needs no square root and stays smooth for
 automatic differentiation.
 """
-@inline function cube_outside_penalty(p::NTuple{3,S}) where {S<:Real}
+@inline function cube_outside_penalty(p::NTuple{3, S}) where {S <: Real}
     t1 = p[1] - one(S)
     t2 = p[2] - one(S)
     t3 = p[3] - one(S)
@@ -282,7 +282,7 @@ end
 
 Evaluate the forward map at four concentrations.
 """
-@inline _mix(m::SpectralModel, c::NTuple{4,S}) where {S<:Real} = mix_rgb(m, c)
+@inline _mix(m::SpectralModel, c::NTuple{4, S}) where {S <: Real} = mix_rgb(m, c)
 
 """
     _jacobian4!(J, ev, c)
@@ -293,6 +293,6 @@ along increasing `c[i]` with the fourth concentration taking up the slack is
 `J[:, i] - J[:, 4]`. Callers only ever combine columns with directions whose
 entries sum to zero, so this convention is exact for both evaluators.
 """
-@inline function _jacobian4!(J::AbstractMatrix, m::SpectralModel, c::NTuple{4,T}) where {T<:Real}
+@inline function _jacobian4!(J::AbstractMatrix, m::SpectralModel, c::NTuple{4, T}) where {T <: Real}
     return mix_rgb_jacobian!(J, m, c)
 end

@@ -23,7 +23,7 @@ The standard sort-and-threshold algorithm: with `v` sorted descending and
 `theta = (css[rho] - 1) / rho` for the largest `rho` that keeps
 `v[rho] - theta > 0`.
 """
-function project_to_simplex(c::NTuple{4,T}) where {T<:AbstractFloat}
+function project_to_simplex(c::NTuple{4, T}) where {T <: AbstractFloat}
     v = (c[1], c[2], c[3], c[4])
     # Sort descending; four elements, no allocation.
     w = [v[1], v[2], v[3], v[4]]
@@ -54,7 +54,7 @@ Uses largest-remainder rounding with deterministic tie-breaking: ties go to
 the lower concentration index. Any leftover or excess after the floor is
 distributed one unit at a time, largest remainder first.
 """
-function quantize_simplex(c::NTuple{4,T}) where {T<:AbstractFloat}
+function quantize_simplex(c::NTuple{4, T}) where {T <: AbstractFloat}
     scaled = (c[1] * 255, c[2] * 255, c[3] * 255, c[4] * 255)
     base = ntuple(i -> floor(Int, scaled[i]), Val(4))
     rem = ntuple(i -> scaled[i] - base[i], Val(4))
@@ -84,13 +84,15 @@ function quantize_simplex(c::NTuple{4,T}) where {T<:AbstractFloat}
     return (UInt8(b[1]), UInt8(b[2]), UInt8(b[3]))
 end
 
-function _remainder_order(rem::NTuple{4,T}) where {T}
+function _remainder_order(rem::NTuple{4, T}) where {T}
     idx = (1, 2, 3, 4)
     # Insertion sort, descending remainder, ascending index on ties.
     for i in 2:4
         j = i
-        while j > 1 && (rem[idx[j]] > rem[idx[j - 1]] ||
-                   (rem[idx[j]] == rem[idx[j - 1]] && idx[j] < idx[j - 1]))
+        while j > 1 && (
+                rem[idx[j]] > rem[idx[j - 1]] ||
+                    (rem[idx[j]] == rem[idx[j - 1]] && idx[j] < idx[j - 1])
+            )
             idx = _swap_at(idx, j, j - 1)
             j -= 1
         end
@@ -98,15 +100,15 @@ function _remainder_order(rem::NTuple{4,T}) where {T}
     return idx
 end
 
-@inline function _swap_at(t::NTuple{N,T}, i::Int, j::Int) where {N,T}
+@inline function _swap_at(t::NTuple{N, T}, i::Int, j::Int) where {N, T}
     return ntuple(k -> k == i ? t[j] : (k == j ? t[i] : t[k]), Val(N))
 end
 
-@inline function _add_at(t::NTuple{N,T}, i::Int, d::T) where {N,T}
+@inline function _add_at(t::NTuple{N, T}, i::Int, d::T) where {N, T}
     return ntuple(k -> k == i ? t[k] + d : t[k], Val(N))
 end
 
-function _repair_byte_sum(b::NTuple{4,Int}, s::Int)
+function _repair_byte_sum(b::NTuple{4, Int}, s::Int)
     if s < 255
         return _add_at(b, 1, 255 - s)
     end
@@ -130,7 +132,7 @@ order: `3 * (i + n * (j + n * k)) + ch` with zero-based indices.
 `forward` maps `(c1, c2, c3)` to linear sRGB; `inverse` maps `(r, g, b)` to
 the first three concentrations. Both hold `3 n^3` values.
 """
-struct FloatTables{T<:AbstractFloat}
+struct FloatTables{T <: AbstractFloat}
     n::Int
     forward::Vector{T}
     inverse::Vector{T}
@@ -209,7 +211,7 @@ how slabs are distributed across threads.
 function inverse_slab!(
         dest::AbstractVector{T}, model::SpectralModel{T}, n::Int, k::Int,
         scratch::SolverScratch, settings::UnmixSettings{T},
-        seedrow::Vector{NTuple{4,T}}, prevrow::Vector{NTuple{4,T}},
+        seedrow::Vector{NTuple{4, T}}, prevrow::Vector{NTuple{4, T}},
     ) where {T}
     d = n - 1
     z = T(k) / d
@@ -287,7 +289,7 @@ already-completed slab. `on_slab(k, slab)` is called after a slab is filled.
 function generate_inverse(
         model, n::Integer;
         threads::Integer = Threads.nthreads(),
-        settings::Union{Nothing,UnmixSettings} = nothing,
+        settings::Union{Nothing, UnmixSettings} = nothing,
         solver::Symbol = :reference,
         resume = nothing, on_slab = nothing,
     )
@@ -295,14 +297,16 @@ function generate_inverse(
     st = settings === nothing ? UnmixSettings{T}(100, T(1.0e-10), T(1.0e-6), 4) : settings
     n = Int(n)
     n >= 2 || throw(ArgumentError("table size must be >= 2, got $n"))
-    solver in (:reference, :bulk) || throw(ArgumentError(
-        "solver must be :reference or :bulk, got $(repr(solver))"
-    ))
+    solver in (:reference, :bulk) || throw(
+        ArgumentError(
+            "solver must be :reference or :bulk, got $(repr(solver))"
+        )
+    )
     out = Vector{T}(undef, 3 * n^3)
     krange = collect(0:(n - 1))
     if threads <= 1 || n < 8
-        seedrow = Vector{NTuple{4,T}}(undef, n)
-        prevrow = Vector{NTuple{4,T}}(undef, n)
+        seedrow = Vector{NTuple{4, T}}(undef, n)
+        prevrow = Vector{NTuple{4, T}}(undef, n)
         scratch = SolverScratch()
         for k in krange
             _slab_or_generate!(
@@ -311,8 +315,8 @@ function generate_inverse(
         end
     else
         Threads.@threads for k in krange
-            seedrow = Vector{NTuple{4,T}}(undef, n)
-            prevrow = Vector{NTuple{4,T}}(undef, n)
+            seedrow = Vector{NTuple{4, T}}(undef, n)
+            prevrow = Vector{NTuple{4, T}}(undef, n)
             scratch = SolverScratch()
             _slab_or_generate!(
                 out, model, n, k, scratch, st, seedrow, prevrow, resume, on_slab, solver
@@ -340,7 +344,7 @@ function _slab_or_generate!(
     end
     if on_slab !== nothing
         o = 3 * k * n * n
-        on_slab(k, view(out, o + 1:o + 3 * n * n))
+        on_slab(k, view(out, (o + 1):(o + 3 * n * n)))
     end
     return nothing
 end
@@ -380,11 +384,13 @@ function _write_job_manifest(store::CheckpointStore)
     path = _job_manifest_path(store)
     if isfile(path)
         existing = _read_manifest(path)
-        get(existing, "job_hash", "") == store.job_hash || throw(InputError(
-            "checkpoint directory $(store.dir) belongs to job " *
-                "$(get(existing, "job_hash", "?")) but this run has $(store.job_hash); " *
-                "remove it or choose another --out"
-        ))
+        get(existing, "job_hash", "") == store.job_hash || throw(
+            InputError(
+                "checkpoint directory $(store.dir) belongs to job " *
+                    "$(get(existing, "job_hash", "?")) but this run has $(store.job_hash); " *
+                    "remove it or choose another --out"
+            )
+        )
         return nothing
     end
     open(path, "w") do io
@@ -397,7 +403,7 @@ function _write_job_manifest(store::CheckpointStore)
 end
 
 function _read_manifest(path)
-    d = Dict{String,Any}()
+    d = Dict{String, Any}()
     for line in eachline(path)
         isempty(strip(line)) && continue
         parts = split(line, "="; limit = 2)
@@ -503,7 +509,7 @@ The forward table in floating point, in the payload's channel-fastest order.
 Serves as the evaluator for the inverse solver through `_mix` and
 `_jacobian4!`.
 """
-struct ForwardFloatLUT{T<:AbstractFloat}
+struct ForwardFloatLUT{T <: AbstractFloat}
     n::Int
     data::Vector{T}
 end
@@ -520,16 +526,16 @@ needs it to size its output before any solve has run.
 _scalar_type(::SpectralModel{T}) where {T} = T
 _scalar_type(::ForwardFloatLUT{T}) where {T} = T
 
-@inline function _axis_f(f::T, n::Int) where {T<:AbstractFloat}
+@inline function _axis_f(f::T, n::Int) where {T <: AbstractFloat}
     i = unsafe_trunc(Int, f)
     i > n - 2 && (i = n - 2)
     return i, f - T(i)
 end
 
-@inline _sub3(a::NTuple{3,T}, b::NTuple{3,T}) where {T} = (a[1] - b[1], a[2] - b[2], a[3] - b[3])
-@inline _mul3(a::NTuple{3,T}, s::T) where {T} = (a[1] * s, a[2] * s, a[3] * s)
+@inline _sub3(a::NTuple{3, T}, b::NTuple{3, T}) where {T} = (a[1] - b[1], a[2] - b[2], a[3] - b[3])
+@inline _mul3(a::NTuple{3, T}, s::T) where {T} = (a[1] * s, a[2] * s, a[3] * s)
 
-@inline function _mix(f::ForwardFloatLUT{T}, c::NTuple{4,S}) where {T,S<:Real}
+@inline function _mix(f::ForwardFloatLUT{T}, c::NTuple{4, S}) where {T, S <: Real}
     n = f.n
     d = f.data
     if n == 1
@@ -568,12 +574,12 @@ end
     return _lerp3f(c0, c1, fz)
 end
 
-@inline function _lerp3f(a::NTuple{3,T}, b::NTuple{3,T}, w::T) where {T}
+@inline function _lerp3f(a::NTuple{3, T}, b::NTuple{3, T}, w::T) where {T}
     s = one(T) - w
     return (s * a[1] + w * b[1], s * a[2] + w * b[2], s * a[3] + w * b[3])
 end
 
-@inline function _jacobian4!(J::AbstractMatrix, f::ForwardFloatLUT{T}, c::NTuple{4,S}) where {T,S<:Real}
+@inline function _jacobian4!(J::AbstractMatrix, f::ForwardFloatLUT{T}, c::NTuple{4, S}) where {T, S <: Real}
     n = f.n
     if n == 1
         @inbounds for i in 1:4
@@ -647,7 +653,7 @@ end
 
 Wrap an already-generated float forward table as an evaluator.
 """
-forward_float_lut(n::Integer, data::AbstractVector{T}) where {T<:AbstractFloat} =
+forward_float_lut(n::Integer, data::AbstractVector{T}) where {T <: AbstractFloat} =
     ForwardFloatLUT{T}(Int(n), convert(Vector{T}, data))
 
 # --- coarse-to-fine inverse ------------------------------------------------
@@ -667,7 +673,7 @@ reconstructed.
 """
 @inline function coarse_seed(
         coarse::AbstractVector{T}, cn::Int, r::T, g::T, b::T
-    ) where {T<:AbstractFloat}
+    ) where {T <: AbstractFloat}
     d = cn - 1
     if cn == 1
         o = 1
@@ -761,16 +767,18 @@ result does not depend on how slabs are distributed across threads.
 function generate_inverse_coarse_to_fine(
         model, n::Integer; coarse_n::Integer = 64,
         threads::Integer = Threads.nthreads(),
-        settings::Union{Nothing,UnmixSettings} = nothing,
-        coarse_settings::Union{Nothing,UnmixSettings} = nothing,
+        settings::Union{Nothing, UnmixSettings} = nothing,
+        coarse_settings::Union{Nothing, UnmixSettings} = nothing,
         resume = nothing, on_slab = nothing,
     )
     T = _scalar_type(model)
     n = Int(n)
     coarse_n = Int(coarse_n)
-    2 <= coarse_n < n || throw(ArgumentError(
-        "coarse_n must be at least 2 and smaller than n, got $coarse_n and $n"
-    ))
+    2 <= coarse_n < n || throw(
+        ArgumentError(
+            "coarse_n must be at least 2 and smaller than n, got $coarse_n and $n"
+        )
+    )
     fine_settings = settings === nothing ?
         UnmixSettings{T}(15, T(1.0e-10), T(1.0e-6), 1) : settings
     cs = coarse_settings === nothing ?
@@ -810,7 +818,7 @@ function _coarse_slab_or_generate!(
     coarse_to_fine_slab!(out, model, n, k, scratch, settings, coarse, cn)
     if on_slab !== nothing
         o = 3 * k * n * n
-        on_slab(k, view(out, o + 1:o + 3 * n * n))
+        on_slab(k, view(out, (o + 1):(o + 3 * n * n)))
     end
     return nothing
 end

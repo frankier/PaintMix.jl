@@ -526,114 +526,30 @@ needs it to size its output before any solve has run.
 _scalar_type(::SpectralModel{T}) where {T} = T
 _scalar_type(::ForwardFloatLUT{T}) where {T} = T
 
-@inline function _axis_f(f::T, n::Int) where {T <: AbstractFloat}
-    i = unsafe_trunc(Int, f)
-    i > n - 2 && (i = n - 2)
-    return i, f - T(i)
-end
-
 @inline _sub3(a::NTuple{3, T}, b::NTuple{3, T}) where {T} = (a[1] - b[1], a[2] - b[2], a[3] - b[3])
 @inline _mul3(a::NTuple{3, T}, s::T) where {T} = (a[1] * s, a[2] * s, a[3] * s)
 
 @inline function _mix(f::ForwardFloatLUT{T}, c::NTuple{4, S}) where {T, S <: Real}
-    n = f.n
-    d = f.data
-    if n == 1
-        return (d[1], d[2], d[3])
-    end
-    gx = clamp(S(c[1]), zero(S), one(S)) * (n - 1)
-    gy = clamp(S(c[2]), zero(S), one(S)) * (n - 1)
-    gz = clamp(S(c[3]), zero(S), one(S)) * (n - 1)
-    i, fx = _axis_f(T(gx), n)
-    j, fy = _axis_f(T(gy), n)
-    k, fz = _axis_f(T(gz), n)
-    b000 = 3 * (i + n * (j + n * k)) + 1
-    b100 = b000 + 3
-    b010 = b000 + 3n
-    b110 = b010 + 3
-    b001 = b000 + 3n * n
-    b101 = b001 + 3
-    b011 = b001 + 3n
-    b111 = b011 + 3
-    @inbounds begin
-        c000 = (T(d[b000]), T(d[b000 + 1]), T(d[b000 + 2]))
-        c100 = (T(d[b100]), T(d[b100 + 1]), T(d[b100 + 2]))
-        c010 = (T(d[b010]), T(d[b010 + 1]), T(d[b010 + 2]))
-        c110 = (T(d[b110]), T(d[b110 + 1]), T(d[b110 + 2]))
-        c001 = (T(d[b001]), T(d[b001 + 1]), T(d[b001 + 2]))
-        c101 = (T(d[b101]), T(d[b101 + 1]), T(d[b101 + 2]))
-        c011 = (T(d[b011]), T(d[b011 + 1]), T(d[b011 + 2]))
-        c111 = (T(d[b111]), T(d[b111 + 1]), T(d[b111 + 2]))
-    end
-    c00 = _lerp3f(c000, c100, fx)
-    c10 = _lerp3f(c010, c110, fx)
-    c01 = _lerp3f(c001, c101, fx)
-    c11 = _lerp3f(c011, c111, fx)
-    c0 = _lerp3f(c00, c10, fy)
-    c1 = _lerp3f(c01, c11, fy)
-    return _lerp3f(c0, c1, fz)
-end
-
-@inline function _lerp3f(a::NTuple{3, T}, b::NTuple{3, T}, w::T) where {T}
-    s = one(T) - w
-    return (s * a[1] + w * b[1], s * a[2] + w * b[2], s * a[3] + w * b[3])
+    corners, fx, fy, fz = _cell(f.data, f.n, T(c[1]), T(c[2]), T(c[3]), one(T))
+    return _trilinear3(corners, fx, fy, fz)
 end
 
 @inline function _jacobian4!(J::AbstractMatrix, f::ForwardFloatLUT{T}, c::NTuple{4, S}) where {T, S <: Real}
-    n = f.n
-    if n == 1
-        @inbounds for i in 1:4
-            J[1, i] = zero(T)
-            J[2, i] = zero(T)
-            J[3, i] = zero(T)
-        end
-        return J
-    end
-    d = f.data
-    gx = clamp(S(c[1]), zero(S), one(S)) * (n - 1)
-    gy = clamp(S(c[2]), zero(S), one(S)) * (n - 1)
-    gz = clamp(S(c[3]), zero(S), one(S)) * (n - 1)
-    i, fx = _axis_f(T(gx), n)
-    j, fy = _axis_f(T(gy), n)
-    k, fz = _axis_f(T(gz), n)
-    b000 = 3 * (i + n * (j + n * k)) + 1
-    b100 = b000 + 3
-    b010 = b000 + 3n
-    b110 = b010 + 3
-    b001 = b000 + 3n * n
-    b101 = b001 + 3
-    b011 = b001 + 3n
-    b111 = b011 + 3
-    @inbounds begin
-        c000 = (T(d[b000]), T(d[b000 + 1]), T(d[b000 + 2]))
-        c100 = (T(d[b100]), T(d[b100 + 1]), T(d[b100 + 2]))
-        c010 = (T(d[b010]), T(d[b010 + 1]), T(d[b010 + 2]))
-        c110 = (T(d[b110]), T(d[b110 + 1]), T(d[b110 + 2]))
-        c001 = (T(d[b001]), T(d[b001 + 1]), T(d[b001 + 2]))
-        c101 = (T(d[b101]), T(d[b101 + 1]), T(d[b101 + 2]))
-        c011 = (T(d[b011]), T(d[b011 + 1]), T(d[b011 + 2]))
-        c111 = (T(d[b111]), T(d[b111 + 1]), T(d[b111 + 2]))
-    end
-    c00 = _lerp3f(c000, c100, fx)
-    c10 = _lerp3f(c010, c110, fx)
-    c01 = _lerp3f(c001, c101, fx)
-    c11 = _lerp3f(c011, c111, fx)
-    c0 = _lerp3f(c00, c10, fy)
-    c1 = _lerp3f(c01, c11, fy)
-    z = one(T)
-    x = one(T)
+    corners, fx, fy, fz = _cell(f.data, f.n, T(c[1]), T(c[2]), T(c[3]), one(T))
+    c000, c100, c010, c110, c001, c101, c011, c111 = corners
+    c00, c10, c01, c11, c0, c1 = _stages(corners, fx, fy)
     # d/dx
     dx00 = _sub3(c100, c000)
     dx10 = _sub3(c110, c010)
     dx01 = _sub3(c101, c001)
     dx11 = _sub3(c111, c011)
-    dx = _mul3(_lerp3f(_lerp3f(dx00, dx10, fy), _lerp3f(dx01, dx11, fy), fz), T(n - 1))
+    dx = _mul3(_lerp3(_lerp3(dx00, dx10, fy), _lerp3(dx01, dx11, fy), fz), T(f.n - 1))
     # d/dy
     dy0 = _sub3(c10, c00)
     dy1 = _sub3(c11, c01)
-    dy = _mul3(_lerp3f(dy0, dy1, fz), T(n - 1))
+    dy = _mul3(_lerp3(dy0, dy1, fz), T(f.n - 1))
     # d/dz
-    dz = _mul3(_sub3(c1, c0), T(n - 1))
+    dz = _mul3(_sub3(c1, c0), T(f.n - 1))
     @inbounds begin
         J[1, 1], J[2, 1], J[3, 1] = dx
         J[1, 2], J[2, 2], J[3, 2] = dy
@@ -674,53 +590,9 @@ reconstructed.
 @inline function coarse_seed(
         coarse::AbstractVector{T}, cn::Int, r::T, g::T, b::T
     ) where {T <: AbstractFloat}
-    d = cn - 1
-    if cn == 1
-        o = 1
-        c1, c2, c3 = coarse[o], coarse[o + 1], coarse[o + 2]
-        return (c1, c2, c3, one(T) - c1 - c2 - c3)
-    end
-    x = clamp(r, zero(T), one(T)) * d
-    y = clamp(g, zero(T), one(T)) * d
-    z = clamp(b, zero(T), one(T)) * d
-    i, fx = _axis_f(x, cn)
-    j, fy = _axis_f(y, cn)
-    k, fz = _axis_f(z, cn)
-    b000 = 3 * (i + cn * (j + cn * k)) + 1
-    b100 = b000 + 3
-    b010 = b000 + 3cn
-    b110 = b010 + 3
-    b001 = b000 + 3cn * cn
-    b101 = b001 + 3
-    b011 = b001 + 3cn
-    b111 = b011 + 3
-    @inbounds begin
-        c1 = _tri(
-            coarse[b000], coarse[b100], coarse[b010], coarse[b110],
-            coarse[b001], coarse[b101], coarse[b011], coarse[b111], fx, fy, fz,
-        )
-        c2 = _tri(
-            coarse[b000 + 1], coarse[b100 + 1], coarse[b010 + 1], coarse[b110 + 1],
-            coarse[b001 + 1], coarse[b101 + 1], coarse[b011 + 1], coarse[b111 + 1], fx, fy, fz,
-        )
-        c3 = _tri(
-            coarse[b000 + 2], coarse[b100 + 2], coarse[b010 + 2], coarse[b110 + 2],
-            coarse[b001 + 2], coarse[b101 + 2], coarse[b011 + 2], coarse[b111 + 2], fx, fy, fz,
-        )
-    end
+    corners, fx, fy, fz = _cell(coarse, cn, r, g, b, one(T))
+    c1, c2, c3 = _trilinear3(corners, fx, fy, fz)
     return (c1, c2, c3, one(T) - c1 - c2 - c3)
-end
-
-@inline function _tri(
-        c000, c100, c010, c110, c001, c101, c011, c111, fx, fy, fz,
-    )
-    a = c000 + fx * (c100 - c000)
-    b = c010 + fx * (c110 - c010)
-    c = c001 + fx * (c101 - c001)
-    d = c011 + fx * (c111 - c011)
-    e = a + fy * (b - a)
-    f = c + fy * (d - c)
-    return e + fz * (f - e)
 end
 
 """

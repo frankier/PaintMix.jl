@@ -6,8 +6,9 @@
 Digital Painting* (2021). The runtime package evaluates two precomputed lookup
 tables: an inverse table (linear sRGB -> four pigment concentrations) and a
 forward table (concentrations -> linear sRGB). Encoding adds a signed RGB
-residual. The module is a pure evaluator with no non-stdlib dependencies, no
-optimizer, and no spectral model.
+residual. The module is a pure evaluator with no optimizer and no spectral
+model. Its only dependency is StaticArrays, which supplies the fixed-size
+vector and matrix algebra the kernels are written in.
 
 The root project is a Julia workspace. `precompute`, `build`, `test`,
 and `benchmarks` are members with their own dependencies. The dependency
@@ -46,9 +47,10 @@ convention changes, update the README that documents it in the same change.
 
 * Be concise. Prefer short functions, short comments, and short names.
   Comment the convention or the reason, never the mechanics.
-* Use the standard library when possible. The runtime package must keep an
-  empty `deps` section in `Project.toml`; `test/runtests.jl` enforces this.
-  Add a dependency only in the member project that needs it.
+* Use the standard library when possible. The runtime package depends on
+  StaticArrays and nothing else; `test/runtests.jl` enforces that allow-list
+  and `test/consumer_env.jl` checks a fresh consumer closure. Add any other
+  dependency only in the member project that needs it.
 * Follow the SciML style guide, <https://docs.sciml.ai/SciMLStyle/dev/>:
   `snake_case` functions, `CamelCase` types, `!` for mutating methods, no
   type piracy, and docstrings on exported names.

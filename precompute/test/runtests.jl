@@ -11,6 +11,7 @@ using ForwardDiff
 using LeastSquaresOptim
 using PaintMix
 using PaintMixPrecompute
+using StaticArrays: SVector
 
 const ROOT = normpath(joinpath(@__DIR__, "..", ".."))
 
@@ -135,20 +136,26 @@ const eval_jacobian4! = PaintMixPrecompute._jacobian4!
         scaled.K .= 37.0 .* spectra.K
         scaled.S .= 37.0 .* spectra.S
         other = spectral_model(scaled, quad)
-        for c in ((0.25, 0.25, 0.25, 0.25), (0.7, 0.1, 0.1, 0.1), (0.0, 0.5, 0.5, 0.0))
+        for c in (
+                SVector(0.25, 0.25, 0.25, 0.25), SVector(0.7, 0.1, 0.1, 0.1),
+                SVector(0.0, 0.5, 0.5, 0.0),
+            )
             @test maximum(abs.(collect(mix_rgb(model, c)) .- collect(mix_rgb(other, c)))) < 1.0e-12
         end
     end
 
     @testset "spectral Jacobian matches finite differences" begin
         _, _, _, _, model = synthetic_model()
-        for c in ((0.25, 0.25, 0.25, 0.25), (0.7, 0.1, 0.1, 0.1), (0.0, 0.4, 0.3, 0.3))
+        for c in (
+                SVector(0.25, 0.25, 0.25, 0.25), SVector(0.7, 0.1, 0.1, 0.1),
+                SVector(0.0, 0.4, 0.3, 0.3),
+            )
             J = zeros(3, 4)
             mix_rgb_jacobian!(J, model, c)
             h = 1.0e-6
             for i in 1:4
-                cp = ntuple(j -> j == i ? c[j] + h : c[j], 4)
-                cm = ntuple(j -> j == i ? c[j] - h : c[j], 4)
+                cp = SVector{4}(ntuple(j -> j == i ? c[j] + h : c[j], 4))
+                cm = SVector{4}(ntuple(j -> j == i ? c[j] - h : c[j], 4))
                 rp = mix_rgb(model, cp)
                 rm = mix_rgb(model, cm)
                 for r in 1:3
@@ -159,20 +166,23 @@ const eval_jacobian4! = PaintMixPrecompute._jacobian4!
     end
 
     @testset "Oklab conventions" begin
-        black = linear_srgb_to_oklab((0.0, 0.0, 0.0))
-        white = linear_srgb_to_oklab((1.0, 1.0, 1.0))
+        black = linear_srgb_to_oklab(SVector(0.0, 0.0, 0.0))
+        white = linear_srgb_to_oklab(SVector(1.0, 1.0, 1.0))
         @test maximum(abs, black) < 1.0e-12
         @test white[1] ≈ 1.0 atol = 1.0e-6
         @test abs(white[2]) < 1.0e-6
         @test abs(white[3]) < 1.0e-6
         # Signed cube root keeps out-of-gamut mixtures finite.
-        o = linear_srgb_to_oklab((1.2, -0.1, 0.5))
+        o = linear_srgb_to_oklab(SVector(1.2, -0.1, 0.5))
         @test all(isfinite, o)
         @test oklab_distance_squared(white, white) == 0.0
     end
 
     @testset "cube penalty equals the signed distance squared" begin
-        for p in ((0.5, 0.5, 0.5), (1.2, 0.5, 0.5), (-0.1, -0.2, 0.5), (1.1, 1.2, 1.3))
+        for p in (
+                SVector(0.5, 0.5, 0.5), SVector(1.2, 0.5, 0.5),
+                SVector(-0.1, -0.2, 0.5), SVector(1.1, 1.2, 1.3),
+            )
             d = cube_signed_distance(p)
             want = d > 0 ? d^2 : 0.0
             @test cube_outside_penalty(p) ≈ want atol = 1.0e-12
@@ -203,8 +213,8 @@ const eval_jacobian4! = PaintMixPrecompute._jacobian4!
 
     @testset "projection onto the simplex" begin
         for c in (
-                (0.25, 0.25, 0.25, 0.25), (1.0, 1.0, 1.0, 1.0), (-1.0, 0.5, 0.5, 0.5),
-                (2.0, -1.0, 0.0, 0.0),
+                SVector(0.25, 0.25, 0.25, 0.25), SVector(1.0, 1.0, 1.0, 1.0),
+                SVector(-1.0, 0.5, 0.5, 0.5), SVector(2.0, -1.0, 0.0, 0.0),
             )
             p = project_to_simplex(c)
             @test sum(p) ≈ 1.0 atol = 1.0e-12
@@ -213,14 +223,15 @@ const eval_jacobian4! = PaintMixPrecompute._jacobian4!
             @test maximum(abs.(collect(project_to_simplex(p)) .- collect(p))) < 1.0e-12
         end
         # A point already on the simplex is unchanged.
-        c = (0.1, 0.2, 0.3, 0.4)
+        c = SVector(0.1, 0.2, 0.3, 0.4)
         @test maximum(abs.(collect(project_to_simplex(c)) .- collect(c))) < 1.0e-12
     end
 
     @testset "joint simplex quantization" begin
         for c in (
-                (0.25, 0.25, 0.25, 0.25), (1.0, 0.0, 0.0, 0.0), (0.0, 0.0, 0.0, 1.0),
-                (1 / 3, 1 / 3, 1 / 3, 0.0), (0.001, 0.001, 0.001, 0.997),
+                SVector(0.25, 0.25, 0.25, 0.25), SVector(1.0, 0.0, 0.0, 0.0),
+                SVector(0.0, 0.0, 0.0, 1.0), SVector(1 / 3, 1 / 3, 1 / 3, 0.0),
+                SVector(0.001, 0.001, 0.001, 0.997),
             )
             b = quantize_simplex(c)
             @test length(b) == 3
@@ -230,27 +241,30 @@ const eval_jacobian4! = PaintMixPrecompute._jacobian4!
             @test quantize_simplex(c) == b
         end
         # Exact concentrations quantize exactly.
-        @test quantize_simplex((0.5, 0.25, 0.25, 0.0)) == (UInt8(127), UInt8(64), UInt8(64))
+        @test quantize_simplex(SVector(0.5, 0.25, 0.25, 0.0)) == SVector(0x7f, 0x40, 0x40)
         # Ties break towards the lower index.
-        b = quantize_simplex((0.5, 0.5, 0.0, 0.0))
+        b = quantize_simplex(SVector(0.5, 0.5, 0.0, 0.0))
         @test Int(b[1]) + Int(b[2]) == 255
         @test b[1] >= b[2]
     end
 
     @testset "affine table interpolation and Jacobian" begin
         lut, f = affine_lut(9)
-        for c in ((0.3, 0.4, 0.5, 0.0), (0.0, 0.0, 0.0, 1.0), (1.0, 0.0, 0.0, 0.0))
+        for c in (
+                SVector(0.3, 0.4, 0.5, 0.0), SVector(0.0, 0.0, 0.0, 1.0),
+                SVector(1.0, 0.0, 0.0, 0.0),
+            )
             got = eval_mix(lut, c)
             want = f(c)
             @test maximum(abs, (got[1] - want[1], got[2] - want[2], got[3] - want[3])) < 1.0e-12
         end
         J = zeros(3, 4)
-        c = (0.3, 0.4, 0.5, 0.0)
+        c = SVector(0.3, 0.4, 0.5, 0.0)
         eval_jacobian4!(J, lut, c)
         h = 1.0e-7
         for i in 1:3
-            cp = ntuple(j -> j == i ? c[j] + h : c[j], 4)
-            cm = ntuple(j -> j == i ? c[j] - h : c[j], 4)
+            cp = SVector{4}(ntuple(j -> j == i ? c[j] + h : c[j], 4))
+            cm = SVector{4}(ntuple(j -> j == i ? c[j] - h : c[j], 4))
             rp = eval_mix(lut, cp)
             rm = eval_mix(lut, cm)
             for r in 1:3
@@ -271,11 +285,11 @@ const eval_jacobian4! = PaintMixPrecompute._jacobian4!
             c1, c2, c3 = i / d, j / d, k / d
             c4 = 1 - c1 - c2 - c3
             if c4 < 0
-                p = project_to_simplex((c1, c2, c3, c4))
+                p = project_to_simplex(SVector(c1, c2, c3, c4))
                 c1, c2, c3, c4 = p[1], p[2], p[3], p[4]
             end
-            want = mix_rgb(model, (c1, c2, c3, c4))
-            got = eval_mix(grid, (i / d, j / d, k / d, 1 - i / d - j / d - k / d))
+            want = mix_rgb(model, SVector(c1, c2, c3, c4))
+            got = eval_mix(grid, SVector(i / d, j / d, k / d, 1 - i / d - j / d - k / d))
             @test maximum(abs, (got[1] - want[1], got[2] - want[2], got[3] - want[3])) < 1.0e-12
         end
     end
@@ -285,9 +299,10 @@ const eval_jacobian4! = PaintMixPrecompute._jacobian4!
         settings = unmix_settings(cfg)
         scratch = SolverScratch()
         for c in (
-                (1.0, 0.0, 0.0, 0.0), (0.0, 1.0, 0.0, 0.0), (0.0, 0.0, 1.0, 0.0),
-                (0.0, 0.0, 0.0, 1.0), (0.25, 0.25, 0.25, 0.25), (0.5, 0.0, 0.5, 0.0),
-                (0.6, 0.2, 0.1, 0.1),
+                SVector(1.0, 0.0, 0.0, 0.0), SVector(0.0, 1.0, 0.0, 0.0),
+                SVector(0.0, 0.0, 1.0, 0.0), SVector(0.0, 0.0, 0.0, 1.0),
+                SVector(0.25, 0.25, 0.25, 0.25), SVector(0.5, 0.0, 0.5, 0.0),
+                SVector(0.6, 0.2, 0.1, 0.1),
             )
             rgb = mix_rgb(model, c)
             r = unmix_reference(model, rgb; settings = settings, scratch = scratch)
@@ -295,7 +310,10 @@ const eval_jacobian4! = PaintMixPrecompute._jacobian4!
             @test maximum(abs.(collect(r.c) .- collect(c))) < 1.0e-6
         end
         # Bulk solver agrees with the reference on interior and boundary points.
-        for c in ((0.25, 0.25, 0.25, 0.25), (0.5, 0.0, 0.5, 0.0), (0.8, 0.1, 0.05, 0.05))
+        for c in (
+                SVector(0.25, 0.25, 0.25, 0.25), SVector(0.5, 0.0, 0.5, 0.0),
+                SVector(0.8, 0.1, 0.05, 0.05),
+            )
             rgb = mix_rgb(model, c)
             ref = unmix_reference(model, rgb; settings = settings, scratch = scratch)
             bulk = unmix_bulk!(scratch, model, rgb, (c,), settings)
@@ -307,8 +325,8 @@ const eval_jacobian4! = PaintMixPrecompute._jacobian4!
         cfg, _, _, _, model = synthetic_model()
         settings = unmix_settings(cfg)
         scratch = SolverScratch()
-        rgb = mix_rgb(model, (0.4, 0.3, 0.2, 0.1))
-        seed = (0.4, 0.3, 0.2, 0.1)
+        rgb = mix_rgb(model, SVector(0.4, 0.3, 0.2, 0.1))
+        seed = SVector(0.4, 0.3, 0.2, 0.1)
         # Warm up every specialization the measured calls reach. The bulk path
         # runs once per grid vertex, so at 256^3 even a few bytes per solve is
         # gigabytes of garbage; it must stay at exactly zero. A `Union` of
@@ -347,7 +365,7 @@ const eval_jacobian4! = PaintMixPrecompute._jacobian4!
             m = max(0.0, θ1, θ2, θ3)
             a, b, c, d = exp(θ1 - m), exp(θ2 - m), exp(θ3 - m), exp(-m)
             s = a + b + c + d
-            return (a / s, b / s, c / s, d / s)
+            return SVector(a / s, b / s, c / s, d / s)
         end
         oracle_residual(model, rgb) = x -> begin
             m = mix_rgb(model, oracle_softmax(x[1], x[2], x[3]))
@@ -367,8 +385,8 @@ const eval_jacobian4! = PaintMixPrecompute._jacobian4!
         # Colors the model produces: a zero-residual solution exists, so both
         # solvers should report the same concentrations.
         for c in (
-                (0.25, 0.25, 0.25, 0.25), (0.4, 0.3, 0.2, 0.1),
-                (0.7, 0.1, 0.1, 0.1), (0.55, 0.25, 0.15, 0.05),
+                SVector(0.25, 0.25, 0.25, 0.25), SVector(0.4, 0.3, 0.2, 0.1),
+                SVector(0.7, 0.1, 0.1, 0.1), SVector(0.55, 0.25, 0.15, 0.05),
             )
             rgb = mix_rgb(model, c)
             ref = unmix_reference(model, rgb; settings = settings, scratch = scratch)
@@ -382,7 +400,10 @@ const eval_jacobian4! = PaintMixPrecompute._jacobian4!
         # only the objective is comparable: the oracle cannot reach a face
         # exactly, and the reference enumerates faces the oracle does not
         # search. The reference must not do worse.
-        for rgb in ((1.0, 0.0, 0.0), (0.0, 1.0, 1.0), (0.1, 0.05, 0.9), (0.9, 0.9, 0.05))
+        for rgb in (
+                SVector(1.0, 0.0, 0.0), SVector(0.0, 1.0, 1.0),
+                SVector(0.1, 0.05, 0.9), SVector(0.9, 0.9, 0.05),
+            )
             ref = unmix_reference(model, rgb; settings = settings, scratch = scratch)
             _, ossr = oracle_unmix(model, rgb)
             @test ref.sse <= ossr + 1.0e-10
@@ -442,12 +463,12 @@ const eval_jacobian4! = PaintMixPrecompute._jacobian4!
             c1, c2, c3 = fine[o + 1], fine[o + 2], fine[o + 3]
             @test c1 >= -1.0e-9 && c2 >= -1.0e-9 && c3 >= -1.0e-9
             @test c1 + c2 + c3 <= 1 + 1.0e-9
-            rgb = (i / d, j / d, k / d)
+            rgb = SVector(i / d, j / d, k / d)
             res = unmix_reference(model, rgb; settings = settings, scratch = sc)
             # The coarse seed is a starting point, not the answer; the fine
             # solve should land in the reference basin even when it does not
             # reach the same local minimum.
-            @test sum(abs2, mix_rgb(model, (c1, c2, c3, 1 - c1 - c2 - c3)) .- rgb) <=
+            @test sum(abs2, mix_rgb(model, SVector(c1, c2, c3, 1 - c1 - c2 - c3)) .- rgb) <=
                 res.sse + 1.0e-3
         end
     end

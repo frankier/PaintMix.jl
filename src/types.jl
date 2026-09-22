@@ -7,11 +7,11 @@
 """
     RGB{T}
 
-A linear-light sRGB color as a 3-tuple of `T`, nominally in `[0, 1]`.
+A linear-light sRGB color as an `SVector{3, T}`, nominally in `[0, 1]`.
 Values outside that range are legal and meaningful: see [`mix`](@ref) and
 [`decode`](@ref), neither of which clips.
 """
-const RGB{T <: AbstractFloat} = NTuple{3, T}
+const RGB{T <: AbstractFloat} = SVector{3, T}
 
 """
     RGB8
@@ -19,16 +19,16 @@ const RGB{T <: AbstractFloat} = NTuple{3, T}
 An encoded-sRGB color as three bytes. Byte colors carry the sRGB transfer
 function; convert with [`linear_from_srgb8`](@ref) before mixing.
 """
-const RGB8 = NTuple{3, UInt8}
+const RGB8 = SVector{3, UInt8}
 
 """
     Concentrations{T}
 
-Four pigment concentrations as a tuple, non-negative and summing to one.
-The index order is fixed by the model's table layout; see
+Four pigment concentrations as an `SVector{4, T}`, non-negative and summing
+to one. The index order is fixed by the model's table layout; see
 [`PigmentModel`](@ref).
 """
-const Concentrations{T <: AbstractFloat} = NTuple{4, T}
+const Concentrations{T <: AbstractFloat} = SVector{4, T}
 
 """
     Latent{T}
@@ -57,12 +57,12 @@ reconstructs it from the first three so that the simplex stays consistent
 even after floating-point interpolation.
 """
 struct Latent{T <: AbstractFloat}
-    c::NTuple{4, T}
-    r::NTuple{3, T}
+    c::SVector{4, T}
+    r::SVector{3, T}
 end
 
 """
-    concentrations(z::Latent) -> NTuple{4,T}
+    concentrations(z::Latent) -> Concentrations{T}
 
 The four pigment concentrations of `z`. The fourth is the value stored at
 encoding time; decoding always reconstructs it as `1 - c[1] - c[2] - c[3]`.
@@ -70,7 +70,7 @@ encoding time; decoding always reconstructs it as `1 - c[1] - c[2] - c[3]`.
 concentrations(z::Latent) = z.c
 
 """
-    residual(z::Latent) -> NTuple{3,T}
+    residual(z::Latent) -> RGB{T}
 
 The signed linear-light residual of `z`.
 """

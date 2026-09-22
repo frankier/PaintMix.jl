@@ -580,12 +580,13 @@ uuid = "efcefdf7-47ab-520b-bdef-62a2eaa19f15"
 version = "10.46.0+0"
 
 [[deps.PaintMix]]
+deps = ["StaticArrays"]
 path = "."
 uuid = "baf22a60-1c55-4971-a207-55391bb51cf2"
 version = "0.1.0"
 
 [[deps.PaintMixLib]]
-deps = ["JLWInterop", "PaintMix"]
+deps = ["JLWInterop", "PaintMix", "StaticArrays"]
 path = "build"
 uuid = "02c30ab6-0f6b-4cce-b39c-6cfbbc18ec0f"
 version = "0.1.0"

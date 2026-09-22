@@ -27,7 +27,7 @@ element. See [`rgb_surface_weights`](@ref) for that diagnostic and
 `precompute/README.md` for why the fit uses this simpler, smooth measure.
 """
 struct SurfaceQuadrature{T <: AbstractFloat}
-    points::Vector{NTuple{4, T}}
+    points::Vector{SVector{4, T}}
     weights::Vector{T}
     face::Vector{Int}
 end
@@ -44,7 +44,7 @@ surface_quadrature(cfg::AbstractDict) =
 
 function _surface_quadrature(d::Int)
     d >= 1 || throw(ArgumentError("surface quadrature needs at least one division"))
-    points = NTuple{4, Float64}[]
+    points = SVector{4, Float64}[]
     faces = Int[]
     step = 1 / d
     for f in 1:4
@@ -54,7 +54,7 @@ function _surface_quadrature(d::Int)
             c[free[1]] = a * step
             c[free[2]] = b * step
             c[free[3]] = (d - a - b) * step
-            push!(points, (c[1], c[2], c[3], c[4]))
+            push!(points, SVector(c[1], c[2], c[3], c[4]))
             push!(faces, f)
         end
     end
@@ -64,7 +64,7 @@ function _surface_quadrature(d::Int)
 end
 
 """
-    surface_targets(model, sq) -> Vector{NTuple{3,Float64}}
+    surface_targets(model, sq) -> Vector{SVector{3,Float64}}
 
 Oklab coordinates of `mix_P*(c)` at every quadrature sample. The pull targets
 do not depend on the fitted parameters, so they are computed once.
@@ -132,14 +132,12 @@ function rgb_surface_weights(model::SpectralModel{T}, sq::SurfaceQuadrature) whe
         f = sq.face[i]
         free = Int[j for j in 1:4 if j != f]
         # Tangent directions of the face in concentration space.
-        u = (J[:, free[1]] .- J[:, free[3]])
-        v = (J[:, free[2]] .- J[:, free[3]])
-        cr = (
-            u[2] * v[3] - u[3] * v[2],
-            u[3] * v[1] - u[1] * v[3],
-            u[1] * v[2] - u[2] * v[1],
+        d = free[3]
+        u1, u2, u3 = J[1, free[1]] - J[1, d], J[2, free[1]] - J[2, d], J[3, free[1]] - J[3, d]
+        v1, v2, v3 = J[1, free[2]] - J[1, d], J[2, free[2]] - J[2, d], J[3, free[2]] - J[3, d]
+        out[i] = sqrt(
+            (u2 * v3 - u3 * v2)^2 + (u3 * v1 - u1 * v3)^2 + (u1 * v2 - u2 * v1)^2
         )
-        out[i] = sqrt(cr[1]^2 + cr[2]^2 + cr[3]^2)
     end
     return out
 end

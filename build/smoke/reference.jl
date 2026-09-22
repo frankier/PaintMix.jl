@@ -24,6 +24,7 @@
 
 using PaintMix
 using Random: Xoshiro
+using StaticArrays: SVector
 
 const BUILD_DIR = normpath(joinpath(@__DIR__, ".."))
 const DEFAULT_PAYLOAD = joinpath(BUILD_DIR, "data", "payload.pmx")
@@ -65,8 +66,8 @@ function main(args)
         println(io, "mix ", MIX_COUNT)
         for i in 1:MIX_COUNT
             if isodd(i)
-                a = (rand(rng), rand(rng), rand(rng))
-                b = (rand(rng), rand(rng), rand(rng))
+                a = SVector(rand(rng), rand(rng), rand(rng))
+                b = SVector(rand(rng), rand(rng), rand(rng))
                 t = rand(rng)
                 print(io, 0, ' ')
                 emit3!(io, a)
@@ -75,8 +76,8 @@ function main(args)
                 emit3!(io, mix(model, a, b, t))
                 println(io)
             else
-                a = (rand(rng, Float32), rand(rng, Float32), rand(rng, Float32))
-                b = (rand(rng, Float32), rand(rng, Float32), rand(rng, Float32))
+                a = SVector(rand(rng, Float32), rand(rng, Float32), rand(rng, Float32))
+                b = SVector(rand(rng, Float32), rand(rng, Float32), rand(rng, Float32))
                 t = rand(rng, Float32)
                 print(io, 1, ' ')
                 emit3!(io, a)
@@ -90,11 +91,11 @@ function main(args)
         println(io, "encode ", ENCODE_COUNT)
         for i in 1:ENCODE_COUNT
             if isodd(i)
-                x = (rand(rng), rand(rng), rand(rng))
+                x = SVector(rand(rng), rand(rng), rand(rng))
                 z = encode(model, x)
                 print(io, 0, ' ')
             else
-                x = (rand(rng, Float32), rand(rng, Float32), rand(rng, Float32))
+                x = SVector(rand(rng, Float32), rand(rng, Float32), rand(rng, Float32))
                 z = encode(model, x)
                 print(io, 1, ' ')
             end
@@ -111,11 +112,11 @@ function main(args)
             dtype32 = iseven(i)
             colors = if dtype32
                 [
-                    (rand(rng, Float32), rand(rng, Float32), rand(rng, Float32))
+                    SVector(rand(rng, Float32), rand(rng, Float32), rand(rng, Float32))
                         for _ in 1:count
                 ]
             else
-                [(rand(rng), rand(rng), rand(rng)) for _ in 1:count]
+                [SVector(rand(rng), rand(rng), rand(rng)) for _ in 1:count]
             end
             weights = dtype32 ? rand(rng, Float32, count) : rand(rng, count)
             print(io, dtype32 ? 1 : 0, ' ', count, ' ')

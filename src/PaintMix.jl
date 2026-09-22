@@ -29,6 +29,8 @@ generation lives in the separate `PaintMixPrecompute` package.
 """
 module PaintMix
 
+using StaticArrays: SVector
+
 export ByteLUT,
     PigmentModel,
     Latent,

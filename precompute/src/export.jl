@@ -157,10 +157,10 @@ function quantize_tables(ft::FloatTables, cfg::AbstractDict)
         if c4 < 0
             # The solver works on the simplex; this only repairs floating
             # point drift before joint quantization.
-            p = project_to_simplex((c1, c2, c3, max(c4, 0.0)))
+            p = project_to_simplex(SVector(c1, c2, c3, max(c4, 0.0)))
             c1, c2, c3 = p[1], p[2], p[3]
         end
-        b = quantize_simplex((c1, c2, c3, max(one(Float64) - c1 - c2 - c3, 0.0)))
+        b = quantize_simplex(SVector(c1, c2, c3, max(one(Float64) - c1 - c2 - c3, 0.0)))
         inv[o + 1] = b[1]
         inv[o + 2] = b[2]
         inv[o + 3] = b[3]

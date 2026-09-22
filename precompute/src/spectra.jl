@@ -50,7 +50,7 @@ struct Quadrature{T <: AbstractFloat}
     y_bar::Vector{T}
     z_bar::Vector{T}
     d65::Vector{T}
-    xyz_to_rgb::NTuple{9, T}
+    xyz_to_rgb::SMatrix{3, 3, T, 9}
     norm::T
 end
 
@@ -211,11 +211,13 @@ function _trapezoid_weights(grid::AbstractVector{T}) where {T}
 end
 
 function _color_matrix(cfg::AbstractDict)
-    rows = cfg["color"]["xyz_to_rgb"]
-    return ntuple(9) do i
-        row = rows[(i - 1) ÷ 3 + 1]
-        Float64(row[(i - 1) % 3 + 1])
-    end
+    r = cfg["color"]["xyz_to_rgb"]
+    # `SMatrix` fills column-major; the configuration stores rows.
+    return SMatrix{3, 3}(
+        Float64(r[1][1]), Float64(r[2][1]), Float64(r[3][1]),
+        Float64(r[1][2]), Float64(r[2][2]), Float64(r[3][2]),
+        Float64(r[1][3]), Float64(r[2][3]), Float64(r[3][3]),
+    )
 end
 
 """

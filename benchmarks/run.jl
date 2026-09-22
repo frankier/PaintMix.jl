@@ -17,6 +17,7 @@
 using PaintMix
 using Printf: @printf
 using Random: Xoshiro
+using StaticArrays: SVector
 
 function synthetic_model(n::Integer)
     rng = Xoshiro(0x62656e63686d6172)
@@ -100,8 +101,8 @@ end
 function run_benchmarks(model::PigmentModel, samples::Int)
     n = grid_n(model)
     rng = Xoshiro(7)
-    a = (rand(rng), rand(rng), rand(rng))
-    b = (rand(rng), rand(rng), rand(rng))
+    a = SVector(rand(rng), rand(rng), rand(rng))
+    b = SVector(rand(rng), rand(rng), rand(rng))
     dest = zeros(3)
     z = encode(model, a)
     as = rand(rng, 3samples)

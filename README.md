@@ -7,9 +7,10 @@ The runtime package evaluates a pair of precomputed lookup tables:
 
 ```julia
 using PaintMix
+using StaticArrays: SVector
 
-blue = (0.02, 0.09, 0.42)      # linear-light sRGB
-yellow = (0.71, 0.62, 0.02)
+blue = SVector(0.02, 0.09, 0.42)      # linear-light sRGB
+yellow = SVector(0.71, 0.62, 0.02)
 
 mix(blue, yellow, 0.5)         # paint-like mixture, not an RGB average
 mix(blue, yellow, 0.0) === blue
@@ -19,8 +20,8 @@ Colors are **linear-light** sRGB with the sRGB primaries and the D65 white
 point. For image data, convert explicitly:
 
 ```julia
-linear_from_srgb8((0x40, 0x80, 0xc0))   # bytes -> linear Float32
-srgb8_from_linear((0.1, 0.4, 0.9))      # linear -> bytes, clips and rounds
+linear_from_srgb8(SVector(0x40, 0x80, 0xc0))   # bytes -> linear Float32
+srgb8_from_linear(SVector(0.1, 0.4, 0.9))      # linear -> bytes, clips and rounds
 ```
 
 ## What the package does and does not do
@@ -37,7 +38,8 @@ weighted_mix(xs,ws)= decode(sum(ws[i] * encode(xs[i])) / sum(ws))
 
 Encoding costs two trilinear lookups and decoding one, so a binary mix costs
 five unless latents are cached. There is no optimizer, spectral model, or
-file-format dependency in the runtime path.
+file-format dependency in the runtime path; its only dependency is
+StaticArrays, for the fixed-size channel vectors and the `SMatrix` solves.
 
 Endpoints are exact (`mix(a, b, 0) === a`), fractions outside `[0, 1]` clamp,
 and `decode` never clips: residuals can push a channel outside `[0, 1]`, which
@@ -142,7 +144,7 @@ Evidence collected so far:
 | C and Python clients match Julia across randomized inputs and error cases | `build/smoke/`, all checks pass |
 | Zero steady-state allocations in every kernel | `test/test_allocations.jl`, `benchmarks/README.md` |
 | Structs have concretely-typed fields, and Aqua checks pass | `test/test_quality.jl` |
-| A fresh consumer environment installs only `PaintMix` | `test/consumer_env.jl` |
+| A fresh consumer environment installs `PaintMix` and its StaticArrays closure | `test/consumer_env.jl` |
 | The compiled library links only against the Julia runtime | `ldd build/out/paintmix.so` |
 | Spectral Jacobian matches finite differences | `precompute/test/runtests.jl` |
 | Inverse solver recovers concentrations and respects the simplex | `precompute/test/runtests.jl` |

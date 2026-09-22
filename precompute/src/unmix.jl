@@ -47,7 +47,7 @@ One inverse solve: the concentrations, the squared RGB residual, the active
 pigment indices, and how the solver finished.
 """
 struct UnmixResult{T <: AbstractFloat}
-    c::NTuple{4, T}
+    c::SVector{4, T}
     sse::T
     active::NTuple{4, Int}   # active indices, zero-padded
     nactive::Int
@@ -75,59 +75,19 @@ mutable struct SolverScratch
     A::Matrix{Float64}     # 3 x 3 normal matrix
     r::Vector{Float64}     # 3 residual
     g::Vector{Float64}     # 3 gradient
-    d::Vector{Float64}     # 3 step
-    c::Vector{Float64}     # 4 concentrations
-    ct::Vector{Float64}    # 4 trial concentrations
-    rt::Vector{Float64}    # 3 trial residual
 end
 
-SolverScratch() = SolverScratch(
-    zeros(3, 4), zeros(3, 3), zeros(3, 3), zeros(3), zeros(3), zeros(3),
-    zeros(4), zeros(4), zeros(3),
-)
+SolverScratch() =
+    SolverScratch(zeros(3, 4), zeros(3, 3), zeros(3, 3), zeros(3), zeros(3))
 
 # --- small helpers ---------------------------------------------------------
 
-@inline function _softmax_k(logits::NTuple{1, T}) where {T}
-    return (one(T),)
+# Softmax over a static logit vector. Its length is in the type, so one
+# method covers every active-set size the solver uses.
+@inline function _softmax_k(logits::SVector{M, T}) where {M, T}
+    e = exp.(logits .- maximum(logits))
+    return e ./ sum(e)
 end
-
-@inline function _softmax_k(logits::NTuple{2, T}) where {T}
-    m = max(logits[1], logits[2])
-    a = exp(logits[1] - m)
-    b = exp(logits[2] - m)
-    s = a + b
-    return (a / s, b / s)
-end
-
-@inline function _softmax_k(logits::NTuple{3, T}) where {T}
-    m = max(logits[1], max(logits[2], logits[3]))
-    a = exp(logits[1] - m)
-    b = exp(logits[2] - m)
-    c = exp(logits[3] - m)
-    s = a + b + c
-    return (a / s, b / s, c / s)
-end
-
-@inline function _softmax_k(logits::NTuple{4, T}) where {T}
-    m = max(max(logits[1], logits[2]), max(logits[3], logits[4]))
-    a = exp(logits[1] - m)
-    b = exp(logits[2] - m)
-    c = exp(logits[3] - m)
-    d = exp(logits[4] - m)
-    s = a + b + c + d
-    return (a / s, b / s, c / s, d / s)
-end
-
-@inline _zeros_tuple(::Val{1}, ::Type{T}) where {T} = (zero(T),)
-@inline _zeros_tuple(::Val{2}, ::Type{T}) where {T} = (zero(T), zero(T))
-@inline _zeros_tuple(::Val{3}, ::Type{T}) where {T} = (zero(T), zero(T), zero(T))
-
-@inline _theta_plus(a::NTuple{1, T}, b::NTuple{1, T}) where {T} = (a[1] + b[1],)
-@inline _theta_plus(a::NTuple{2, T}, b::NTuple{2, T}) where {T} =
-    (a[1] + b[1], a[2] + b[2])
-@inline _theta_plus(a::NTuple{3, T}, b::NTuple{3, T}) where {T} =
-    (a[1] + b[1], a[2] + b[2], a[3] + b[3])
 
 # Damped normal matrix `A + lambda * diag(max(A_ii, floor))`, returned as an
 # `SMatrix` so the caller can solve it with `\`. `lambda` scales the
@@ -135,34 +95,27 @@ end
 # system singular.
 @inline _damp_diag(a::T, λ::T) where {T} = a + λ * max(a, T(1.0e-12))
 
-@inline function _damped(sc::SolverScratch, λ::T, ::Val{1}) where {T}
+@inline function _damped(sc::SolverScratch, λ::T, ::Val{M}) where {M, T}
     a = sc.A
-    return SMatrix{1, 1, T}(_damp_diag(a[1, 1], λ))
-end
-
-@inline function _damped(sc::SolverScratch, λ::T, ::Val{2}) where {T}
-    a = sc.A
-    return SMatrix{2, 2, T}(
-        _damp_diag(a[1, 1], λ), a[2, 1],
-        a[1, 2], _damp_diag(a[2, 2], λ),
-    )
-end
-
-@inline function _damped(sc::SolverScratch, λ::T, ::Val{3}) where {T}
-    a = sc.A
-    return SMatrix{3, 3, T}(
-        _damp_diag(a[1, 1], λ), a[2, 1], a[3, 1],
-        a[1, 2], _damp_diag(a[2, 2], λ), a[3, 2],
-        a[1, 3], a[2, 3], _damp_diag(a[3, 3], λ),
+    return SMatrix{M, M, T}(
+        ntuple(Val(M * M)) do k
+            # The flat index is column-major, matching `SMatrix` storage.
+            j, i = divrem(k - 1, M)
+            i += 1
+            j += 1
+            i == j ? _damp_diag(a[i, j], λ) : a[i, j]
+        end
     )
 end
 
 # Subset probabilities (length K, last logit fixed to zero) -> 4-vector.
-@inline function _c_from_active(active::NTuple{K, Int}, p::NTuple{K, T}) where {K, T}
+@inline function _c_from_active(active::NTuple{K, Int}, p::SVector{K, T}) where {K, T}
     pos = ntuple(i -> _findpos(active, i), Val(4))
-    return ntuple(Val(4)) do i
-        pos[i] == 0 ? zero(T) : p[pos[i]]
-    end
+    return SVector{4, T}(
+        ntuple(Val(4)) do i
+            pos[i] == 0 ? zero(T) : p[pos[i]]
+        end
+    )
 end
 
 @inline function _findpos(active::NTuple{K, Int}, i::Int) where {K}
@@ -173,20 +126,22 @@ end
 end
 
 # Concentrations on a subset -> free logits (last fixed to zero).
-function _theta_from_c(active::NTuple{K, Int}, c::NTuple{4, T}) where {K, T}
+function _theta_from_c(active::NTuple{K, Int}, c::SVector{4, T}) where {K, T}
     last = c[active[K]]
-    return ntuple(Val(K - 1)) do i
-        ci = c[active[i]]
-        ci <= zero(T) && return T(-30)
-        return log(max(ci, T(1.0e-300)) / max(last, T(1.0e-300)))
-    end
+    return SVector{K - 1, T}(
+        ntuple(Val(K - 1)) do i
+            ci = c[active[i]]
+            ci <= zero(T) && return T(-30)
+            return log(max(ci, T(1.0e-300)) / max(last, T(1.0e-300)))
+        end
+    )
 end
 
 # Allocation-free active-set packing: returns `(n, i1, i2, i3, i4)` with the
 # active indices in `i1..in` and zeros elsewhere. Returning a fixed 5-tuple
 # keeps this off the heap, which matters because it runs once per seed per
 # table vertex.
-@inline function _active_pack(c::NTuple{4, T}, threshold::T) where {T}
+@inline function _active_pack(c::AbstractVector{T}, threshold::T) where {T}
     n = 0
     i1 = 0
     i2 = 0
@@ -233,11 +188,8 @@ end
     j == 2 ? (a[1], a[3], a[4]) :
     j == 3 ? (a[1], a[2], a[4]) : (a[1], a[2], a[3])
 
-@inline function _sse(rgb::NTuple{3, T}, m::NTuple{3, S}) where {T, S}
-    d1 = m[1] - rgb[1]
-    d2 = m[2] - rgb[2]
-    d3 = m[3] - rgb[3]
-    return d1 * d1 + d2 * d2 + d3 * d3
+@inline function _sse(rgb::SVector{3, T}, m::SVector{3, S}) where {T, S}
+    return sum(abs2, m - rgb)
 end
 
 # Solve the damped normal equations. The dimension is at most three (the
@@ -271,12 +223,12 @@ Returns the best concentrations found, the squared residual, the iteration
 count, and whether the step stationarity test passed.
 """
 function lm_active!(
-        sc::SolverScratch, model, rgb::NTuple{3, T},
-        active::NTuple{K, Int}, theta0::NTuple{M, T}, settings::UnmixSettings,
+        sc::SolverScratch, model, rgb::SVector{3, T},
+        active::NTuple{K, Int}, theta0::SVector{M, T}, settings::UnmixSettings,
     ) where {T, K, M}
     @assert M == K - 1 "softmax needs K - 1 free logits"
     θ = theta0
-    p = _softmax_k((θ..., zero(T)))
+    p = _softmax_k(SVector{M + 1, T}(θ..., zero(T)))
     c = _c_from_active(active, p)
     m = _mix(model, c)
     sse = _sse(rgb, m)
@@ -326,15 +278,15 @@ function lm_active!(
         end
 
         accepted = false
-        δ = _zeros_tuple(Val(M), T)
+        δ = zero(SVector{M, T})
         for _ in 1:12
             A = _damped(sc, λ, Val(M))
-            g = SVector{M, T}(ntuple(i -> -sc.g[i], Val(M)))
+            g = -SVector{M, T}(ntuple(i -> sc.g[i], Val(M)))
             x = _solve_damped(A, g)
             x === nothing && break
-            δ = ntuple(i -> x[i], Val(M))
-            θt = _theta_plus(θ, δ)
-            pt = _softmax_k((θt..., zero(T)))
+            δ = x
+            θt = θ + δ
+            pt = _softmax_k(SVector{M + 1, T}(θt..., zero(T)))
             ct = _c_from_active(active, pt)
             mt = _mix(model, ct)
             st = _sse(rgb, mt)
@@ -354,11 +306,7 @@ function lm_active!(
             converged = true
             break
         end
-        normδ = zero(T)
-        @inbounds for i in 1:M
-            normδ += δ[i] * δ[i]
-        end
-        if sqrt(normδ) < settings.tolerance
+        if sqrt(sum(abs2, δ)) < settings.tolerance
             converged = true
             break
         end
@@ -374,8 +322,8 @@ Run LM from concentrations rather than logits, converting to the subset's
 free logits first.
 """
 function _polish!(
-        sc::SolverScratch, model, rgb::NTuple{3, T},
-        active::NTuple{K, Int}, c::NTuple{4, T}, settings::UnmixSettings,
+        sc::SolverScratch, model, rgb::SVector{3, T},
+        active::NTuple{K, Int}, c::SVector{4, T}, settings::UnmixSettings,
     ) where {T, K}
     θ = _theta_from_c(active, c)
     return lm_active!(sc, model, rgb, active, θ, settings)
@@ -391,8 +339,8 @@ logits. `active` is a zero-padded `NTuple{4,Int}` whose first `n` entries are
 the active pigment indices.
 """
 function _solve_adaptive!(
-        sc::SolverScratch, model, rgb::NTuple{3, T},
-        seed::NTuple{4, T}, settings::UnmixSettings,
+        sc::SolverScratch, model, rgb::SVector{3, T},
+        seed::SVector{4, T}, settings::UnmixSettings,
     ) where {T}
     n, i1, i2, i3, i4 = _active_pack(seed, settings.face_threshold)
     if n == 4
@@ -410,8 +358,8 @@ end
 # value carries the active set as a fixed-width `(n, NTuple{4,Int})` pair,
 # which is what keeps the boundary of the solver allocation-free.
 function _adaptive_face!(
-        sc::SolverScratch, model, rgb::NTuple{3, T},
-        active::NTuple{K, Int}, c::NTuple{4, T}, settings::UnmixSettings,
+        sc::SolverScratch, model, rgb::SVector{3, T},
+        active::NTuple{K, Int}, c::SVector{4, T}, settings::UnmixSettings,
     ) where {T, K}
     c, sse, iters, converged = _polish!(sc, model, rgb, active, c, settings)
     K == 1 && return c, sse, K, _pad4(active), iters, converged
@@ -447,12 +395,12 @@ over a non-convex objective, so `converged` and the objective value are
 reported rather than a global-optimality claim.
 """
 function unmix_reference(
-        model, rgb::NTuple{3, T};
+        model, rgb::SVector{3, T};
         settings::UnmixSettings{T} = UnmixSettings{T}(50, T(1.0e-10), T(1.0e-6), 4),
         scratch::SolverScratch = SolverScratch(),
     ) where {T}
     state = _ReferenceState{T}(
-        (T(0.25), T(0.25), T(0.25), T(0.25)), T(Inf), 0, false, 0,
+        SVector(T(0.25), T(0.25), T(0.25), T(0.25)), T(Inf), 0, false, 0,
     )
     _reference_pass!(state, scratch, model, rgb, settings, _all_subsets())
     nactive, a1, a2, a3, a4 = _active_pack(state.c, zero(T))
@@ -465,7 +413,7 @@ end
 # Mutable accumulator for one reference solve. Keeping it in a struct rather
 # than a closure lets the subset pass stay allocation-free.
 mutable struct _ReferenceState{T <: AbstractFloat}
-    c::NTuple{4, T}
+    c::SVector{4, T}
     sse::T
     iters::Int
     converged::Bool
@@ -480,7 +428,7 @@ end
 # active set stays concrete. The early exit matters: once the interior solve
 # is exact there is no reason to enumerate the faces.
 function _reference_pass!(
-        state::_ReferenceState, sc::SolverScratch, model, rgb::NTuple{3, T},
+        state::_ReferenceState, sc::SolverScratch, model, rgb::SVector{3, T},
         settings::UnmixSettings, subsets::S,
     ) where {T, S <: Tuple}
     state.sse < T(1.0e-18) && return nothing
@@ -489,16 +437,16 @@ function _reference_pass!(
 end
 
 _reference_pass!(
-    state::_ReferenceState, sc::SolverScratch, model, rgb::NTuple{3, T},
+    state::_ReferenceState, sc::SolverScratch, model, rgb::SVector{3, T},
     settings::UnmixSettings, ::Tuple{},
 ) where {T} = nothing
 
 function _subset_pass!(
-        state::_ReferenceState{T}, sc::SolverScratch, model, rgb::NTuple{3, T},
+        state::_ReferenceState{T}, sc::SolverScratch, model, rgb::SVector{3, T},
         active::NTuple{K, Int}, settings::UnmixSettings,
     ) where {T, K}
     if K == 1
-        c = ntuple(i -> i == active[1] ? one(T) : zero(T), Val(4))
+        c = SVector{4, T}(ntuple(i -> i == active[1] ? one(T) : zero(T), Val(4)))
         s = _sse(rgb, _mix(model, c))
         if s < state.sse
             state.c = c
@@ -529,10 +477,10 @@ end
 
 @inline function _uniform_on(active::NTuple{K, Int}, ::Type{T}) where {K, T}
     n = one(T) / K
-    return ntuple(i -> _findpos(active, i) == 0 ? zero(T) : n, Val(4))
+    return SVector{4, T}(ntuple(i -> _findpos(active, i) == 0 ? zero(T) : n, Val(4)))
 end
 
-function _project_onto(active::NTuple{K, Int}, c::NTuple{4, T}) where {K, T}
+function _project_onto(active::NTuple{K, Int}, c::SVector{4, T}) where {K, T}
     s = zero(T)
     @inbounds for idx in active
         s += c[idx]
@@ -542,22 +490,25 @@ function _project_onto(active::NTuple{K, Int}, c::NTuple{4, T}) where {K, T}
     # binding. Capturing `s` itself would box it, because `s` is mutated by
     # the loop above.
     inv_s = inv(s)
-    return ntuple(Val(4)) do i
-        _findpos(active, i) == 0 ? zero(T) : c[i] * inv_s
-    end
+    return SVector{4, T}(
+        ntuple(Val(4)) do i
+            _findpos(active, i) == 0 ? zero(T) : c[i] * inv_s
+        end
+    )
 end
 
 # Deterministic perturbation, not RNG: restart `r` shifts the uniform seed in
 # a fixed pattern so runs are reproducible.
 function _random_on(active::NTuple{K, Int}, r::Int) where {K}
     T = Float64
-    raw = ntuple(Val(4)) do i
-        j = _findpos(active, i)
-        j == 0 && return zero(T)
-        return T(0.5 + 0.37 * sin(12.9898 * (i + 78.233 * r)))
-    end
-    s = sum(raw)
-    return ntuple(i -> raw[i] / s, Val(4))
+    raw = SVector{4, T}(
+        ntuple(Val(4)) do i
+            j = _findpos(active, i)
+            j == 0 && return zero(T)
+            return T(0.5 + 0.37 * sin(12.9898 * (i + 78.233 * r)))
+        end
+    )
+    return raw / sum(raw)
 end
 
 # The 15 nonempty subsets of {1,2,3,4}, in a fixed order. The full simplex
@@ -581,8 +532,8 @@ active-face reduction and keep the best objective. Seeds normally come from
 already-solved neighbouring grid vertices; the uniform seed is the fallback.
 """
 function unmix_bulk!(
-        sc::SolverScratch, model, rgb::NTuple{3, T},
-        seeds::NTuple{N, NTuple{4, T}}, settings::UnmixSettings{T},
+        sc::SolverScratch, model, rgb::SVector{3, T},
+        seeds::NTuple{N, SVector{4, T}}, settings::UnmixSettings{T},
     ) where {T, N}
     best_c = seeds[1]
     best_sse = T(Inf)

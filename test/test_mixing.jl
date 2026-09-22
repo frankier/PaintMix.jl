@@ -3,12 +3,12 @@
 
 using Random: Xoshiro
 
-@testset "latent is an isbits value with tuple fields" begin
+@testset "latent is an isbits value with static-vector fields" begin
     @test isbitstype(Latent{Float32})
     @test isbitstype(Latent{Float64})
-    z = Latent((0.25, 0.25, 0.25, 0.25), (0.0, 0.0, 0.0))
-    @test concentrations(z) === (0.25, 0.25, 0.25, 0.25)
-    @test residual(z) === (0.0, 0.0, 0.0)
+    z = Latent(SVector(0.25, 0.25, 0.25, 0.25), SVector(0.0, 0.0, 0.0))
+    @test concentrations(z) === SVector(0.25, 0.25, 0.25, 0.25)
+    @test residual(z) === SVector(0.0, 0.0, 0.0)
     @test occursin("Latent", sprint(show, z))
 end
 
@@ -20,9 +20,9 @@ end
             x = T(rand(rng))
             y = T(rand(rng))
             z = T(rand(rng))
-            got = decode(model, encode(model, (x, y, z)))
+            got = decode(model, encode(model, SVector(x, y, z)))
             @test eltype(got) === T
-            @test maximum(abs.(got .- (x, y, z))) <= tol
+            @test maximum(abs.(got .- SVector(x, y, z))) <= tol
         end
     end
 end
@@ -31,7 +31,7 @@ end
     rng = Xoshiro(3)
     model = random_model(3, 6)
     for _ in 1:100
-        z = encode(model, (rand(rng), rand(rng), rand(rng)))
+        z = encode(model, SVector(rand(rng), rand(rng), rand(rng)))
         c = concentrations(z)
         @test all(>=(0), c)
         @test sum(c) <= 1 + 8 * eps(Float64)
@@ -43,8 +43,8 @@ end
 
 @testset "same-color mixing and exact binary endpoints" begin
     model = identity_model(16)
-    a = (0.31, 0.62, 0.07)
-    b = (0.1, 0.2, 0.3)
+    a = SVector(0.31, 0.62, 0.07)
+    b = SVector(0.1, 0.2, 0.3)
     for t in (0.0, 0.25, 0.5, 1.0)
         @test mix(model, a, a, t) == a
     end
@@ -54,13 +54,13 @@ end
     @test mix(model, a, b, 2.0) === b
     @test mix(model, a, b, 0) === a
     @test mix(model, a, b, 1) === b
-    @test mix(model, a, b, 1 // 2) isa NTuple{3, Float64}
+    @test mix(model, a, b, 1 // 2) isa SVector{3, Float64}
 end
 
 @testset "mixing is symmetric under swapping the arguments" begin
     model = identity_model(16)
-    a = (0.31, 0.62, 0.07)
-    b = (0.11, 0.22, 0.73)
+    a = SVector(0.31, 0.62, 0.07)
+    b = SVector(0.11, 0.22, 0.73)
     for t in (0.1, 0.25, 0.5, 0.9)
         @test maximum(abs.(mix(model, a, b, t) .- mix(model, b, a, 1 - t))) <= 1.0e-12
     end
@@ -70,8 +70,8 @@ end
     # `mix(a, b, t)` with t in (0, 1) equals decoding the lerp of the two
     # latents; re-encoding that result and decoding again is stable.
     model = identity_model(8)
-    a = (0.9, 0.2, 0.4)
-    b = (0.05, 0.8, 0.3)
+    a = SVector(0.9, 0.2, 0.4)
+    b = SVector(0.05, 0.8, 0.3)
     m = mix(model, a, b, 0.35)
     @test maximum(abs.(decode(model, encode(model, m)) .- m)) <= 1.0e-12
 end
@@ -80,22 +80,22 @@ end
     model = offset_model(8)
     # A byte-valued forward table cannot leave [0, 1]; the excursion has to
     # come from the residual, and decode must keep it.
-    z = Latent((0.25, 0.5, 0.25, 0.0), (0.0, 0.9, -0.4))
+    z = Latent(SVector(0.25, 0.5, 0.25, 0.0), SVector(0.0, 0.9, -0.4))
     got = decode(model, z)
     @test got[2] > 1
     @test got[3] < 0
     @test got == decode(model, z)
     @test srgb8_from_linear(got)[2] == 0xff
     @test srgb8_from_linear(got)[3] == 0x00
-    @test all(srgb8_from_linear((-1.0, 2.0, 0.5)) .== (0x00, 0xff, 0xbc))
+    @test all(srgb8_from_linear(SVector(-1.0, 2.0, 0.5)) .== SVector(0x00, 0xff, 0xbc))
 end
 
 @testset "concentration repair keeps the simplex" begin
     model = identity_model(4)
-    z = Latent((0.5, 0.4, 0.3, -0.2), (0.0, 0.0, 0.0))
+    z = Latent(SVector(0.5, 0.4, 0.3, -0.2), SVector(0.0, 0.0, 0.0))
     got = decode(model, z)
     @test all(isfinite, got)
-    neg = Latent((0.5, 0.4, 0.1, 0.0), (0.0, 0.0, 0.0))
+    neg = Latent(SVector(0.5, 0.4, 0.1, 0.0), SVector(0.0, 0.0, 0.0))
     @test all(isfinite, decode(model, neg))
     @test decode(model, neg) == PaintMix.forward_rgb(model, 0.5, 0.4, 0.1)
 end
@@ -111,17 +111,17 @@ end
     @test bulk_mix!(dest, model, as, bs, ts) === dest
     for i in 1:n
         want = mix(
-            model, (as[3i - 2], as[3i - 1], as[3i]),
-            (bs[3i - 2], bs[3i - 1], bs[3i]), ts[i]
+            model, SVector(as[3i - 2], as[3i - 1], as[3i]),
+            SVector(bs[3i - 2], bs[3i - 1], bs[3i]), ts[i]
         )
-        @test (dest[3i - 2], dest[3i - 1], dest[3i]) == want
+        @test SVector(dest[3i - 2], dest[3i - 1], dest[3i]) == want
     end
 end
 
 @testset "weighted mixing" begin
     model = identity_model(16)
-    a = (0.31, 0.62, 0.07)
-    b = (0.1, 0.2, 0.3)
+    a = SVector(0.31, 0.62, 0.07)
+    b = SVector(0.1, 0.2, 0.3)
     # Two colors reduce to the binary mix.
     @test maximum(
         abs.(weighted_mix(model, [a, b], [1 - 0.3, 0.3]) .- mix(model, a, b, 0.3))
@@ -135,7 +135,7 @@ end
     ) <= 1.0e-12
     # A single positive weight returns that input color unchanged.
     @test weighted_mix(model, [a, b], [0.0, 3.0]) === b
-    colors = [(0.1, 0.2, 0.3), (0.7, 0.1, 0.2), (0.05, 0.05, 0.9)]
+    colors = [SVector(0.1, 0.2, 0.3), SVector(0.7, 0.1, 0.2), SVector(0.05, 0.05, 0.9)]
     @test weighted_mix(model, colors, [0.0, 0.0, 5.0]) === colors[3]
     # Zero weights are skipped, and accumulation order is the input order.
     @test weighted_mix(model, [a, b, b], [1.0, 0.0, 0.0]) === a
@@ -144,20 +144,20 @@ end
     dest = zeros(3)
     weighted_mix!(dest, model, flat, [1.0, 1.0, 1.0])
     @test maximum(
-        abs.((dest[1], dest[2], dest[3]) .- weighted_mix(model, colors, [1.0, 1.0, 1.0]))
+        abs.(SVector(dest[1], dest[2], dest[3]) .- weighted_mix(model, colors, [1.0, 1.0, 1.0]))
     ) <= 1.0e-15
     @test all(isfinite, weighted_mix(model, colors, [1.0, 0.5, 2.5]))
 end
 
 @testset "input validation throws" begin
     model = identity_model(4)
-    a = (0.5, 0.5, 0.0)
-    b = (0.0, 0.5, 0.5)
-    @test_throws DomainError encode(model, (NaN, 0.5, 0.5))
-    @test_throws DomainError encode(model, (0.5, Inf, 0.5))
+    a = SVector(0.5, 0.5, 0.0)
+    b = SVector(0.0, 0.5, 0.5)
+    @test_throws DomainError encode(model, SVector(NaN, 0.5, 0.5))
+    @test_throws DomainError encode(model, SVector(0.5, Inf, 0.5))
     @test_throws DomainError mix(model, a, b, NaN)
     @test_throws DomainError mix(model, a, b, Inf)
-    @test_throws DomainError mix(model, (NaN, 0.0, 0.0), b, 0.5)
+    @test_throws DomainError mix(model, SVector(NaN, 0.0, 0.0), b, 0.5)
     @test_throws ArgumentError weighted_mix(model, [a, b], [-1.0, 2.0])
     @test_throws ArgumentError weighted_mix(model, [a, b], [0.0, 0.0])
     @test_throws ArgumentError weighted_mix(model, [a, b], [NaN, 1.0])
@@ -200,12 +200,12 @@ end
 
 @testset "Float32 path" begin
     model = identity_model(16)
-    a = (0.31f0, 0.62f0, 0.07f0)
-    b = (0.1f0, 0.2f0, 0.3f0)
+    a = SVector(0.31f0, 0.62f0, 0.07f0)
+    b = SVector(0.1f0, 0.2f0, 0.3f0)
     z = encode(model, a)
     @test z isa Latent{Float32}
-    @test decode(model, z) isa NTuple{3, Float32}
-    @test mix(model, a, b, 0.5f0) isa NTuple{3, Float32}
+    @test decode(model, z) isa SVector{3, Float32}
+    @test mix(model, a, b, 0.5f0) isa SVector{3, Float32}
     @test maximum(abs.(decode(model, z) .- a)) <= 2.0f-6
     as = Float32[0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
     dest = zeros(Float32, 6)

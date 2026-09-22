@@ -9,6 +9,7 @@ module SyntheticFixtures
 
 using PaintMix
 using Random: Xoshiro
+using StaticArrays: SVector
 
 export quantize_simplex,
     project_to_simplex3,
@@ -212,7 +213,7 @@ reference_vertex(lut::ByteLUT, i::Int, j::Int, k::Int, ch::Int) =
     lut.data[ch + 1 + 3 * (i + lut.n * (j + lut.n * k))]
 
 """
-    reference_trilinear(lut, x, y, z) -> NTuple{3,Float64}
+    reference_trilinear(lut, x, y, z) -> RGB{Float64}
 
 An independent trilinear implementation: eight weight products rather than
 three stages of lerps. Any disagreement with `PaintMix.trilinear` beyond
@@ -221,7 +222,9 @@ rounding is a bug in one of the two.
 function reference_trilinear(lut::ByteLUT, x::Real, y::Real, z::Real)
     n = lut.n
     if n == 1
-        return ntuple(ch -> Float64(reference_vertex(lut, 0, 0, 0, ch - 1)) / 255.0, Val(3))
+        return SVector{3, Float64}(
+            ntuple(ch -> Float64(reference_vertex(lut, 0, 0, 0, ch - 1)) / 255.0, Val(3))
+        )
     end
     gx = clamp(Float64(x), 0.0, 1.0) * (n - 1)
     gy = clamp(Float64(y), 0.0, 1.0) * (n - 1)
@@ -232,16 +235,18 @@ function reference_trilinear(lut::ByteLUT, x::Real, y::Real, z::Real)
     fx = gx - i0
     fy = gy - j0
     fz = gz - k0
-    return ntuple(Val(3)) do ch
-        s = 0.0
-        for dk in 0:1, dj in 0:1, di in 0:1
-            w = (di == 1 ? fx : 1 - fx) * (dj == 1 ? fy : 1 - fy) *
-                (dk == 1 ? fz : 1 - fz)
-            v = reference_vertex(lut, i0 + di, j0 + dj, k0 + dk, ch - 1)
-            s += w * Float64(v) / 255.0
+    return SVector{3, Float64}(
+        ntuple(Val(3)) do ch
+            s = 0.0
+            for dk in 0:1, dj in 0:1, di in 0:1
+                w = (di == 1 ? fx : 1 - fx) * (dj == 1 ? fy : 1 - fy) *
+                    (dk == 1 ? fz : 1 - fz)
+                v = reference_vertex(lut, i0 + di, j0 + dj, k0 + dk, ch - 1)
+                s += w * Float64(v) / 255.0
+            end
+            s
         end
-        s
-    end
+    )
 end
 
 end # module SyntheticFixtures

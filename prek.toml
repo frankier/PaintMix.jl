@@ -5,8 +5,8 @@
 #   prek run --all-files
 #
 # The Runic hook builds its own Julia environment (`language: julia`, see the
-# hook repo's `Project.toml`), so the runtime package keeps an empty `[deps]`
-# section. Do not pin Runic via `additional_dependencies`: prek passes those
+# hook repo's `Project.toml`), so it adds no dependency to the runtime project.
+# Do not pin Runic via `additional_dependencies`: prek passes those
 # strings straight to `Pkg.add`, which rejects `Runic@<version>`. CI runs
 # `fredrikekre/runic-action` instead.
 #

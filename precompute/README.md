@@ -126,6 +126,11 @@ garbage at 256³. `unmix_reference` still allocates a little inside its
 subset recursion; the test bounds it as a regression guard rather than
 claiming zero.
 
+A later change replaced the fixed-arity tuple arithmetic with `SVector` and
+`SMatrix` throughout both packages, which retired the four-way `_softmax_k`
+and three-way `_damped` arity families and the `_sub3`/`_mul3`/`_theta_plus`
+helpers. The allocation guarantee is unchanged.
+
 The release validation record is written to
 `precompute/output/release/<model-id>.toml`. For the promoted model it shows
 that the provisional LUT-versus-spectral quality targets are not met, while

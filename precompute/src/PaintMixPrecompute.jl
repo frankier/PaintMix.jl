@@ -34,7 +34,7 @@ using Optim: Optim
 using Printf: @sprintf
 using Random: AbstractRNG, Xoshiro
 using SHA: sha256
-using StaticArrays: SMatrix, SVector
+using StaticArrays: SMatrix, SVector, @SMatrix
 using TOML: TOML
 
 include("inputdb.jl")

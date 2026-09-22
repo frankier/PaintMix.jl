@@ -5,10 +5,10 @@ using Random: Xoshiro
 
 @testset "steady-state allocations are zero" begin
     model = identity_model(16)
-    a32 = (0.31f0, 0.62f0, 0.07f0)
-    b32 = (0.1f0, 0.2f0, 0.3f0)
-    a64 = (0.31, 0.62, 0.07)
-    b64 = (0.1, 0.2, 0.3)
+    a32 = SVector(0.31f0, 0.62f0, 0.07f0)
+    b32 = SVector(0.1f0, 0.2f0, 0.3f0)
+    a64 = SVector(0.31, 0.62, 0.07)
+    b64 = SVector(0.1, 0.2, 0.3)
 
     dest64 = zeros(3)
     dest32 = zeros(Float32, 3)

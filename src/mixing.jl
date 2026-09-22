@@ -72,9 +72,7 @@ function error_message(code::Integer)
 end
 
 @inline function _check(rgb::RGB)
-    if !(isfinite(rgb[1]) && isfinite(rgb[2]) && isfinite(rgb[3]))
-        throw(DomainError(rgb, "color channels must be finite"))
-    end
+    all(isfinite, rgb) || throw(DomainError(rgb, "color channels must be finite"))
     return nothing
 end
 
@@ -88,15 +86,10 @@ end
 # repairs floating-point excursions; for a pathological input it is still a
 # deterministic projection rather than an error.
 @inline function _repair_simplex(c1::T, c2::T, c3::T) where {T <: AbstractFloat}
-    a = max(c1, zero(T))
-    b = max(c2, zero(T))
-    c = max(c3, zero(T))
-    s = a + b + c
-    if s > one(T)
-        f = one(T) / s
-        return (a * f, b * f, c * f)
-    end
-    return (a, b, c)
+    c = SVector(max(c1, zero(T)), max(c2, zero(T)), max(c3, zero(T)))
+    s = c[1] + c[2] + c[3]
+    s > one(T) || return c
+    return c / s
 end
 
 """
@@ -109,11 +102,11 @@ fourth concentration is implied; only the first three index the table.
 @inline function forward_rgb(
         model::PigmentModel, c1::T, c2::T, c3::T
     ) where {T <: AbstractFloat}
-    r1, r2, r3 = _repair_simplex(c1, c2, c3)
-    return trilinear(model.forward, r1, r2, r3)
+    r = _repair_simplex(c1, c2, c3)
+    return trilinear(model.forward, r[1], r[2], r[3])
 end
 
-@inline forward_rgb(model::PigmentModel, c::Concentrations{T}) where {T <: AbstractFloat} =
+@inline forward_rgb(model::PigmentModel, c::AbstractVector{T}) where {T <: AbstractFloat} =
     forward_rgb(model, c[1], c[2], c[3])
 
 """
@@ -134,11 +127,10 @@ model.
 @inline function encode(model::PigmentModel, rgb::RGB{T}) where {T <: AbstractFloat}
     _check(rgb)
     x, y, z = rgb
-    c1, c2, c3 = trilinear(model.inverse, x, y, z)
-    c1, c2, c3 = _repair_simplex(c1, c2, c3)
-    c4 = max(zero(T), one(T) - (c1 + c2 + c3))
-    m = forward_rgb(model, c1, c2, c3)
-    return Latent((c1, c2, c3, c4), (x - m[1], y - m[2], z - m[3]))
+    c = _repair_simplex(trilinear(model.inverse, x, y, z)...)
+    c4 = max(zero(T), one(T) - (c[1] + c[2] + c[3]))
+    m = forward_rgb(model, c)
+    return Latent(SVector(c[1], c[2], c[3], c4), rgb - m)
 end
 
 """
@@ -154,17 +146,12 @@ read from the latent, so that interpolation drift cannot move the point off
 the simplex.
 """
 @inline function decode(model::PigmentModel, z::Latent{T}) where {T <: AbstractFloat}
-    c1, c2, c3, _ = z.c
-    m = forward_rgb(model, c1, c2, c3)
-    r = z.r
-    return (m[1] + r[1], m[2] + r[2], m[3] + r[3])
+    m = forward_rgb(model, z.c[1], z.c[2], z.c[3])
+    return m + z.r
 end
 
 @inline function _latent_lerp(a::Latent{T}, b::Latent{T}, t::T) where {T <: AbstractFloat}
-    s = one(T) - t
-    c = ntuple(i -> s * a.c[i] + t * b.c[i], Val(4))
-    r = ntuple(i -> s * a.r[i] + t * b.r[i], Val(3))
-    return Latent(c, r)
+    return Latent(a.c + t * (b.c - a.c), a.r + t * (b.r - a.r))
 end
 
 """
@@ -246,8 +233,8 @@ function bulk_mix_kernel!(
     end
     @inbounds for i in 1:n
         c = mix(
-            model, (as[3i - 2], as[3i - 1], as[3i]),
-            (bs[3i - 2], bs[3i - 1], bs[3i]), ts[i]
+            model, SVector(as[3i - 2], as[3i - 1], as[3i]),
+            SVector(bs[3i - 2], bs[3i - 1], bs[3i]), ts[i]
         )
         dest[3i - 2] = c[1]
         dest[3i - 1] = c[2]
@@ -326,29 +313,19 @@ function weighted_mix_kernel!(
         end
         return PM_OK
     end
-    # Seven scalar accumulators: a `Ref` or a mutable container would heap
+    # Two static accumulators; a `Ref` or a mutable container would heap
     # allocate once per call.
-    ac1 = zero(T); ac2 = zero(T); ac3 = zero(T); ac4 = zero(T)
-    ar1 = zero(T); ar2 = zero(T); ar3 = zero(T)
+    ac = zero(SVector{4, T})
+    ar = zero(SVector{3, T})
     @inbounds for i in 1:n
         w = weights[i]
         w == zero(T) && continue
-        zi = encode(model, (colors[3i - 2], colors[3i - 1], colors[3i]))
-        ac1 += w * zi.c[1]
-        ac2 += w * zi.c[2]
-        ac3 += w * zi.c[3]
-        ac4 += w * zi.c[4]
-        ar1 += w * zi.r[1]
-        ar2 += w * zi.r[2]
-        ar3 += w * zi.r[3]
+        zi = encode(model, SVector(colors[3i - 2], colors[3i - 1], colors[3i]))
+        ac += w * zi.c
+        ar += w * zi.r
     end
     inv = one(T) / total
-    z = decode(
-        model, Latent(
-            (ac1 * inv, ac2 * inv, ac3 * inv, ac4 * inv),
-            (ar1 * inv, ar2 * inv, ar3 * inv),
-        )
-    )
+    z = decode(model, Latent(ac * inv, ar * inv))
     @inbounds begin
         dest[1] = z[1]
         dest[2] = z[2]
@@ -404,7 +381,7 @@ function weighted_mix(
     end
     dest = Vector{T}(undef, 3)
     weighted_mix!(dest, model, flat, weights)
-    return (dest[1], dest[2], dest[3])
+    return SVector(dest[1], dest[2], dest[3])
 end
 
 # --- default-model conveniences -------------------------------------------

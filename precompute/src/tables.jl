@@ -14,7 +14,7 @@
 #     introduces near every face, edge, and vertex.
 
 """
-    project_to_simplex(c) -> NTuple{4}
+    project_to_simplex(c) -> SVector{4}
 
 Euclidean projection of a four-vector onto `{c >= 0, sum(c) == 1}`.
 
@@ -23,11 +23,9 @@ The standard sort-and-threshold algorithm: with `v` sorted descending and
 `theta = (css[rho] - 1) / rho` for the largest `rho` that keeps
 `v[rho] - theta > 0`.
 """
-function project_to_simplex(c::NTuple{4, T}) where {T <: AbstractFloat}
-    v = (c[1], c[2], c[3], c[4])
+function project_to_simplex(c::SVector{4, T}) where {T <: AbstractFloat}
     # Sort descending; four elements, no allocation.
-    w = [v[1], v[2], v[3], v[4]]
-    sort!(w; rev = true)
+    w = sort(c; rev = true)
     rho = 0
     theta = zero(T)
     css = zero(T)
@@ -39,12 +37,12 @@ function project_to_simplex(c::NTuple{4, T}) where {T <: AbstractFloat}
             theta = t
         end
     end
-    rho == 0 && return (T(0.25), T(0.25), T(0.25), T(0.25))
-    return ntuple(i -> max(c[i] - theta, zero(T)), Val(4))
+    rho == 0 && return SVector(T(0.25), T(0.25), T(0.25), T(0.25))
+    return max.(c .- theta, zero(T))
 end
 
 """
-    quantize_simplex(c) -> NTuple{3,UInt8}
+    quantize_simplex(c) -> SVector{3,UInt8}
 
 Quantize all four concentrations jointly to non-negative integers summing to
 255, then return the first three. The fourth is implied by the runtime and
@@ -54,8 +52,8 @@ Uses largest-remainder rounding with deterministic tie-breaking: ties go to
 the lower concentration index. Any leftover or excess after the floor is
 distributed one unit at a time, largest remainder first.
 """
-function quantize_simplex(c::NTuple{4, T}) where {T <: AbstractFloat}
-    scaled = (c[1] * 255, c[2] * 255, c[3] * 255, c[4] * 255)
+function quantize_simplex(c::SVector{4, T}) where {T <: AbstractFloat}
+    scaled = c .* 255
     base = ntuple(i -> floor(Int, scaled[i]), Val(4))
     rem = ntuple(i -> scaled[i] - base[i], Val(4))
     diff = 255 - (base[1] + base[2] + base[3] + base[4])
@@ -81,7 +79,7 @@ function quantize_simplex(c::NTuple{4, T}) where {T <: AbstractFloat}
     if s != 255
         b = _repair_byte_sum(b, s)
     end
-    return (UInt8(b[1]), UInt8(b[2]), UInt8(b[3]))
+    return SVector(UInt8(b[1]), UInt8(b[2]), UInt8(b[3]))
 end
 
 function _remainder_order(rem::NTuple{4, T}) where {T}
@@ -157,11 +155,11 @@ simplex projection when `(c1, c2, c3)` lies outside the simplex.
     c2 = T(j) / d
     c3 = T(k) / d
     c4 = one(T) - c1 - c2 - c3
+    c = SVector(c1, c2, c3, c4)
     if c4 < zero(T)
-        c = project_to_simplex((c1, c2, c3, c4))
-        c1, c2, c3, c4 = c[1], c[2], c[3], c[4]
+        c = project_to_simplex(c)
     end
-    rgb = mix_rgb(model, (c1, c2, c3, c4))
+    rgb = mix_rgb(model, c)
     o = _table_offset(n, i, j, k)
     @inbounds begin
         dest[o + 1] = rgb[1]
@@ -211,18 +209,18 @@ how slabs are distributed across threads.
 function inverse_slab!(
         dest::AbstractVector{T}, model::SpectralModel{T}, n::Int, k::Int,
         scratch::SolverScratch, settings::UnmixSettings{T},
-        seedrow::Vector{NTuple{4, T}}, prevrow::Vector{NTuple{4, T}},
+        seedrow::Vector{SVector{4, T}}, prevrow::Vector{SVector{4, T}},
     ) where {T}
     d = n - 1
     z = T(k) / d
-    uniform = (T(0.25), T(0.25), T(0.25), T(0.25))
+    uniform = SVector(T(0.25), T(0.25), T(0.25), T(0.25))
     cur = seedrow
     prev = prevrow
     @inbounds for j in 0:(n - 1)
         y = T(j) / d
         for i in 0:(n - 1)
             x = T(i) / d
-            rgb = (x, y, z)
+            rgb = SVector(x, y, z)
             # `cur[i]` is (i-1, j) from earlier in this row; `prev[i+1]` is
             # (i, j-1) from the previous row. Keeping the two buffers distinct
             # is what makes the traversal a proper 4-neighbour continuation.
@@ -265,7 +263,7 @@ function reference_slab!(
     @inbounds for j in 0:(n - 1)
         y = T(j) / d
         for i in 0:(n - 1)
-            rgb = (T(i) / d, y, z)
+            rgb = SVector(T(i) / d, y, z)
             r = unmix_reference(model, rgb; settings = settings, scratch = scratch)
             o = _table_offset(n, i, j, k)
             dest[o + 1] = r.c[1]
@@ -305,8 +303,8 @@ function generate_inverse(
     out = Vector{T}(undef, 3 * n^3)
     krange = collect(0:(n - 1))
     if threads <= 1 || n < 8
-        seedrow = Vector{NTuple{4, T}}(undef, n)
-        prevrow = Vector{NTuple{4, T}}(undef, n)
+        seedrow = Vector{SVector{4, T}}(undef, n)
+        prevrow = Vector{SVector{4, T}}(undef, n)
         scratch = SolverScratch()
         for k in krange
             _slab_or_generate!(
@@ -315,8 +313,8 @@ function generate_inverse(
         end
     else
         Threads.@threads for k in krange
-            seedrow = Vector{NTuple{4, T}}(undef, n)
-            prevrow = Vector{NTuple{4, T}}(undef, n)
+            seedrow = Vector{SVector{4, T}}(undef, n)
+            prevrow = Vector{SVector{4, T}}(undef, n)
             scratch = SolverScratch()
             _slab_or_generate!(
                 out, model, n, k, scratch, st, seedrow, prevrow, resume, on_slab, solver
@@ -526,30 +524,27 @@ needs it to size its output before any solve has run.
 _scalar_type(::SpectralModel{T}) where {T} = T
 _scalar_type(::ForwardFloatLUT{T}) where {T} = T
 
-@inline _sub3(a::NTuple{3, T}, b::NTuple{3, T}) where {T} = (a[1] - b[1], a[2] - b[2], a[3] - b[3])
-@inline _mul3(a::NTuple{3, T}, s::T) where {T} = (a[1] * s, a[2] * s, a[3] * s)
-
-@inline function _mix(f::ForwardFloatLUT{T}, c::NTuple{4, S}) where {T, S <: Real}
+@inline function _mix(f::ForwardFloatLUT{T}, c::AbstractVector{S}) where {T, S <: Real}
     corners, fx, fy, fz = _cell(f.data, f.n, T(c[1]), T(c[2]), T(c[3]), one(T))
     return _trilinear3(corners, fx, fy, fz)
 end
 
-@inline function _jacobian4!(J::AbstractMatrix, f::ForwardFloatLUT{T}, c::NTuple{4, S}) where {T, S <: Real}
+@inline function _jacobian4!(
+        J::AbstractMatrix, f::ForwardFloatLUT{T}, c::AbstractVector{S}
+    ) where {T, S <: Real}
     corners, fx, fy, fz = _cell(f.data, f.n, T(c[1]), T(c[2]), T(c[3]), one(T))
     c000, c100, c010, c110, c001, c101, c011, c111 = corners
     c00, c10, c01, c11, c0, c1 = _stages(corners, fx, fy)
+    g = T(f.n - 1)
     # d/dx
-    dx00 = _sub3(c100, c000)
-    dx10 = _sub3(c110, c010)
-    dx01 = _sub3(c101, c001)
-    dx11 = _sub3(c111, c011)
-    dx = _mul3(_lerp3(_lerp3(dx00, dx10, fy), _lerp3(dx01, dx11, fy), fz), T(f.n - 1))
+    dx = _lerp3(
+        _lerp3(c100 - c000, c110 - c010, fy),
+        _lerp3(c101 - c001, c111 - c011, fy), fz,
+    ) * g
     # d/dy
-    dy0 = _sub3(c10, c00)
-    dy1 = _sub3(c11, c01)
-    dy = _mul3(_lerp3(dy0, dy1, fz), T(f.n - 1))
+    dy = _lerp3(c10 - c00, c11 - c01, fz) * g
     # d/dz
-    dz = _mul3(_sub3(c1, c0), T(f.n - 1))
+    dz = (c1 - c0) * g
     @inbounds begin
         J[1, 1], J[2, 1], J[3, 1] = dx
         J[1, 2], J[2, 2], J[3, 2] = dy
@@ -581,7 +576,7 @@ forward_float_lut(n::Integer, data::AbstractVector{T}) where {T <: AbstractFloat
 # except for the seed, which keeps slab parallelism deterministic.
 
 """
-    coarse_seed(coarse, cn, r, g, b) -> NTuple{4,T}
+    coarse_seed(coarse, cn, r, g, b) -> SVector{4,T}
 
 Trilinearly interpolate a coarse concentration field at a fine RGB position.
 The stored coordinates are the first three concentrations; the fourth is
@@ -591,8 +586,8 @@ reconstructed.
         coarse::AbstractVector{T}, cn::Int, r::T, g::T, b::T
     ) where {T <: AbstractFloat}
     corners, fx, fy, fz = _cell(coarse, cn, r, g, b, one(T))
-    c1, c2, c3 = _trilinear3(corners, fx, fy, fz)
-    return (c1, c2, c3, one(T) - c1 - c2 - c3)
+    c = _trilinear3(corners, fx, fy, fz)
+    return SVector(c[1], c[2], c[3], one(T) - c[1] - c[2] - c[3])
 end
 
 """
@@ -607,12 +602,12 @@ function coarse_to_fine_slab!(
     ) where {T}
     d = n - 1
     z = T(k) / d
-    uniform = (T(0.25), T(0.25), T(0.25), T(0.25))
+    uniform = SVector(T(0.25), T(0.25), T(0.25), T(0.25))
     @inbounds for j in 0:(n - 1)
         y = T(j) / d
         for i in 0:(n - 1)
             x = T(i) / d
-            rgb = (x, y, z)
+            rgb = SVector(x, y, z)
             seed = coarse_seed(coarse, cn, x, y, z)
             r = unmix_bulk!(scratch, model, rgb, (seed, uniform), settings)
             o = _table_offset(n, i, j, k)

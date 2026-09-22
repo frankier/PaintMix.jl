@@ -7,15 +7,18 @@
 # The workspace shares dependency resolution, not dependency visibility, so a
 # workspace test proves nothing about what a consumer gets. This script builds
 # a fresh environment in a temporary directory, `develop`s only PaintMix into
-# it, resolves, and reports the resulting dependency names. Offline: the
-# runtime package has no non-stdlib dependencies to resolve.
+# it, resolves, and reports the resulting dependency names. PaintMix depends
+# on StaticArrays and nothing else; StaticArrays resolves from the depot.
 
 using Pkg
 using Test
 
 const ROOT = normpath(joinpath(@__DIR__, ".."))
 
-const FORBIDDEN = ["Optim", "ForwardDiff", "JuliaLibWrapping", "JuliaC", "JLWInterop", "DuckDB", "XLSX"]
+const FORBIDDEN = [
+    "Optim", "ForwardDiff", "JuliaLibWrapping", "JuliaC", "JLWInterop",
+    "DuckDB", "XLSX", "DataFrames",
+]
 
 @testset "fresh consumer environment" begin
     dir = mktempdir()
@@ -25,11 +28,15 @@ const FORBIDDEN = ["Optim", "ForwardDiff", "JuliaLibWrapping", "JuliaC", "JLWInt
     deps = Pkg.dependencies()
     names = sort([d.name for d in values(deps) if d.name !== nothing])
     @test "PaintMix" in names
+    @test "StaticArrays" in names
     found = intersect(names, FORBIDDEN)
     @test isempty(found)
     println(
         "consumer environment resolved $(length(names)) packages: ",
         join(names, ", ")
     )
-    @test length(names) <= 6  # PaintMix and a handful of stdlibs
+    # PaintMix, StaticArrays and its transitive closure (LinearAlgebra,
+    # PrecompileTools, StaticArraysCore, plus the BLAS provider jlls), and the
+    # stdlibs the manifest records. No precompute or build tooling.
+    @test length(names) <= 20
 end

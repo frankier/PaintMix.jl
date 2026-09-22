@@ -31,7 +31,9 @@ end
         y = j / 2
         z = k / 2
         got = trilinear(lut, x, y, z)
-        want = ntuple(ch -> Float64(reference_vertex(lut, i, j, k, ch - 1)) / 255, Val(3))
+        want = SVector{3, Float64}(
+            ntuple(ch -> Float64(reference_vertex(lut, i, j, k, ch - 1)) / 255, Val(3))
+        )
         # A grid plane must reproduce the stored value: no interpolation
         # error. Division and multiplication by 1/255 may differ by one ulp,
         # so the check is exact to within that.
@@ -50,7 +52,9 @@ end
             @test trilinear(lut, x, y, z) == trilinear(lut, x, y, z)
         end
         # Weight one on the last plane must equal the last vertex exactly.
-        last = ntuple(ch -> Float64(reference_vertex(lut, n - 1, n - 1, n - 1, ch - 1)) / 255, Val(3))
+        last = SVector{3, Float64}(
+            ntuple(ch -> Float64(reference_vertex(lut, n - 1, n - 1, n - 1, ch - 1)) / 255, Val(3))
+        )
         @test maximum(abs.(trilinear(lut, 1.0, 1.0, 1.0) .- last)) <= 1.0e-15
     end
 end
@@ -67,19 +71,19 @@ end
     # the corner samples is the affine map itself, bit for bit.
     p = permuted_model(2)
     for (c1, c2, c3) in ((0.25, 0.5, 0.125), (1.0, 0.0, 0.0), (0.3, 0.7, 0.9))
-        @test trilinear(p.forward, c1, c2, c3) == (c3, c1, c2)
+        @test trilinear(p.forward, c1, c2, c3) == SVector(c3, c1, c2)
     end
     s = signed_model(2)
     for (c1, c2, c3) in ((0.25, 0.5, 0.125), (1.0, 1.0, 1.0), (0.0, 0.0, 0.0))
-        @test trilinear(s.forward, c1, c2, c3) == (1 - c1, c2, 1 - c3)
+        @test trilinear(s.forward, c1, c2, c3) == SVector(1 - c1, c2, 1 - c3)
     end
 end
 
 @testset "Float32 tables stay in Float32" begin
     lut = random_model(5, 4).forward
     got = trilinear(lut, 0.3f0, 0.6f0, 0.1f0)
-    @test got isa NTuple{3, Float32}
+    @test got isa SVector{3, Float32}
     @test maximum(abs.(got .- trilinear(lut, 0.3, 0.6, 0.1))) <= 1.0e-6
-    @test PaintMix.vertex(lut, 1, 2, 3) isa NTuple{3, UInt8}
+    @test PaintMix.vertex(lut, 1, 2, 3) isa SVector{3, UInt8}
     @test_throws BoundsError PaintMix.vertex(lut, 4, 0, 0)
 end

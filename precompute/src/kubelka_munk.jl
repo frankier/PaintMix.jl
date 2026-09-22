@@ -31,7 +31,7 @@ The paper's convention has no added specular term, so `kins` does not appear.
 end
 
 """
-    mix_rgb(model, c) -> NTuple{3}
+    mix_rgb(model, c) -> RGB
 
 `mix(c)` of equation (7): equations (1) and (2), the Saunderson correction
 (6), the tristimulus integrals (3)-(5) with the cached trapezoidal weights,
@@ -41,12 +41,14 @@ and the pinned XYZ-to-linear-sRGB matrix.
 on the simplex boundary pass an exact zero. Nothing is clipped: mixtures of
 the original pigments may legitimately produce channels outside `[0, 1]`.
 """
-@inline function mix_rgb(m::SpectralModel{T}, c::NTuple{4, S}) where {T <: AbstractFloat, S <: Real}
+@inline function mix_rgb(
+        m::SpectralModel{T}, c::AbstractVector{S}
+    ) where {T <: AbstractFloat, S <: Real}
     return mix_rgb_params(m.K, m.S, m.k1, m.k2, m.quad, c)
 end
 
 """
-    mix_rgb_params(K, S, k1, k2, quad, c) -> NTuple{3}
+    mix_rgb_params(K, S, k1, k2, quad, c) -> RGB
 
 `mix(c)` of equation (7) from raw pigment parameters. This is the form the
 surrogate fit calls: during `ForwardDiff` it holds `Dual`-valued `K` and `S`
@@ -54,7 +56,7 @@ with a `Float64` quadrature, so it cannot build a `SpectralModel`.
 """
 @inline function mix_rgb_params(
         K::AbstractMatrix, S::AbstractMatrix, k1, k2,
-        q::Quadrature, c::NTuple{4, S2},
+        q::Quadrature, c::AbstractVector{S2},
     ) where {S2 <: Real}
     Tacc = promote_type(S2, eltype(K), eltype(S), eltype(q.weights), typeof(k1), typeof(k2))
     W = length(q.weights)
@@ -73,27 +75,21 @@ with a `Float64` quadrature, so it cannot build a `SpectralModel`.
         Y += w * q.y_bar[l]
         Z += w * q.z_bar[l]
     end
-    mt = q.xyz_to_rgb
-    n = q.norm
-    return (
-        (mt[1] * X + mt[2] * Y + mt[3] * Z) * n,
-        (mt[4] * X + mt[5] * Y + mt[6] * Z) * n,
-        (mt[7] * X + mt[8] * Y + mt[9] * Z) * n,
-    )
+    return (q.xyz_to_rgb * SVector(X, Y, Z)) * q.norm
 end
 
 # The docstring above documents the model form; the raw-parameter form is
 # what the surrogate fit calls.
 
 """
-    mix_rgb_simplex(model, c1, c2, c3) -> NTuple{3}
+    mix_rgb_simplex(model, c1, c2, c3) -> RGB
 
 `mix_rgb` with the fourth concentration implied as `1 - c1 - c2 - c3`.
 """
 @inline function mix_rgb_simplex(
         m::SpectralModel{T}, c1::S, c2::S, c3::S
     ) where {T <: AbstractFloat, S <: Real}
-    return mix_rgb(m, (c1, c2, c3, one(S) - c1 - c2 - c3))
+    return mix_rgb(m, SVector(c1, c2, c3, one(S) - c1 - c2 - c3))
 end
 
 """
@@ -105,7 +101,7 @@ by the bulk inverse solver and as the reference for finite-difference checks
 of the `ForwardDiff` path.
 """
 function mix_rgb_jacobian!(
-        J::AbstractMatrix{T}, m::SpectralModel{T}, c::NTuple{4, T}
+        J::AbstractMatrix{T}, m::SpectralModel{T}, c::AbstractVector{T}
     ) where {T <: AbstractFloat}
     size(J, 1) >= 3 && size(J, 2) >= 4 ||
         throw(ArgumentError("Jacobian buffer must be at least 3 x 4, got $(size(J))"))
@@ -143,13 +139,11 @@ function mix_rgb_jacobian!(
             J[3, i] += zw * dq
         end
     end
-    mt = q.xyz_to_rgb
-    n = q.norm
     @inbounds for i in 1:4
-        x, y, z = J[1, i], J[2, i], J[3, i]
-        J[1, i] = (mt[1] * x + mt[2] * y + mt[3] * z) * n
-        J[2, i] = (mt[4] * x + mt[5] * y + mt[6] * z) * n
-        J[3, i] = (mt[7] * x + mt[8] * y + mt[9] * z) * n
+        rgb = (q.xyz_to_rgb * SVector(J[1, i], J[2, i], J[3, i])) * q.norm
+        J[1, i] = rgb[1]
+        J[2, i] = rgb[2]
+        J[3, i] = rgb[3]
     end
     return J
 end
@@ -157,41 +151,28 @@ end
 # --- perceptual difference and the cube penalty ---------------------------
 
 # Oklab (Ottosson 2020), the color space equation (17) measures distances in.
-const _OKLAB_M1 = (
-    0.4122214708, 0.5363325363, 0.0514459929,
-    0.2119034982, 0.6806995451, 0.1073969566,
-    0.0883024619, 0.2817188376, 0.6299787005,
-)
-const _OKLAB_M2 = (
-    0.2104542553, 0.793617785, -0.0040720468,
-    1.9779984951, -2.428592205, 0.4505937099,
-    0.0259040371, 0.7827717662, -0.808675766,
-)
+const _OKLAB_M1 = @SMatrix [
+    0.4122214708 0.5363325363 0.0514459929
+    0.2119034982 0.6806995451 0.1073969566
+    0.0883024619 0.2817188376 0.6299787005
+]
+const _OKLAB_M2 = @SMatrix [
+    0.2104542553 0.793617785 -0.0040720468
+    1.9779984951 -2.428592205 0.4505937099
+    0.0259040371 0.7827717662 -0.808675766
+]
 
 """
-    linear_srgb_to_oklab(rgb) -> NTuple{3}
+    linear_srgb_to_oklab(rgb) -> RGB
 
 Convert linear-light sRGB to Oklab. Accepts out-of-gamut values; the LMS
 cube root is signed so that negatives propagate.
 """
-@inline function linear_srgb_to_oklab(rgb::NTuple{3, S}) where {S <: Real}
-    r, g, b = rgb
-    m = _OKLAB_M1
-    l = m[1] * r + m[2] * g + m[3] * b
-    mm = m[4] * r + m[5] * g + m[6] * b
-    s = m[7] * r + m[8] * g + m[9] * b
+@inline function linear_srgb_to_oklab(rgb::SVector{3, S}) where {S <: Real}
     # `cbrt` accepts negative arguments, which out-of-gamut linear RGB needs.
     # Its derivative is singular at zero; that is inherent, and the tests
     # check gradients away from it.
-    l_ = cbrt(l)
-    m_ = cbrt(mm)
-    s_ = cbrt(s)
-    n = _OKLAB_M2
-    return (
-        n[1] * l_ + n[2] * m_ + n[3] * s_,
-        n[4] * l_ + n[5] * m_ + n[6] * s_,
-        n[7] * l_ + n[8] * m_ + n[9] * s_,
-    )
+    return _OKLAB_M2 * cbrt.(_OKLAB_M1 * rgb)
 end
 
 """
@@ -199,19 +180,7 @@ end
 
 Squared Euclidean Oklab distance, the integrand of equation (17).
 """
-@inline function oklab_distance_squared(a::NTuple{3, S}, b::NTuple{3, S}) where {S <: Real}
-    d1 = a[1] - b[1]
-    d2 = a[2] - b[2]
-    d3 = a[3] - b[3]
-    return d1 * d1 + d2 * d2 + d3 * d3
-end
-
-@inline function oklab_distance_squared(a::NTuple{3, S}, b::NTuple{3, S2}) where {S <: Real, S2 <: Real}
-    d1 = a[1] - b[1]
-    d2 = a[2] - b[2]
-    d3 = a[3] - b[3]
-    return d1 * d1 + d2 * d2 + d3 * d3
-end
+@inline oklab_distance_squared(a::AbstractVector, b::AbstractVector) = sum(abs2, a - b)
 
 """
     cube_signed_distance(p) -> Real
@@ -225,23 +194,9 @@ Outside it is the Euclidean distance to the cube, computed as a square root.
 The fit itself never calls this: [`cube_outside_penalty`](@ref) is the
 squared form and avoids the root.
 """
-function cube_signed_distance(p::NTuple{3, S}) where {S <: Real}
-    inside = true
-    d = zero(S)
-    @inbounds for i in 1:3
-        v = p[i]
-        if v < zero(S)
-            inside = false
-            d += v * v
-        elseif v > one(S)
-            inside = false
-            t = v - one(S)
-            d += t * t
-        end
-    end
-    if inside
-        return -min(min(p[1], one(S) - p[1]), min(p[2], one(S) - p[2]), min(p[3], one(S) - p[3]))
-    end
+function cube_signed_distance(p::SVector{3, S}) where {S <: Real}
+    d = sum(abs2, max.(p .- one(S), zero(S))) + sum(abs2, max.(-p, zero(S)))
+    d == zero(S) && return -minimum(min.(p, one(S) .- p))
     return sqrt(d)
 end
 
@@ -255,20 +210,8 @@ It is written as a sum of squared per-channel violations, which is exactly
 `phi(p)^2` outside the cube but needs no square root and stays smooth for
 automatic differentiation.
 """
-@inline function cube_outside_penalty(p::NTuple{3, S}) where {S <: Real}
-    t1 = p[1] - one(S)
-    t2 = p[2] - one(S)
-    t3 = p[3] - one(S)
-    lo1 = -p[1]
-    lo2 = -p[2]
-    lo3 = -p[3]
-    a = max(t1, zero(S))
-    b = max(t2, zero(S))
-    c = max(t3, zero(S))
-    d = max(lo1, zero(S))
-    e = max(lo2, zero(S))
-    f = max(lo3, zero(S))
-    return a * a + b * b + c * c + d * d + e * e + f * f
+@inline function cube_outside_penalty(p::SVector{3, S}) where {S <: Real}
+    return sum(abs2, max.(p .- one(S), zero(S))) + sum(abs2, max.(-p, zero(S)))
 end
 
 # --- evaluator interface ---------------------------------------------------
@@ -278,11 +221,11 @@ end
 # generic over the evaluator type so no dispatch happens inside the hot loop.
 
 """
-    _mix(ev, c) -> NTuple{3}
+    _mix(ev, c) -> RGB
 
 Evaluate the forward map at four concentrations.
 """
-@inline _mix(m::SpectralModel, c::NTuple{4, S}) where {S <: Real} = mix_rgb(m, c)
+@inline _mix(m::SpectralModel, c::AbstractVector{S}) where {S <: Real} = mix_rgb(m, c)
 
 """
     _jacobian4!(J, ev, c)
@@ -293,6 +236,6 @@ along increasing `c[i]` with the fourth concentration taking up the slack is
 `J[:, i] - J[:, 4]`. Callers only ever combine columns with directions whose
 entries sum to zero, so this convention is exact for both evaluators.
 """
-@inline function _jacobian4!(J::AbstractMatrix, m::SpectralModel, c::NTuple{4, T}) where {T <: Real}
+@inline function _jacobian4!(J::AbstractMatrix, m::SpectralModel, c::AbstractVector{T}) where {T <: Real}
     return mix_rgb_jacobian!(J, m, c)
 end

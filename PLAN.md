@@ -62,7 +62,7 @@ projects = ["precompute", "test", "build", "benchmarks"]
 
 Each child declares its own dependencies. Children that use the runtime declare `PaintMix` in `[deps]` and `[sources] PaintMix = {path = ".."}`. Put precompute's test dependencies in its own nested test project if needed. Generate UUIDs and manifests with Julia/Pkg during implementation; do not invent package UUIDs.
 
-The dependency direction is `precompute -> PaintMix` and `build -> PaintMix`; never the reverse. Start with Base/stdlib facilities for the runtime. Keep image decoders, plotting, optimization, AD, and binding generation out of its dependency graph. Optional Colors.jl integration can follow through an extension after the core API works.
+The dependency direction is `precompute -> PaintMix` and `build -> PaintMix`; never the reverse. The runtime's only dependency is StaticArrays, which supplies the fixed-size vector and matrix algebra the kernels are written in; image decoders, plotting, optimization, AD, and binding generation stay out of its dependency graph and out of the workspace-member projects that do not need them. Optional Colors.jl integration can follow through an extension after the core API works.
 
 Workspaces share resolution and a manifest, not dependency visibility. Full workspace setup can install heavy tooling, so test a separate consumer environment to verify that installing `PaintMix` alone does not pull in precompute/build dependencies. [Pkg workspace documentation](https://pkgdocs.julialang.org/dev/toml-files/#The-%5Bworkspace%5D-section)
 

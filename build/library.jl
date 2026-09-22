@@ -11,6 +11,7 @@ module PaintMixLib
 
 using JLWInterop
 using PaintMix
+using StaticArrays: SVector
 
 const ABI_VERSION = Int32(1)
 const CHANNELS = 3
@@ -86,21 +87,19 @@ end
 end
 
 @inline function _load3(v::CVector{:borrowed, T}, i::Int) where {T}
-    return (
+    return SVector(
         unsafe_load(v.data, 3i - 2), unsafe_load(v.data, 3i - 1), unsafe_load(v.data, 3i),
     )
 end
 
-@inline function _store3!(v::CVector{:borrowed, T}, i::Int, rgb::NTuple{3, T}) where {T}
+@inline function _store3!(v::CVector{:borrowed, T}, i::Int, rgb::SVector{3, T}) where {T}
     unsafe_store!(v.data, rgb[1], 3i - 2)
     unsafe_store!(v.data, rgb[2], 3i - 1)
     unsafe_store!(v.data, rgb[3], 3i)
     return nothing
 end
 
-@inline function _finite3(c::NTuple{3, T}) where {T}
-    return isfinite(c[1]) && isfinite(c[2]) && isfinite(c[3])
-end
+@inline _finite3(c::SVector{3, T}) where {T} = all(isfinite, c)
 
 # --- encode and decode -----------------------------------------------------
 
@@ -111,7 +110,7 @@ function _encode!(
     st == PM_OK || return st
     st = _check_vec(latent, LATENT_SCALARS)
     st == PM_OK || return st
-    c = (unsafe_load(rgb.data, 1), unsafe_load(rgb.data, 2), unsafe_load(rgb.data, 3))
+    c = SVector(unsafe_load(rgb.data, 1), unsafe_load(rgb.data, 2), unsafe_load(rgb.data, 3))
     _finite3(c) || return PM_ERR_NONFINITE
     z = PaintMix.encode(MODEL, c)
     unsafe_store!(latent.data, z.c[1], 1)
@@ -135,11 +134,11 @@ function _decode!(
         isfinite(unsafe_load(latent.data, i)) || return PM_ERR_NONFINITE
     end
     z = Latent(
-        (
+        SVector(
             unsafe_load(latent.data, 1), unsafe_load(latent.data, 2),
             unsafe_load(latent.data, 3), unsafe_load(latent.data, 4),
         ),
-        (
+        SVector(
             unsafe_load(latent.data, 5), unsafe_load(latent.data, 6),
             unsafe_load(latent.data, 7),
         ),
@@ -160,8 +159,8 @@ function _mix!(
     st == PM_OK || return st
     st = _check_vec(out, CHANNELS)
     st == PM_OK || return st
-    ca = (unsafe_load(a.data, 1), unsafe_load(a.data, 2), unsafe_load(a.data, 3))
-    cb = (unsafe_load(b.data, 1), unsafe_load(b.data, 2), unsafe_load(b.data, 3))
+    ca = SVector(unsafe_load(a.data, 1), unsafe_load(a.data, 2), unsafe_load(a.data, 3))
+    cb = SVector(unsafe_load(b.data, 1), unsafe_load(b.data, 2), unsafe_load(b.data, 3))
     (_finite3(ca) && _finite3(cb) && isfinite(t)) || return PM_ERR_NONFINITE
     _store3!(out, 1, mix(MODEL, ca, cb, t))
     return PM_OK

@@ -5,7 +5,7 @@
 # the coarse concentration field. Only the buffer, its element scale, and the
 # scalar type vary, so they are arguments rather than separate kernels.
 #
-# The kernels index a concrete buffer directly and return tuples. They
+# The kernels index a concrete buffer directly and return `SVector`s. They
 # allocate nothing, dispatch on nothing, and never branch on
 # trailing-singleton axes.
 #
@@ -25,21 +25,20 @@
     return i, f - T(i)
 end
 
-@inline function _channel3(d::Vector{UInt8}, base::Int)::NTuple{3, UInt8}
-    return @inbounds (d[base], d[base + 1], d[base + 2])
+@inline function _channel3(d::Vector{UInt8}, base::Int)::SVector{3, UInt8}
+    return @inbounds SVector(d[base], d[base + 1], d[base + 2])
 end
 
 # The three channels at `base`, scaled by `s`: `one(T) / 255` for the byte
 # tables and `one(T)` for the float tables and the coarse field.
 @inline function _load3(d::AbstractVector, base::Int, s::T) where {T <: AbstractFloat}
-    return @inbounds (
+    return @inbounds SVector(
         s * T(d[base]), s * T(d[base + 1]), s * T(d[base + 2]),
     )
 end
 
-@inline function _lerp3(a::NTuple{3, T}, b::NTuple{3, T}, w::T) where {T <: AbstractFloat}
-    s = one(T) - w
-    return (s * a[1] + w * b[1], s * a[2] + w * b[2], s * a[3] + w * b[3])
+@inline function _lerp3(a::SVector{3, T}, b::SVector{3, T}, w::T) where {T <: AbstractFloat}
+    return a + w * (b - a)
 end
 
 # Channel-fastest layout: `ch + 3 * (i + n * (j + n * k))`. Base offsets of
@@ -103,7 +102,7 @@ end
 end
 
 """
-    trilinear(lut::ByteLUT, x, y, z) -> NTuple{3,T}
+    trilinear(lut::ByteLUT, x, y, z) -> RGB{T}
 
 Sample `lut` trilinearly at `(x, y, z)`, each of which is clamped to
 `[0, 1]`. Values are returned in `[0, 1]` after scaling bytes by `1/255`.
@@ -120,7 +119,7 @@ use it.
 end
 
 """
-    vertex(lut::ByteLUT, i, j, k) -> NTuple{3,UInt8}
+    vertex(lut::ByteLUT, i, j, k) -> RGB8
 
 The stored bytes at zero-based grid indices `(i, j, k)`. Exposed for
 validation and tests; not used in the mixing path.

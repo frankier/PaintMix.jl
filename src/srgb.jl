@@ -15,7 +15,7 @@ The computation is done in `T`, so a `Float32` input does not silently
 round-trip through `Float64`.
 """
 @inline function linear_from_srgb(c::RGB{T}) where {T <: AbstractFloat}
-    return (_srgb_decode(c[1]), _srgb_decode(c[2]), _srgb_decode(c[3]))
+    return _srgb_decode.(c)
 end
 
 """
@@ -25,7 +25,7 @@ Apply the inverse of [`linear_from_srgb`](@ref). The result is not clipped:
 use this for round trips and clip only when converting to bytes.
 """
 @inline function srgb_from_linear(c::RGB{T}) where {T <: AbstractFloat}
-    return (_srgb_encode(c[1]), _srgb_encode(c[2]), _srgb_encode(c[3]))
+    return _srgb_encode.(c)
 end
 
 @inline function _srgb_decode(c::T) where {T <: AbstractFloat}
@@ -45,7 +45,7 @@ function is then applied in `Float32`.
 """
 @inline function linear_from_srgb8(rgb::RGB8)
     s = 1.0f0 / 255.0f0
-    return linear_from_srgb((s * Float32(rgb[1]), s * Float32(rgb[2]), s * Float32(rgb[3])))
+    return linear_from_srgb(s * Float32.(rgb))
 end
 
 """
@@ -58,9 +58,7 @@ function, multiply by 255, round half away from zero (`round`), and clamp to
 `0x00:0xff`. Clipping is explicit here and nowhere else in the scalar API.
 """
 @inline function srgb8_from_linear(c::RGB{T}) where {T <: AbstractFloat}
-    return (
-        _byte_from_linear(c[1]), _byte_from_linear(c[2]), _byte_from_linear(c[3]),
-    )
+    return _byte_from_linear.(c)
 end
 
 @inline function _byte_from_linear(c::T) where {T <: AbstractFloat}

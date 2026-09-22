@@ -7,17 +7,19 @@
 using Pkg: Pkg
 using Test
 using PaintMix
+using StaticArrays: SVector
 
 include("fixtures/synthetic.jl")
 using .SyntheticFixtures
 
 @testset "PaintMix" begin
     @testset "runtime dependency isolation" begin
-        # The runtime package must stay evaluable with no non-stdlib
-        # dependencies; test/consumer_env.jl checks a fresh consumer
-        # environment, and this catches the change that would break it.
+        # The runtime depends on StaticArrays and nothing else; precompute,
+        # build, and benchmark dependencies must not leak in.
+        # test/consumer_env.jl checks the resolved closure of a fresh
+        # consumer environment.
         project = Pkg.TOML.parsefile(joinpath(pkgdir(PaintMix), "Project.toml"))
-        @test isempty(get(project, "deps", Dict{String, Any}()))
+        @test sort(collect(keys(get(project, "deps", Dict{String, Any}())))) == ["StaticArrays"]
     end
     include("test_lookup.jl")
     include("test_mixing.jl")

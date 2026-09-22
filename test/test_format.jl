@@ -137,7 +137,7 @@ end
         end
         @test err isa ArgumentError
         @test occursin("default.pmx", sprint(showerror, err))
-        @test_throws ArgumentError encode((0.1, 0.2, 0.3))
+        @test_throws ArgumentError encode(SVector(0.1, 0.2, 0.3))
     else
         @test default_model() === default_model()
     end

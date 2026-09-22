@@ -12,7 +12,7 @@
 # promised across Julia versions, but it is stable in practice, which is all
 # the validation reports need.
 
-@inline rand_rgb(rng::AbstractRNG) = (rand(rng), rand(rng), rand(rng))
+@inline rand_rgb(rng::AbstractRNG) = SVector(rand(rng), rand(rng), rand(rng))
 
 # --- spectral reference implementation of encode/mix ----------------------
 
@@ -24,14 +24,13 @@ equation (9) with the reference solver, then store the residual against the
 *same* spectral model. This is the reference the byte tables approximate.
 """
 function spectral_encode(
-        model::SpectralModel{T}, rgb::NTuple{3, T};
+        model::SpectralModel{T}, rgb::SVector{3, T};
         settings::UnmixSettings{T} = UnmixSettings{T}(100, T(1.0e-10), T(1.0e-6), 4),
         scratch::SolverScratch = SolverScratch(),
     ) where {T}
     res = unmix_reference(model, rgb; settings = settings, scratch = scratch)
     m = mix_rgb(model, res.c)
-    r = (rgb[1] - m[1], rgb[2] - m[2], rgb[3] - m[3])
-    return res.c, r
+    return res.c, rgb - m
 end
 
 """
@@ -41,14 +40,12 @@ Reference `kmerp`: lerp the spectral latents and decode through `mix` of the
 spectral model. Callers cache the encodings of `a` and `b`.
 """
 @inline function spectral_mix(
-        model::SpectralModel{T}, ca::NTuple{4, T}, ra::NTuple{3, T},
-        cb::NTuple{4, T}, rb::NTuple{3, T}, t::T,
+        model::SpectralModel{T}, ca::SVector{4, T}, ra::SVector{3, T},
+        cb::SVector{4, T}, rb::SVector{3, T}, t::T,
     ) where {T}
     s = one(T) - t
-    c = ntuple(i -> s * ca[i] + t * cb[i], Val(4))
-    r = ntuple(i -> s * ra[i] + t * rb[i], Val(3))
-    m = mix_rgb(model, c)
-    return (m[1] + r[1], m[2] + r[2], m[3] + r[3])
+    m = mix_rgb(model, s * ca + t * cb)
+    return m + s * ra + t * rb
 end
 
 # --- reports ---------------------------------------------------------------
@@ -61,11 +58,14 @@ pigment vertices and white, a spread of random colors, and some near-black
 and near-white samples where residuals dominate.
 """
 function corpus(rng::AbstractRNG, count::Integer)
-    colors = NTuple{3, Float64}[]
+    colors = SVector{3, Float64}[]
     for r in (0.0, 1.0), g in (0.0, 1.0), b in (0.0, 1.0)
-        push!(colors, (r, g, b))
+        push!(colors, SVector(r, g, b))
     end
-    push!(colors, (0.0, 0.0, 0.0), (1.0, 1.0, 1.0), (0.02, 0.02, 0.02), (0.98, 0.98, 0.98))
+    push!(
+        colors, SVector(0.0, 0.0, 0.0), SVector(1.0, 1.0, 1.0),
+        SVector(0.02, 0.02, 0.02), SVector(0.98, 0.98, 0.98),
+    )
     while length(colors) < count
         push!(colors, rand_rgb(rng))
     end
@@ -93,7 +93,7 @@ function quality_report(
     scratch = SolverScratch()
     rng = Xoshiro(seed)
     points = corpus(rng, colors)
-    latents = Vector{Tuple{NTuple{4, T}, NTuple{3, T}}}(undef, length(points))
+    latents = Vector{Tuple{SVector{4, T}, SVector{3, T}}}(undef, length(points))
     for (i, rgb) in enumerate(points)
         latents[i] = spectral_encode(spectral, rgb; settings = settings, scratch = scratch)
     end
@@ -101,7 +101,7 @@ function quality_report(
     ch = Float64[]
     enc = Float64[]
     ok = Float64[]
-    worst = (0.0, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), 0.0)
+    worst = (0.0, SVector(0.0, 0.0, 0.0), SVector(0.0, 0.0, 0.0), 0.0)
     @inbounds for _ in 1:pairs
         ia = 1 + floor(Int, rand(rng) * (length(points) - 1))
         ib = 1 + floor(Int, rand(rng) * (length(points) - 1))
@@ -112,20 +112,16 @@ function quality_report(
         cb, rb = latents[ib]
         ref = spectral_mix(spectral, ca, ra, cb, rb, T(t))
         got = PaintMix.mix(model, a, b, Float32(t))
-        e = (
-            abs(Float64(got[1]) - ref[1]), abs(Float64(got[2]) - ref[2]),
-            abs(Float64(got[3]) - ref[3]),
-        )
+        e = abs.(Float64.(got) .- ref)
         m = maximum(e)
         push!(ch, m)
         # The plan's quality target is on *encoded* sRGB, so report the
         # displayable-range error separately from the linear-light one.
-        ga = PaintMix.srgb_from_linear(ntuple(i -> clamp(Float64(got[i]), 0.0, 1.0), 3))
-        ra = PaintMix.srgb_from_linear(ntuple(i -> clamp(ref[i], 0.0, 1.0), 3))
-        push!(enc, maximum(abs.(collect(ga) .- collect(ra))))
+        ga = PaintMix.srgb_from_linear(clamp.(Float64.(got), 0.0, 1.0))
+        ra = PaintMix.srgb_from_linear(clamp.(ref, 0.0, 1.0))
+        push!(enc, maximum(abs.(ga .- ra)))
         d = oklab_distance_squared(
-            linear_srgb_to_oklab((Float64(got[1]), Float64(got[2]), Float64(got[3]))),
-            linear_srgb_to_oklab(ref)
+            linear_srgb_to_oklab(Float64.(got)), linear_srgb_to_oklab(ref)
         )
         push!(ok, sqrt(d))
         if m > worst[1]
@@ -176,7 +172,7 @@ function padding_report(
     ) where {T}
     n = PaintMix.grid_n(model)
     errs = Dict{Float64, Vector{Float64}}(d => Float64[] for d in inside_depths)
-    worst = (0.0, (0.0, 0.0, 0.0, 0.0), 0.0)
+    worst = (0.0, SVector(0.0, 0.0, 0.0, 0.0), 0.0)
     for face in 1:4
         free = [i for i in 1:4 if i != face]
         for a in 0:face_samples, b in 0:(face_samples - a)
@@ -188,19 +184,13 @@ function padding_report(
                 # Pull the point `depth` into the simplex along the face normal
                 # so it is strictly inside when depth > 0.
                 eps = depth / 4
-                c = (
+                c = SVector(
                     base[1] + eps, base[2] + eps, base[3] + eps, base[4] + eps,
                 )
-                s = c[1] + c[2] + c[3] + c[4]
-                c = (c[1] / s, c[2] / s, c[3] / s, c[4] / s)
+                c = c / sum(c)
                 ref = mix_rgb(spectral, c)
                 got = PaintMix.forward_rgb(model, T(c[1]), T(c[2]), T(c[3]))
-                e = maximum(
-                    (
-                        abs(Float64(got[1]) - ref[1]), abs(Float64(got[2]) - ref[2]),
-                        abs(Float64(got[3]) - ref[3]),
-                    )
-                )
+                e = maximum(abs.(Float64.(got) .- Float64.(ref)))
                 push!(errs[depth], e)
                 if e > worst[1]
                     worst = (e, c, depth)
@@ -242,30 +232,13 @@ function roundtrip_report(
     err32 = Float64[]
     err64 = Float64[]
     for rgb in points
-        a32 = (Float32(rgb[1]), Float32(rgb[2]), Float32(rgb[3]))
+        a32 = Float32.(rgb)
         z32 = PaintMix.encode(model, a32)
         back32 = PaintMix.decode(model, z32)
-        push!(
-            err32, maximum(
-                abs.(
-                    (
-                        Float64(back32[1]) - rgb[1], Float64(back32[2]) - rgb[2],
-                        Float64(back32[3]) - rgb[3],
-                    )
-                )
-            )
-        )
+        push!(err32, maximum(abs.(Float64.(back32) .- rgb)))
         z64 = PaintMix.encode(model, rgb)
         back64 = PaintMix.decode(model, z64)
-        push!(
-            err64, maximum(
-                abs.(
-                    (
-                        back64[1] - rgb[1], back64[2] - rgb[2], back64[3] - rgb[3],
-                    )
-                )
-            )
-        )
+        push!(err64, maximum(abs.(back64 .- rgb)))
     end
     return Dict{String, Any}(
         "samples" => length(points),
@@ -354,35 +327,25 @@ function continuity_report(
     rng = Xoshiro(seed)
     jumps = Float64[]
     decode_err = Float64[]
-    worst_jump = (0.0, (0.0, 0.0, 0.0))
+    worst_jump = (0.0, SVector(0.0, 0.0, 0.0))
     for _ in 1:lines
         a = rand_rgb(rng)
         b = rand_rgb(rng)
         prev = nothing
         for i in 0:(points - 1)
             t = Float32(i / (points - 1))
-            rgb = (
-                Float32(a[1] + t * (b[1] - a[1])),
-                Float32(a[2] + t * (b[2] - a[2])),
-                Float32(a[3] + t * (b[3] - a[3])),
-            )
+            rgb = Float32.(a .+ t .* (b .- a))
             z = PaintMix.encode(model, rgb)
             if prev !== nothing
-                c1, c2, c3, c4 = PaintMix.concentrations(prev)
-                d1, d2, d3, d4 = PaintMix.concentrations(z)
-                jump = max(abs(d1 - c1), abs(d2 - c2), abs(d3 - c3), abs(d4 - c4))
+                c = PaintMix.concentrations(prev)
+                d = PaintMix.concentrations(z)
+                jump = maximum(abs.(d .- c))
                 push!(jumps, jump)
                 if jump > worst_jump[1]
-                    worst_jump = (jump, (Float64(rgb[1]), Float64(rgb[2]), Float64(rgb[3])))
+                    worst_jump = (jump, Float64.(rgb))
                 end
                 back = PaintMix.decode(model, z)
-                push!(
-                    decode_err, maximum(
-                        abs.(
-                            (Float64(back[1]) - rgb[1], Float64(back[2]) - rgb[2], Float64(back[3]) - rgb[3]),
-                        )
-                    )
-                )
+                push!(decode_err, maximum(abs.(Float64.(back) .- Float64.(rgb))))
             end
             prev = z
         end
@@ -422,46 +385,41 @@ residual of the runtime model.
 function behavior_report(
         model::PaintMix.PigmentModel, spectral::SpectralModel{T}, cfg::AbstractDict,
     ) where {T}
-    Tf = Float64
-    blue = (0.02, 0.09, 0.42)
-    yellow = (0.71, 0.62, 0.02)
-    magenta = (0.55, 0.02, 0.12)
-    white = (1.0, 1.0, 1.0)
+    blue = SVector(0.02, 0.09, 0.42)
+    yellow = SVector(0.71, 0.62, 0.02)
+    magenta = SVector(0.55, 0.02, 0.12)
+    white = SVector(1.0, 1.0, 1.0)
     settings = unmix_settings(cfg)
     scratch = SolverScratch()
-    encode_spec = rgb -> spectral_encode(
-        spectral, (T(rgb[1]), T(rgb[2]), T(rgb[3])); settings = settings, scratch = scratch
-    )
-    cblue, rblue = encode_spec(blue)
-    cyellow, ryellow = encode_spec(yellow)
-    cmagenta, rmagenta = encode_spec(magenta)
-    spec_mix = (a, b, t) -> spectral_mix(spectral, a[1], a[2], b[1], b[2], T(t))
+    cblue, rblue = spectral_encode(spectral, T.(blue); settings = settings, scratch = scratch)
+    cyellow, ryellow = spectral_encode(spectral, T.(yellow); settings = settings, scratch = scratch)
+    cmagenta, rmagenta =
+        spectral_encode(spectral, T.(magenta); settings = settings, scratch = scratch)
 
-    green_spec = spec_mix((cblue, rblue), (cyellow, ryellow), 0.5)
-    orange_spec = spec_mix((cmagenta, rmagenta), (cyellow, ryellow), 0.5)
-    green = PaintMix.mix(model, Tf.(blue), Tf.(yellow), 0.5)
-    orange = PaintMix.mix(model, Tf.(magenta), Tf.(yellow), 0.5)
+    green_spec = spectral_mix(spectral, cblue, rblue, cyellow, ryellow, T(0.5))
+    orange_spec = spectral_mix(spectral, cmagenta, rmagenta, cyellow, ryellow, T(0.5))
+    green = PaintMix.mix(model, blue, yellow, 0.5)
+    orange = PaintMix.mix(model, magenta, yellow, 0.5)
 
     luma(c) = 0.2126 * c[1] + 0.7152 * c[2] + 0.0722 * c[3]
-    tints = [PaintMix.mix(model, Tf.(blue), Tf.(white), Float32(t)) for t in (0.0, 0.25, 0.5, 0.75, 1.0)]
+    tints = [PaintMix.mix(model, blue, white, t) for t in (0.0, 0.25, 0.5, 0.75, 1.0)]
     lightness = [luma(c) for c in tints]
-    same = maximum(abs.(collect(PaintMix.mix(model, Tf.(blue), Tf.(blue), 0.37)) .- blue))
+    same = maximum(abs.(PaintMix.mix(model, blue, blue, 0.37) .- blue))
     reversal = maximum(
         abs.(
-            collect(PaintMix.mix(model, Tf.(blue), Tf.(yellow), 0.3)) .-
-                collect(PaintMix.mix(model, Tf.(yellow), Tf.(blue), 0.7)),
+            PaintMix.mix(model, blue, yellow, 0.3) .-
+                PaintMix.mix(model, yellow, blue, 0.7)
         )
     )
     return Dict{String, Any}(
         "spectral_blue_yellow_50_50" => collect(green_spec),
         "runtime_blue_yellow_50_50" => collect(Float64.(green)),
-        "blue_yellow_channel_error" => maximum(abs.(collect(Float64.(green)) .- collect(green_spec))),
+        "blue_yellow_channel_error" => maximum(abs.(Float64.(green) .- green_spec)),
         "blue_yellow_is_green" =>
             green_spec[2] > green_spec[1] && green_spec[2] >= green_spec[3] - 0.05,
         "spectral_magenta_yellow_50_50" => collect(orange_spec),
         "runtime_magenta_yellow_50_50" => collect(Float64.(orange)),
-        "magenta_yellow_channel_error" =>
-            maximum(abs.(collect(Float64.(orange)) .- collect(orange_spec))),
+        "magenta_yellow_channel_error" => maximum(abs.(Float64.(orange) .- orange_spec)),
         "magenta_yellow_is_orange" =>
             orange_spec[1] > orange_spec[2] && orange_spec[2] >= orange_spec[3] - 0.05,
         "white_tint_lightness" => collect(lightness),

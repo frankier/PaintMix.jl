@@ -61,7 +61,7 @@ convention changes, update the README that documents it in the same change.
 
 ```sh
 julia --project=. -e 'using Pkg; Pkg.test()'                 # runtime tests
-julia --project=precompute/test -e 'include("runtests.jl")'  # precompute tests
+julia --project=precompute/test precompute/test/runtests.jl  # precompute tests
 julia --project=benchmarks benchmarks/run.jl --n 64          # benchmarks
 julia --project=build build/compile.jl --profile tiny        # shared library
 bash build/smoke/run.sh                                      # C + Python vs Julia

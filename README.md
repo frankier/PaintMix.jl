@@ -152,7 +152,7 @@ Evidence collected so far:
 ```sh
 julia --project=. -e 'using Pkg; Pkg.instantiate()'   # workspace
 julia --project=. -e 'using Pkg; Pkg.test()'          # runtime tests (fast)
-julia --project=precompute/test -e 'include("runtests.jl")'
+julia --project=precompute/test precompute/test/runtests.jl
 julia --project=test test/consumer_env.jl             # dependency isolation
 
 julia --project=build build/compile.jl --profile tiny # shared library + bindings

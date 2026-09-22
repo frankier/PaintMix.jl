@@ -141,6 +141,7 @@ Evidence collected so far:
 | Full-size payload survives `juliac --trim`, relocates, and matches the file | `build/EMBEDDING.md` |
 | C and Python clients match Julia across randomized inputs and error cases | `build/smoke/`, all checks pass |
 | Zero steady-state allocations in every kernel | `test/test_allocations.jl`, `benchmarks/README.md` |
+| Structs have concretely-typed fields, and Aqua checks pass | `test/test_quality.jl` |
 | A fresh consumer environment installs only `PaintMix` | `test/consumer_env.jl` |
 | The compiled library links only against the Julia runtime | `ldd build/out/paintmix.so` |
 | Spectral Jacobian matches finite differences | `precompute/test/runtests.jl` |

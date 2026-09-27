@@ -388,8 +388,7 @@ function main(args)
         @printf("promoted to %s with recorded override\n", target)
     else
         @printf(
-            "not promoted: failed gates %s; rerun with --force to promote and " *
-                "record the override\n",
+            "not promoted: failed gates %s; rerun with --force to promote and record the override\n",
             join(failed, ", ")
         )
     end

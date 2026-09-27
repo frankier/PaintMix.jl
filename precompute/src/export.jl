@@ -6,7 +6,7 @@
 # sidecar. `promote` copies a validated candidate into `data/default/`.
 
 """
-    model_id_bytes(io_writer) -> NTuple{16,UInt8}
+    _model_id_from(text) -> NTuple{16,UInt8}
 
 First 16 bytes of a SHA-256 over the canonical provenance string.
 """

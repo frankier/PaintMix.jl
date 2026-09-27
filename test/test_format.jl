@@ -3,7 +3,7 @@
 
 # Build a payload for a model that `write_model` would refuse to validate: the
 # header is written directly, so the file is well-formed but invalid.
-function BytesForTest(model::PigmentModel)
+function bytes_for_test(model::PigmentModel)
     io = IOBuffer()
     write(io, PaintMix._header_bytes(model))
     write(io, model.inverse.data)
@@ -107,7 +107,7 @@ end
         good.id, ByteLUT(n, inv), good.forward, FORMAT_VERSION, good.flags
     )
     @test_throws ArgumentError validate_model(broken)
-    bytes = BytesForTest(broken)
+    bytes = bytes_for_test(broken)
     @test_throws ArgumentError model_from_bytes(bytes)
     # Without the simplex check the payload is structurally acceptable.
     @test model_from_bytes(bytes; validate = false) isa PigmentModel

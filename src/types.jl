@@ -115,10 +115,10 @@ struct ByteLUT
 end
 
 Base.:(==)(a::ByteLUT, b::ByteLUT) = a.n == b.n && a.data == b.data
-Base.hash(l::ByteLUT, h::UInt) = hash(l.data, hash(l.n, hash(:ByteLUT, h)))
+Base.hash(lut::ByteLUT, h::UInt) = hash(lut.data, hash(lut.n, hash(:ByteLUT, h)))
 
-function Base.show(io::IO, l::ByteLUT)
-    print(io, "ByteLUT(n = ", l.n, ", ", length(l.data), " bytes)")
+function Base.show(io::IO, lut::ByteLUT)
+    print(io, "ByteLUT(n = ", lut.n, ", ", length(lut.data), " bytes)")
     return nothing
 end
 

@@ -98,11 +98,6 @@ end
 
 Base.showerror(io::IO, e::InputError) = print(io, "InputError: ", e.msg)
 
-function _require(cond::Bool, msg::AbstractString)
-    cond || throw(InputError(msg))
-    return nothing
-end
-
 """
     validate_database(db) -> db
 

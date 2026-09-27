@@ -1,5 +1,5 @@
 #!/usr/bin/env julia
-# Build the shared library and its C header and Python bindings.
+# Build the shared library and its C header, Python bindings, and R package.
 #
 #   julia --project=build-env -e 'using Pkg; Pkg.instantiate()'
 #   julia --project=build -e 'using Pkg; Pkg.instantiate()'
@@ -11,8 +11,10 @@
 #                         or "grid N"
 #   --out DIR             artifact directory (default build/out)
 #   --libname NAME        library name (default paintmix)
+#   --rname NAME          R package name (default the library name)
 #   --bundle              also produce a self-contained runtime bundle
 #   --no-python           skip the Python package target
+#   --no-r                skip the R package target
 #   --no-c                skip the C header target
 #   --keep-going          do not delete an existing out/ directory
 #
@@ -39,6 +41,8 @@ function parse_args(args)
         "bundle" => false,
         "c" => true,
         "python" => true,
+        "r" => true,
+        "rname" => nothing,
     )
     i = 1
     while i <= length(args)
@@ -47,9 +51,11 @@ function parse_args(args)
             opts["bundle"] = true
         elseif a == "--no-python"
             opts["python"] = false
+        elseif a == "--no-r"
+            opts["r"] = false
         elseif a == "--no-c"
             opts["c"] = false
-        elseif a in ("--payload", "--profile", "--out", "--libname")
+        elseif a in ("--payload", "--profile", "--out", "--libname", "--rname")
             i <= length(args) - 1 || error("$a needs a value")
             opts[a[3:end]] = args[i + 1]
             i += 1
@@ -76,7 +82,8 @@ end
 """
     compile(opts)
 
-Build `paintmix.so`, `paintmix.h`, and the `paintmix_py` ctypes package.
+Build `paintmix.so`, `paintmix.h`, the `paintmix_py` ctypes package, and the
+`paintmix` R package.
 """
 function compile(opts)
     profile = opts["profile"]
@@ -113,6 +120,17 @@ function compile(opts)
             ),
         )
     end
+    rname = opts["rname"] === nothing ? libname : String(opts["rname"])
+    if opts["r"]
+        bundle = opts["bundle"]
+        push!(
+            targets,
+            RTarget(
+                out, rname, libname;
+                bundle_subdir = bundle ? "bundle" : nothing,
+            ),
+        )
+    end
     isempty(targets) && error("no targets selected")
 
     result = build_library(
@@ -126,6 +144,9 @@ function compile(opts)
     )
     if opts["python"]
         _finish_python_target(out, libname, opts["bundle"])
+    end
+    if opts["r"]
+        _finish_r_target(out, rname, libname, opts["bundle"])
     end
     println("library:  ", result.library)
     println("abi:      ", result.abi_path)
@@ -164,6 +185,35 @@ function _finish_python_target(out::AbstractString, libname::AbstractString, bun
         cp(
             joinpath(out, libname * "." * Libdl.dlext),
             joinpath(pkg, libname * "." * Libdl.dlext);
+            force = true,
+        )
+    end
+    return nothing
+end
+
+"""
+    _finish_r_target(out, rname, libname, bundle)
+
+Install the maintained façade over the generated starter and, for a
+non-bundled build, place the shared library in `inst/` so the generated
+loader finds it once `R CMD INSTALL` has moved that tree to the package root.
+The generated `R/lowlevel.R` is never edited.
+"""
+function _finish_r_target(
+        out::AbstractString, rname::AbstractString, libname::AbstractString, bundle::Bool
+    )
+    pkg = joinpath(out, rname)
+    facade = joinpath(BUILD_DIR, "r", "_facade.R")
+    if isfile(facade)
+        cp(facade, joinpath(pkg, "R", "facade.R"); force = true)
+        println("façade:   ", joinpath(pkg, "R", "facade.R"))
+    end
+    if !bundle
+        inst = joinpath(pkg, "inst")
+        mkpath(inst)
+        cp(
+            joinpath(out, libname * "." * Libdl.dlext),
+            joinpath(inst, libname * "." * Libdl.dlext);
             force = true,
         )
     end

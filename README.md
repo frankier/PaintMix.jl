@@ -55,7 +55,7 @@ produce. Clipping happens only in `srgb8_from_linear`.
 | `src/` | the runtime package: tables, interpolation, latent algebra |
 | `data/default/` | the promoted release payload and the format contract |
 | `precompute/` | `PaintMixPrecompute`: spectra, surrogate fit, inverse solver, export |
-| `build/` | the C ABI, `juliac` compilation, and the generated C/Python bindings |
+| `build/` | the C ABI, `juliac` compilation, and the generated C/Python/R bindings |
 | `benchmarks/` | runtime benchmarks |
 | `test/` | fast runtime tests on synthetic tables |
 | `PLAN.md` | the implementation plan this repository follows |
@@ -75,8 +75,9 @@ Plan steps 1-6 are implemented:
   * the runtime: trilinear lookup on byte tables, latents with residuals,
     exact binary endpoints, bulk and weighted mixing, the `.pmx` format with
     simplex validation, and the sRGB adapters;
-  * the compiled boundary: a 12-entrypoint C ABI, generated `paintmix.h` and
-    `paintmix_py` bindings, and C and Python clients checked against Julia on
+  * the compiled boundary: a 12-entrypoint C ABI, generated `paintmix.h`,
+    `paintmix_py`, and `paintmix` (R) bindings, and C, Python, and R clients
+    checked against Julia on
     both a tiny and a full-size (96 MiB) payload;
   * the precompute pipeline: spreadsheet import into DuckDB, the equations
     (1)-(7) spectral reference with an analytic Jacobian, the surrogate fit of
@@ -143,7 +144,7 @@ Evidence collected so far:
 | --- | --- |
 | Release payload promoted with the quality override recorded | `precompute/output/release/` (ignored), `data/default/README.md` |
 | Full-size payload survives `juliac --trim`, relocates, and matches the file | `build/EMBEDDING.md` |
-| C and Python clients match Julia across randomized inputs and error cases | `build/smoke/`, all checks pass |
+| C, Python, and R clients match Julia across randomized inputs and error cases | `build/smoke/`, all checks pass |
 | Zero steady-state allocations in every kernel | `test/test_allocations.jl`, `benchmarks/README.md` |
 | Structs have concretely-typed fields, and Aqua checks pass | `test/test_quality.jl` |
 | A fresh consumer environment installs `PaintMix` and its StaticArrays closure | `test/consumer_env.jl` |
@@ -160,7 +161,7 @@ julia --project=precompute/test precompute/test/runtests.jl
 julia --project=test test/consumer_env.jl             # dependency isolation
 
 julia --project=build build/compile.jl --profile tiny # shared library + bindings
-bash build/smoke/run.sh                               # C + Python vs Julia
+bash build/smoke/run.sh                               # C + Python + R vs Julia
 
 julia --project=benchmarks benchmarks/run.jl --n 256
 

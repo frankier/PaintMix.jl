@@ -26,7 +26,7 @@ direction is one-way: `precompute -> PaintMix` and `build -> PaintMix`.
 | `src/tables.jl` | `.pmx` reading, writing, validation, default model |
 | `data/default/` | the promoted release payload (untracked build artifact) |
 | `precompute/` | `PaintMixPrecompute`: spectra, surrogate fit, inverse solver, export |
-| `build/` | the C ABI, `juliac` compilation, generated C/Python bindings |
+| `build/` | the C ABI, `juliac` compilation, generated C/Python/R bindings |
 | `benchmarks/` | runtime benchmarks, which also assert allocations |
 | `test/` | fast runtime tests on in-memory synthetic tables |
 

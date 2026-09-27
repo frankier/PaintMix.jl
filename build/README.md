@@ -47,7 +47,7 @@ julia --project=build/build-env -e 'using Pkg; Pkg.instantiate()'
 julia --project=build -e 'using Pkg; Pkg.instantiate()'
 julia --project=build build/compile.jl --profile tiny      # fast development build
 julia --project=build build/compile.jl --payload data/default/default.pmx
-bash build/smoke/run.sh                                    # C + Python vs Julia
+bash build/smoke/run.sh                                    # C + Python + R vs Julia
 ```
 
 `compile.jl` copies the chosen payload to `build/data/payload.pmx`, which is
@@ -55,6 +55,41 @@ the path `library.jl` reads while the image is built. Without `--bundle` the
 library still needs Julia's `lib` directory on the loader path; `--bundle`
 produces the self-contained `juliac --bundle` tree instead (hundreds of
 megabytes).
+
+## Language wrappers
+
+`compile.jl` emits three targets beside the shared library:
+
+  * `paintmix.h` — the C header.
+  * `paintmix_py/` — a `ctypes` package. `_lowlevel.py` is regenerated on
+    every build; `build/python/_facade.py` is the maintained API and is
+    copied over the generated starter.
+  * `paintmix/` — an installable R package that calls the library through
+    [rdyncall](https://CRAN.R-project.org/package=rdyncall). `R/lowlevel.R`
+    is regenerated; `build/r/_facade.R` is the maintained API and is copied
+    over the generated starter in the same way.
+
+Pass `--no-c`, `--no-python`, or `--no-r` to skip a target.
+
+### R package
+
+Install it with `R CMD INSTALL <out>/paintmix`; it lists `rdyncall` in
+`Imports`, so there is nothing to compile. A non-bundled build copies the
+shared library into `inst/`, which installs to the package root where the
+generated loader finds it; `PAINTMIX_R_LIBRARY` overrides the search for a
+library built elsewhere.
+
+The façade mirrors the Python one: `abi_version`, `model_info`, `encode`,
+`decode`, `mix`, `bulk_mix`, `weighted_mix`, `rgb8_to_linear`, and
+`linear_to_rgb8`. A matrix argument is `n x 3`, one color per row; a flat
+argument is channel-fastest. R has no `float32` vector type, so the
+`precision` argument (`"double"`, the default, or `"single"`) selects the
+entrypoint pair.
+
+`model_info()$model_id` returns the 16 raw identifier bytes, read straight
+from the returned struct. The `model_id_lo` and `model_id_hi` fields cross
+rdyncall as `double`, which cannot hold a 64-bit integer, so the decoded
+fields are not used for the identifier.
 
 ## Where the payload is validated
 
@@ -69,6 +104,8 @@ still runs while the image is built.
 
 `build/smoke/run.sh` generates reference values with the Julia package from
 the same payload, then checks the compiled library from C (`client.c`, linked
-against `paintmix.h`) and from Python (`client.py`, importing the generated
-`paintmix_py` package). Both clients cover mixing, encoding, decoding,
-weighted mixing, the error contract, and the model-info identity.
+against `paintmix.h`), from Python (`client.py`, importing the generated
+`paintmix_py` package), and from R (`client.R`, loading the installed
+`paintmix` package). All three clients cover mixing, encoding, decoding,
+weighted mixing, the error contract, and the model-info identity. The R
+client is skipped with a message when `Rscript` or `rdyncall` is absent.

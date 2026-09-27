@@ -93,7 +93,8 @@ function report(label, f; elements::Int = 1)
     per_element = per_call / elements
     @printf(
         "%-38s %10.4f us/call  %8.1f ns/color  %8.2f Mcolor/s  %5d allocs  (%d iters)\n",
-        label, per_call * 1.0e6, per_element * 1.0e9, elements / per_call * 1.0e-6, allocs, n,
+        label, per_call * 1.0e6, per_element * 1.0e9,
+        elements / per_call * 1.0e-6, allocs, n,
     )
     return nothing
 end

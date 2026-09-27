@@ -1,7 +1,8 @@
 #!/usr/bin/env julia
 # Import the selected spreadsheet ranges into a DuckDB database.
 #
-#   julia --project=precompute scripts/import_inputs.jl [--config PATH] [--db PATH] [--force]
+#   julia --project=precompute scripts/import_inputs.jl [--config PATH] [--db PATH]
+#   [--force]
 #
 # Plan step 3. The import is specified in precompute/inputs/README.md:
 #
@@ -60,7 +61,8 @@ function main(args)
     cfg_path = opts["config"]
     cfg = load_config(cfg_path)
     db_path = something(
-        opts["db"], joinpath(ROOT, get(cfg["inputs"], "database", "precompute/output/paintmix.duckdb"))
+        opts["db"],
+        joinpath(ROOT, get(cfg["inputs"], "database", "precompute/output/paintmix.duckdb"))
     )
     if isfile(db_path) && !opts["force"]
         @printf("database already exists: %s (use --force to overwrite)\n", db_path)

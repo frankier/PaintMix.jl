@@ -53,7 +53,8 @@ validation results.
 """
 function build_provenance(
         cfg::AbstractDict, cfg_path::AbstractString, db::InputDatabase,
-        fit::SurrogateFit, validation::AbstractDict; grid_n::Integer = Int(cfg["grid"]["release_n"]),
+        fit::SurrogateFit, validation::AbstractDict;
+        grid_n::Integer = Int(cfg["grid"]["release_n"]),
     )
     inputs = Dict{String, String}(
         "config" => config_hash(cfg_path),
@@ -95,7 +96,8 @@ function build_provenance(
             "alpha_halvings" => cfg["surrogate"]["alpha_halvings"],
             "solver" => "Optim.LBFGS on softplus-transformed parameters",
             "note" =>
-                "the paper uses L-BFGS-B; transformed L-BFGS is an intentional substitution",
+                "the paper uses L-BFGS-B; " *
+                "transformed L-BFGS is an intentional substitution",
             "surface_divisions" => cfg["surrogate"]["surface_divisions"],
             "history" => fit.history,
             "diagnostics" => fit.diagnostics,
@@ -188,11 +190,15 @@ function build_model(ft::FloatTables, cfg::AbstractDict, provenance::AbstractDic
     )
     text = provenance_text(
         cfg, provenance["config_hash"], inputs;
-        grid_n = Int(get(get(provenance, "grid", Dict{String, Any}()), "n", cfg["grid"]["release_n"])),
+        grid_n = Int(
+            get(get(provenance, "grid", Dict{String, Any}()), "n", cfg["grid"]["release_n"])
+        ),
     )
     id = _model_id_from(text)
     inverse, forward = quantize_tables(ft, cfg)
-    flags = PaintMix.FLAG_FORWARD_SIMPLEX_PROJECTED | PaintMix.FLAG_INVERSE_LARGEST_REMAINDER
+    flags =
+        PaintMix.FLAG_FORWARD_SIMPLEX_PROJECTED |
+        PaintMix.FLAG_INVERSE_LARGEST_REMAINDER
     return PaintMix.PigmentModel(id, inverse, forward, PaintMix.FORMAT_VERSION, flags)
 end
 

@@ -121,7 +121,8 @@ _parse_header(b::AbstractVector{UInt8}) = ModelHeader(
 function _check_header(h::ModelHeader)
     h.format_version == FORMAT_VERSION || throw(
         InvalidPayload(
-            "unsupported format version $(h.format_version), runtime understands $(FORMAT_VERSION)"
+            "unsupported format version $(h.format_version), " *
+                "runtime understands $(FORMAT_VERSION)"
         )
     )
     h.header_bytes >= HEADER_BYTES || throw(
@@ -135,7 +136,9 @@ function _check_header(h::ModelHeader)
         )
     )
     h.channels == 3 || throw(InvalidPayload("channel count must be 3, got $(h.channels)"))
-    h.table_count == 2 || throw(InvalidPayload("table count must be 2, got $(h.table_count)"))
+    h.table_count == 2 || throw(
+        InvalidPayload("table count must be 2, got $(h.table_count)")
+    )
     h.color_space == COLORSPACE_LINEAR_SRGB_D65 || throw(
         InvalidPayload(
             "color space $(h.color_space) is not linear-light sRGB with D65 (0)"
@@ -160,12 +163,14 @@ function _check_header(h::ModelHeader)
     expected = 3 * h.grid_n^3
     h.inverse_bytes == expected || throw(
         InvalidPayload(
-            "inverse table has $(h.inverse_bytes) bytes, expected $expected for n = $(h.grid_n)"
+            "inverse table has $(h.inverse_bytes) bytes, " *
+                "expected $expected for n = $(h.grid_n)"
         )
     )
     h.forward_bytes == expected || throw(
         InvalidPayload(
-            "forward table has $(h.forward_bytes) bytes, expected $expected for n = $(h.grid_n)"
+            "forward table has $(h.forward_bytes) bytes, " *
+                "expected $expected for n = $(h.grid_n)"
         )
     )
     return nothing
@@ -233,7 +238,8 @@ function model_from_bytes(bytes::AbstractVector{UInt8}; validate::Bool = true)
     total = max(h.inverse_offset + h.inverse_bytes, h.forward_offset + h.forward_bytes)
     length(bytes) >= total || throw(
         InvalidPayload(
-            "payload is $(length(bytes)) bytes, but the header places tables up to byte $total"
+            "payload is $(length(bytes)) bytes, but the header places " *
+                "tables up to byte $total"
         )
     )
     inverse = _copy_table(bytes, h.inverse_offset, h.inverse_bytes, h.grid_n)

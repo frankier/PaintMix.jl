@@ -29,6 +29,9 @@ using TOML: TOML
 
 const ROOT = normpath(joinpath(@__DIR__, "..", ".."))
 const STAGES = ("inputs", "fit", "tables", "validate", "promote", "all")
+const VALUE_OPTIONS = (
+    "--config", "--profile", "--out", "--stage", "--solver", "--threads", "--coarse",
+)
 
 function usage()
     return """
@@ -78,7 +81,7 @@ function parse_args(args)
             opts["check-inputs"] = true
         elseif a == "--force-import"
             opts["force-import"] = true
-        elseif a in ("--config", "--profile", "--out", "--stage", "--solver", "--threads", "--coarse")
+        elseif a in VALUE_OPTIONS
             i < length(args) || error("$a needs a value")
             opts[a[3:end]] = args[i + 1]
             i += 1
@@ -111,8 +114,10 @@ function profile_config(cfg::AbstractDict, profile::AbstractString)
         s = out["surrogate"]
         s["surface_divisions"] =
             min(Int(s["surface_divisions"]), Int(get(g, "dev_surface_divisions", 8)))
-        s["max_iterations"] = min(Int(s["max_iterations"]), Int(get(g, "dev_max_iterations", 40)))
-        s["alpha_halvings"] = min(Int(s["alpha_halvings"]), Int(get(g, "dev_alpha_halvings", 12)))
+        s["max_iterations"] =
+            min(Int(s["max_iterations"]), Int(get(g, "dev_max_iterations", 40)))
+        s["alpha_halvings"] =
+            min(Int(s["alpha_halvings"]), Int(get(g, "dev_alpha_halvings", 12)))
     end
     return out
 end
@@ -193,7 +198,9 @@ function load_surrogate(path, cfg, hash, W)
     S = reshape(Float64[Float64(x) for x in doc["scattering"]], 4, W)
     return SurrogateFit(
         K, S, theta, _as_dicts(get(doc, "history", Any[])),
-        Dict{String, Any}(String(k) => v for (k, v) in pairs(get(doc, "diagnostics", Dict{String, Any}()))),
+        Dict{String, Any}(
+            String(k) => v for (k, v) in pairs(get(doc, "diagnostics", Dict{String, Any}()))
+        ),
         surface_quadrature(cfg),
     )
 end
@@ -283,16 +290,19 @@ function main(args)
         settings = unmix_settings(pcfg)
         if opts["solver"] == "coarse"
             g = get(pcfg, "generation", Dict{String, Any}())
-            coarse_n = min(
-                opts["coarse"] === nothing ? Int(get(g, "coarse_n", 64)) : parse(Int, string(opts["coarse"])),
-                max(2, n ÷ 2),
-            )
+            coarse_from_opt =
+                opts["coarse"] === nothing ? Int(get(g, "coarse_n", 64)) :
+                parse(Int, string(opts["coarse"]))
+            coarse_n = min(coarse_from_opt, max(2, n ÷ 2))
             fine_iter = Int(get(g, "fine_max_iterations", 15))
             @printf("generating inverse table coarse-to-fine (coarse n = %d)\n", coarse_n)
             thash = table_hash(hash, pcfg, profile, "coarse$(coarse_n)i$(fine_iter)")
-            cp = CheckpointStore(joinpath(out, "checkpoints", thash[1:16]), thash, n, "inverse")
+            cp = CheckpointStore(
+                joinpath(out, "checkpoints", thash[1:16]), thash, n, "inverse"
+            )
             done = completed_slabs(cp)
-            isempty(done) || @printf("  resuming: %d/%d slabs already complete\n", length(done), n)
+            isempty(done) ||
+                @printf("  resuming: %d/%d slabs already complete\n", length(done), n)
             t0 = time()
             inverse = generate_inverse_coarse_to_fine(
                 surrogate, n; coarse_n = coarse_n, threads = opts["threads"],
@@ -302,13 +312,17 @@ function main(args)
             )
         else
             @printf("generating inverse table with the %s solver\n", opts["solver"])
-            cp = CheckpointStore(joinpath(out, "checkpoints", thash[1:16]), thash, n, "inverse")
+            cp = CheckpointStore(
+                joinpath(out, "checkpoints", thash[1:16]), thash, n, "inverse"
+            )
             done = completed_slabs(cp)
-            isempty(done) || @printf("  resuming: %d/%d slabs already complete\n", length(done), n)
+            isempty(done) ||
+                @printf("  resuming: %d/%d slabs already complete\n", length(done), n)
             t0 = time()
             inverse = generate_inverse(
                 surrogate, n;
-                threads = opts["threads"], settings = settings, solver = Symbol(opts["solver"]),
+                threads = opts["threads"], settings = settings,
+                solver = Symbol(opts["solver"]),
                 resume = slab_resume_function(cp), on_slab = slab_callback_function(cp),
             )
         end
@@ -384,11 +398,14 @@ function main(args)
         @printf("overriding failed gates: %s\n", join(failed, ", "))
         provenance["promoted_with_failed_gates"] = failed
         write_sidecar(result["sidecar_path"], provenance, model, ft)
-        PaintMixPrecompute.promote(result["payload_path"], target; expected_id = result["model_id"])
+        PaintMixPrecompute.promote(
+            result["payload_path"], target; expected_id = result["model_id"]
+        )
         @printf("promoted to %s with recorded override\n", target)
     else
         @printf(
-            "not promoted: failed gates %s; rerun with --force to promote and record the override\n",
+            "not promoted: failed gates %s; rerun with --force to promote and " *
+                "record the override\n",
             join(failed, ", ")
         )
     end

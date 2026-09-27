@@ -62,7 +62,9 @@ The eight scaled channel triples of the cell containing `(x, y, z)`, plus the
 in-cell weights. Each coordinate is clamped to `[0, 1]` and scaled to the
 grid. A one-plane table degenerates to the single vertex with zero weights.
 """
-@inline function _cell(d::AbstractVector, n::Int, x::T, y::T, z::T, s::T) where {T <: AbstractFloat}
+@inline function _cell(
+        d::AbstractVector, n::Int, x::T, y::T, z::T, s::T
+    ) where {T <: AbstractFloat}
     if n == 1
         v = _load3(d, 1, s)
         return (v, v, v, v, v, v, v, v), zero(T), zero(T), zero(T)

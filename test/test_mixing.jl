@@ -14,7 +14,8 @@ end
 
 @testset "round trips cancel the table quantization" begin
     rng = Xoshiro(11)
-    for model in (identity_model(2), identity_model(16), random_model(9, 5)), T in (Float32, Float64)
+    models = (identity_model(2), identity_model(16), random_model(9, 5))
+    for model in models, T in (Float32, Float64)
         tol = T === Float32 ? 2.0f-6 : 1.0e-12
         for _ in 1:200
             x = T(rand(rng))
@@ -143,8 +144,9 @@ end
     flat = reduce(vcat, collect.(colors))
     dest = zeros(3)
     weighted_mix!(dest, model, flat, [1.0, 1.0, 1.0])
+    expected = weighted_mix(model, colors, [1.0, 1.0, 1.0])
     @test maximum(
-        abs.(SVector(dest[1], dest[2], dest[3]) .- weighted_mix(model, colors, [1.0, 1.0, 1.0]))
+        abs.(SVector(dest[1], dest[2], dest[3]) .- expected)
     ) <= 1.0e-15
     @test all(isfinite, weighted_mix(model, colors, [1.0, 0.5, 2.5]))
 end
@@ -186,8 +188,10 @@ end
     weights = [1.0, -1.0]
     @test PaintMix.weighted_mix_kernel!(zeros(3), model, as, weights, 2) == PM_ERR_WEIGHT
     @test PaintMix.weighted_mix_kernel!(zeros(3), model, as, [0.0, 0.0], 2) == PM_ERR_TOTAL
-    @test PaintMix.weighted_mix_kernel!(zeros(3), model, as, [NaN, 1.0], 2) == PM_ERR_NONFINITE
-    @test PaintMix.weighted_mix_kernel!(zeros(3), model, zeros(5), [1.0, 1.0], 2) == PM_ERR_LENGTH
+    @test PaintMix.weighted_mix_kernel!(zeros(3), model, as, [NaN, 1.0], 2) ==
+        PM_ERR_NONFINITE
+    @test PaintMix.weighted_mix_kernel!(zeros(3), model, zeros(5), [1.0, 1.0], 2) ==
+        PM_ERR_LENGTH
     # A failed call leaves the output untouched.
     sentinel = fill(42.0, 6)
     @test PaintMix.bulk_mix_kernel!(sentinel, model, bad, bs, ts, 2) == PM_ERR_NONFINITE

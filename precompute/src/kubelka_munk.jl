@@ -236,6 +236,8 @@ along increasing `c[i]` with the fourth concentration taking up the slack is
 `J[:, i] - J[:, 4]`. Callers only ever combine columns with directions whose
 entries sum to zero, so this convention is exact for both evaluators.
 """
-@inline function _jacobian4!(J::AbstractMatrix, m::SpectralModel, c::AbstractVector{T}) where {T <: Real}
+@inline function _jacobian4!(
+        J::AbstractMatrix, m::SpectralModel, c::AbstractVector{T}
+    ) where {T <: Real}
     return mix_rgb_jacobian!(J, m, c)
 end

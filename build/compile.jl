@@ -66,7 +66,8 @@ end
 function make_payload(profile::AbstractString)
     jl = joinpath(BUILD_DIR, "scripts", "make_dummy_payload.jl")
     project = BUILD_DIR
-    cmd = `$(Base.julia_cmd()) --project=$project --startup-file=no $jl $profile $DEFAULT_PAYLOAD`
+    julia = Base.julia_cmd()
+    cmd = `$julia --project=$project --startup-file=no $jl $profile $DEFAULT_PAYLOAD`
     println("Generating payload: $cmd")
     run(cmd)
     return DEFAULT_PAYLOAD

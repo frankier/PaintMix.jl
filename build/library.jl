@@ -110,7 +110,9 @@ function _encode!(
     st == PM_OK || return st
     st = _check_vec(latent, LATENT_SCALARS)
     st == PM_OK || return st
-    c = SVector(unsafe_load(rgb.data, 1), unsafe_load(rgb.data, 2), unsafe_load(rgb.data, 3))
+    c = SVector(
+        unsafe_load(rgb.data, 1), unsafe_load(rgb.data, 2), unsafe_load(rgb.data, 3),
+    )
     _finite3(c) || return PM_ERR_NONFINITE
     z = PaintMix.encode(MODEL, c)
     unsafe_store!(latent.data, z.c[1], 1)

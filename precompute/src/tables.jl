@@ -421,7 +421,8 @@ function _write_job_manifest(store::CheckpointStore)
         get(existing, "job_hash", "") == store.job_hash || throw(
             InputError(
                 "checkpoint directory $(store.dir) belongs to job " *
-                    "$(get(existing, "job_hash", "?")) but this run has $(store.job_hash); " *
+                    "$(get(existing, "job_hash", "?")) but this run has " *
+                    "$(store.job_hash); " *
                     "remove it or choose another --out"
             )
         )
@@ -656,7 +657,9 @@ function coarse_to_fine_slab!(
 end
 
 """
-    generate_inverse_coarse_to_fine(model, n; coarse_n, threads, settings, coarse_settings, resume, on_slab)
+    generate_inverse_coarse_to_fine(
+        model, n; coarse_n, threads, settings, coarse_settings, resume, on_slab
+    )
 
 Solve the inverse on a `coarse_n^3` grid with the reference solver, then use
 the trilinearly interpolated field as the seed for a short bulk solve at
@@ -686,7 +689,9 @@ function generate_inverse_coarse_to_fine(
         UnmixSettings{T}(15, T(1.0e-10), T(1.0e-6), 1) : settings
     cs = coarse_settings === nothing ?
         UnmixSettings{T}(50, T(1.0e-10), T(1.0e-6), 4) : coarse_settings
-    coarse = generate_inverse(model, coarse_n; threads = threads, settings = cs, solver = :reference)
+    coarse = generate_inverse(
+        model, coarse_n; threads = threads, settings = cs, solver = :reference
+    )
     out = Vector{T}(undef, 3 * n^3)
     setup = () -> SolverScratch()
     body = (ctx, k) -> _slab_or_generate!(

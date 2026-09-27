@@ -43,18 +43,21 @@ function synthetic_database(cfg::AbstractDict; rng_seed::Integer = 1)
     for (i, code) in enumerate(codes)
         for (j, wl) in enumerate(grid)
             frac = (j - 1) / max(length(grid) - 1, 1)
-            k = i == 4 ? 0.01 + 0.005 * frac : 0.05 + 2.5 * exp(-((frac - (i - 1) / 3)^2) / 0.05)
+            k = i == 4 ? 0.01 + 0.005 * frac :
+                0.05 + 2.5 * exp(-((frac - (i - 1) / 3)^2) / 0.05)
             s = i == 4 ? 1.0 + 0.1 * frac : 0.2 + 0.1 * frac
             push!(
                 spectra, (
                     code = code, quantity = "K", wavelength_nm = wl, value = k,
-                    source_file = "synthetic", sheet = "synthetic", cell_range = "synthetic",
+                    source_file = "synthetic", sheet = "synthetic",
+                    cell_range = "synthetic",
                 )
             )
             push!(
                 spectra, (
                     code = code, quantity = "S", wavelength_nm = wl, value = s,
-                    source_file = "synthetic", sheet = "synthetic", cell_range = "synthetic",
+                    source_file = "synthetic", sheet = "synthetic",
+                    cell_range = "synthetic",
                 )
             )
         end
@@ -73,7 +76,8 @@ function synthetic_database(cfg::AbstractDict; rng_seed::Integer = 1)
     end
     pigments = [
         (
-            slot = i, code = codes[i], name = "synthetic $(codes[i])", ci = "CI $(codes[i])",
+            slot = i, code = codes[i], name = "synthetic $(codes[i])",
+            ci = "CI $(codes[i])",
             column = cfg["pigments"][i]["column"],
         ) for i in 1:4
     ]
@@ -83,7 +87,8 @@ function synthetic_database(cfg::AbstractDict; rng_seed::Integer = 1)
     )
     db = InputDatabase(
         [("synthetic", "synthetic.xlsx", repeat("0", 64))], pigments, spectra, saunderson,
-        observer, ("observer", "synthetic.csv", repeat("1", 64)), Dict{String, String}("tool" => "test"),
+        observer, ("observer", "synthetic.csv", repeat("1", 64)),
+        Dict{String, String}("tool" => "test"),
     )
     return validate_database(db)
 end

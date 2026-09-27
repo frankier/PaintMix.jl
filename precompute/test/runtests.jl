@@ -140,7 +140,9 @@ const eval_jacobian4! = PaintMixPrecompute._jacobian4!
                 SVector(0.25, 0.25, 0.25, 0.25), SVector(0.7, 0.1, 0.1, 0.1),
                 SVector(0.0, 0.5, 0.5, 0.0),
             )
-            @test maximum(abs.(collect(mix_rgb(model, c)) .- collect(mix_rgb(other, c)))) < 1.0e-12
+            @test maximum(
+                abs.(collect(mix_rgb(model, c)) .- collect(mix_rgb(other, c)))
+            ) < 1.0e-12
         end
     end
 
@@ -256,7 +258,9 @@ const eval_jacobian4! = PaintMixPrecompute._jacobian4!
             )
             got = eval_mix(lut, c)
             want = f(c)
-            @test maximum(abs, (got[1] - want[1], got[2] - want[2], got[3] - want[3])) < 1.0e-12
+            @test maximum(
+                abs, (got[1] - want[1], got[2] - want[2], got[3] - want[3])
+            ) < 1.0e-12
         end
         J = zeros(3, 4)
         c = SVector(0.3, 0.4, 0.5, 0.0)
@@ -290,7 +294,9 @@ const eval_jacobian4! = PaintMixPrecompute._jacobian4!
             end
             want = mix_rgb(model, SVector(c1, c2, c3, c4))
             got = eval_mix(grid, SVector(i / d, j / d, k / d, 1 - i / d - j / d - k / d))
-            @test maximum(abs, (got[1] - want[1], got[2] - want[2], got[3] - want[3])) < 1.0e-12
+            @test maximum(
+                abs, (got[1] - want[1], got[2] - want[2], got[3] - want[3])
+            ) < 1.0e-12
         end
     end
 
@@ -331,7 +337,8 @@ const eval_jacobian4! = PaintMixPrecompute._jacobian4!
         # runs once per grid vertex, so at 256^3 even a few bytes per solve is
         # gigabytes of garbage; it must stay at exactly zero. A `Union` of
         # tuple arities in the active set used to box here.
-        @test unmix_bulk!(scratch, model, rgb, (seed,), settings) isa PaintMixPrecompute.UnmixResult
+        @test unmix_bulk!(scratch, model, rgb, (seed,), settings) isa
+            PaintMixPrecompute.UnmixResult
         @test unmix_reference(model, rgb; settings = settings, scratch = scratch) isa
             PaintMixPrecompute.UnmixResult
         @test (@allocated unmix_bulk!(scratch, model, rgb, (seed,), settings)) == 0
@@ -343,7 +350,9 @@ const eval_jacobian4! = PaintMixPrecompute._jacobian4!
         # The reference path still allocates a little inside its subset
         # recursion (measured 80 bytes). The bound is a regression guard, not
         # a claim of zero: the old union-typed active set cost 768.
-        @test (@allocated unmix_reference(model, rgb; settings = settings, scratch = scratch)) <= 256
+        @test (
+            @allocated unmix_reference(model, rgb; settings = settings, scratch = scratch)
+        ) <= 256
     end
 
     @testset "reference solver agrees with an independent Levenberg-Marquardt" begin
@@ -491,7 +500,9 @@ const eval_jacobian4! = PaintMixPrecompute._jacobian4!
         @test read_slab(store, 1) == fill(0.5, 27)
         @test read_slab(store, 0) === nothing
         # A different job hash in the same directory is rejected.
-        @test_throws InputError CheckpointStore(joinpath(dir, "checkpoints"), "other", 3, "inverse")
+        @test_throws InputError CheckpointStore(
+            joinpath(dir, "checkpoints"), "other", 3, "inverse"
+        )
     end
 
     @testset "resume reproduces an uninterrupted run" begin

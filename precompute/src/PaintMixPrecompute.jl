@@ -183,8 +183,9 @@ payload validation is deliberately separate: this checks a *plan*, while
 `PaintMix.model_from_bytes` checks bytes.
 """
 function validate_config(cfg::AbstractDict)
-    get(cfg, "schema_version", nothing) == 1 ||
-        throw(ConfigError("schema_version must be 1, got $(repr(get(cfg, "schema_version", nothing)))"))
+    version = get(cfg, "schema_version", nothing)
+    version == 1 ||
+        throw(ConfigError("schema_version must be 1, got $(repr(version))"))
 
     color = _section(cfg, "color")
     matrix = get(color, "xyz_to_rgb", nothing)
@@ -219,7 +220,8 @@ function validate_config(cfg::AbstractDict)
     saunderson = _section(cfg, "saunderson")
     for key in ("k1", "k2")
         v = get(saunderson, key, nothing)
-        v isa Real && isfinite(v) || throw(ConfigError("saunderson.$key must be a finite number"))
+        v isa Real && isfinite(v) ||
+            throw(ConfigError("saunderson.$key must be a finite number"))
     end
     0 <= saunderson["k1"] < 1 || throw(ConfigError("saunderson.k1 must be in [0, 1)"))
     0 <= saunderson["k2"] < 1 || throw(ConfigError("saunderson.k2 must be in [0, 1)"))
@@ -247,7 +249,8 @@ function validate_config(cfg::AbstractDict)
         n = get(grid, key, nothing)
         n isa Integer && n >= 2 || throw(ConfigError("grid.$key must be an integer >= 2"))
     end
-    grid["storage"] == "u8" || throw(ConfigError("grid.storage must be \"u8\" for the v1 format"))
+    grid["storage"] == "u8" ||
+        throw(ConfigError("grid.storage must be \"u8\" for the v1 format"))
     grid["byte_scale"] == "b/255" ||
         throw(ConfigError("grid.byte_scale must be \"b/255\" for the v1 format"))
 
@@ -256,7 +259,8 @@ function validate_config(cfg::AbstractDict)
     epsilon isa Real && epsilon > 0 ||
         throw(ConfigError("surrogate.epsilon must be a positive floor"))
     alpha = get(surrogate, "alpha_initial", nothing)
-    alpha isa Real && alpha > 0 || throw(ConfigError("surrogate.alpha_initial must be positive"))
+    alpha isa Real && alpha > 0 ||
+        throw(ConfigError("surrogate.alpha_initial must be positive"))
     divisions = get(surrogate, "surface_divisions", nothing)
     divisions isa Integer && divisions >= 1 || throw(
         ConfigError(
@@ -273,13 +277,15 @@ function validate_config(cfg::AbstractDict)
     unmix = _section(cfg, "unmix")
     unmix["objective"] == "rgb-least-squares" || throw(
         ConfigError(
-            "unmix.objective must remain \"rgb-least-squares\"; changing it is a model variant"
+            "unmix.objective must remain \"rgb-least-squares\"; " *
+                "changing it is a model variant"
         )
     )
     tol = get(unmix, "tolerance", nothing)
     tol isa Real && tol > 0 || throw(ConfigError("unmix.tolerance must be positive"))
     face = get(unmix, "face_threshold", nothing)
-    face isa Real && face >= 0 || throw(ConfigError("unmix.face_threshold must be non-negative"))
+    face isa Real && face >= 0 ||
+        throw(ConfigError("unmix.face_threshold must be non-negative"))
 
     return cfg
 end

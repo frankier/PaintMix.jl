@@ -13,8 +13,8 @@
     # Mid-encoded-gray is the classic 0.2159 linear value.
     gray = SVector(0.5, 0.5, 0.5)
     @test linear_from_srgb(gray)[1] ≈ 0.21404114048223255 atol = 1.0e-12
-    @test srgb_from_linear(SVector(0.21404114048223255, 0.21404114048223255, 0.21404114048223255))[1] ≈
-        0.5 atol = 1.0e-12
+    lin = SVector(0.21404114048223255, 0.21404114048223255, 0.21404114048223255)
+    @test srgb_from_linear(lin)[1] ≈ 0.5 atol = 1.0e-12
     # The linear segment below 0.04045 is continuous with the power segment.
     for t in (0.0, 1.0e-6, 0.03, 0.04044, 0.04046, 0.5, 0.9, 1.0)
         @test srgb_from_linear(linear_from_srgb(SVector(t, t, t)))[1] ≈ t atol = 1.0e-12

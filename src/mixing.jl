@@ -413,5 +413,8 @@ mix(a::RGB{T}, b::RGB{T}, t::Real) where {T <: AbstractFloat} =
 
 [`weighted_mix`](@ref) against [`default_model`](@ref).
 """
-weighted_mix(colors::AbstractVector{<:RGB{T}}, weights::AbstractVector{T}) where {T <: AbstractFloat} =
-    weighted_mix(default_model(), colors, weights)
+function weighted_mix(
+        colors::AbstractVector{<:RGB{T}}, weights::AbstractVector{T}
+    ) where {T <: AbstractFloat}
+    return weighted_mix(default_model(), colors, weights)
+end

@@ -133,8 +133,12 @@ function rgb_surface_weights(model::SpectralModel{T}, sq::SurfaceQuadrature) whe
         free = Int[j for j in 1:4 if j != f]
         # Tangent directions of the face in concentration space.
         d = free[3]
-        u1, u2, u3 = J[1, free[1]] - J[1, d], J[2, free[1]] - J[2, d], J[3, free[1]] - J[3, d]
-        v1, v2, v3 = J[1, free[2]] - J[1, d], J[2, free[2]] - J[2, d], J[3, free[2]] - J[3, d]
+        u1 = J[1, free[1]] - J[1, d]
+        u2 = J[2, free[1]] - J[2, d]
+        u3 = J[3, free[1]] - J[3, d]
+        v1 = J[1, free[2]] - J[1, d]
+        v2 = J[2, free[2]] - J[2, d]
+        v3 = J[3, free[2]] - J[3, d]
         out[i] = sqrt(
             (u2 * v3 - u3 * v2)^2 + (u3 * v1 - u1 * v3)^2 + (u1 * v2 - u2 * v1)^2
         )
@@ -153,7 +157,9 @@ function quadrature_report(model::SpectralModel, sq::SurfaceQuadrature)
     uni = sq.weights
     total_u = sum(uni)
     total_j = sum(jac)
-    ratios = [total_j > 0 ? (uni[i] * total_j) / (jac[i] * total_u) : NaN for i in eachindex(uni)]
+    ratios = map(eachindex(uni)) do i
+        total_j > 0 ? (uni[i] * total_j) / (jac[i] * total_u) : NaN
+    end
     nu = count(!isnan, ratios)
     return Dict{String, Any}(
         "samples" => length(uni),
@@ -288,7 +294,8 @@ function surrogate_objective(
     @inbounds for (i, c) in enumerate(sq.points)
         rgb = mix_rgb_params(K, S, base.k1, base.k2, base.quad, c)
         push += sq.weights[i] * cube_outside_penalty(rgb)
-        pull += sq.weights[i] * oklab_distance_squared(linear_srgb_to_oklab(rgb), targets[i])
+        pull +=
+            sq.weights[i] * oklab_distance_squared(linear_srgb_to_oklab(rgb), targets[i])
     end
     return push + alpha * pull
 end
@@ -350,7 +357,9 @@ function fit_surrogates(
 
     started = time()
     for (step, α) in enumerate(alpha_schedule(cfg))
-        f = x -> surrogate_objective(x, base, sq, targets, epsilon, α, Matrix{T}(undef, 4, W))
+        f = x -> surrogate_objective(
+            x, base, sq, targets, epsilon, α, Matrix{T}(undef, 4, W)
+        )
         # The ForwardDiff tag is derived from the function object, so the
         # gradient configuration must be rebuilt whenever the closure changes
         # (here, when alpha does).
@@ -384,7 +393,8 @@ function fit_surrogates(
                 log,
                 @sprintf(
                     "  alpha=%-10.4g Epush=%-12.6e Epull=%-12.6e iters=%-4d converged=%s",
-                    α, entry["Epush"], entry["Epull"], entry["iterations"], entry["converged"]
+                    α, entry["Epush"], entry["Epull"], entry["iterations"],
+                    entry["converged"]
                 ),
             )
             flush(log)
@@ -407,7 +417,9 @@ that the fit did not use, plus the quadrature weighting report.
 
 Finite sampling is evidence, not a proof of continuous gamut containment.
 """
-function surrogate_diagnostics(model::SpectralModel, base::SpectralModel, sq::SurfaceQuadrature, targets)
+function surrogate_diagnostics(
+        model::SpectralModel, base::SpectralModel, sq::SurfaceQuadrature, targets
+    )
     denser = _surface_quadrature(40)
     push_fit = Epush(model, sq)
     pull_fit = Epull(model, sq, targets)

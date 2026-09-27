@@ -52,8 +52,9 @@ end
             @test trilinear(lut, x, y, z) == trilinear(lut, x, y, z)
         end
         # Weight one on the last plane must equal the last vertex exactly.
+        hi = n - 1
         last = SVector{3, Float64}(
-            ntuple(ch -> Float64(reference_vertex(lut, n - 1, n - 1, n - 1, ch - 1)) / 255, Val(3))
+            ntuple(ch -> Float64(reference_vertex(lut, hi, hi, hi, ch - 1)) / 255, Val(3))
         )
         @test maximum(abs.(trilinear(lut, 1.0, 1.0, 1.0) .- last)) <= 1.0e-15
     end

@@ -19,7 +19,8 @@ using .SyntheticFixtures
         # test/consumer_env.jl checks the resolved closure of a fresh
         # consumer environment.
         project = Pkg.TOML.parsefile(joinpath(pkgdir(PaintMix), "Project.toml"))
-        @test sort(collect(keys(get(project, "deps", Dict{String, Any}())))) == ["StaticArrays"]
+        deps = sort(collect(keys(get(project, "deps", Dict{String, Any}()))))
+        @test deps == ["StaticArrays"]
     end
     include("test_lookup.jl")
     include("test_mixing.jl")

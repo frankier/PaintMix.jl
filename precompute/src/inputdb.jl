@@ -122,7 +122,8 @@ function validate_database(db::InputDatabase)
             rows = filter(r -> r.code == code && r.quantity == quantity, db.spectra)
             isempty(rows) && throw(InputError("no $quantity spectrum for pigment $code"))
             wl = [r.wavelength_nm for r in rows]
-            issorted(wl; lt = <=) || throw(InputError("$code $quantity wavelengths are not sorted"))
+            issorted(wl; lt = <=) ||
+                throw(InputError("$code $quantity wavelengths are not sorted"))
             length(unique(wl)) == length(wl) ||
                 throw(InputError("$code $quantity has duplicate wavelengths"))
             for r in rows
@@ -130,7 +131,8 @@ function validate_database(db::InputDatabase)
                     throw(InputError("$code $quantity has a non-finite wavelength"))
                 isfinite(r.value) && r.value > 0 || throw(
                     InputError(
-                        "$code $quantity at $(r.wavelength_nm) nm must be finite and positive, " *
+                        "$code $quantity at $(r.wavelength_nm) nm " *
+                            "must be finite and positive, " *
                             "got $(r.value)"
                     )
                 )
@@ -143,8 +145,11 @@ function validate_database(db::InputDatabase)
     length(unique(grid)) == length(grid) ||
         throw(InputError("observer table has duplicate wavelengths"))
     for r in db.observer
-        for (name, v) in (("x_bar", r.x_bar), ("y_bar", r.y_bar), ("z_bar", r.z_bar), ("d65", r.d65))
-            isfinite(v) || throw(InputError("observer $name at $(r.wavelength_nm) nm is not finite"))
+        for (name, v) in (
+                ("x_bar", r.x_bar), ("y_bar", r.y_bar), ("z_bar", r.z_bar), ("d65", r.d65),
+            )
+            isfinite(v) ||
+                throw(InputError("observer $name at $(r.wavelength_nm) nm is not finite"))
         end
         r.y_bar >= 0 || throw(InputError("observer y_bar must be non-negative"))
         r.d65 >= 0 || throw(InputError("D65 must be non-negative"))
@@ -254,7 +259,9 @@ end
 
 # --- reading ---------------------------------------------------------------
 
-const _TABLES = ("source_files", "pigments", "spectra", "saunderson", "observer", "build_info")
+const _TABLES = (
+    "source_files", "pigments", "spectra", "saunderson", "observer", "build_info",
+)
 
 """
     open_database(path) -> InputDatabase
@@ -273,7 +280,8 @@ function open_database(path::AbstractString)
             String.(
                 _query(
                     con,
-                    "SELECT table_name FROM information_schema.tables WHERE table_schema = 'main'"
+                    "SELECT table_name FROM information_schema.tables " *
+                        "WHERE table_schema = 'main'"
                 ).table_name
             )
         )
@@ -299,7 +307,8 @@ function open_database(path::AbstractString)
         spectra = _records(
             SpectrumRecord, _query(
                 con,
-                "SELECT code, quantity, wavelength_nm, value, source_file, sheet, cell_range " *
+                "SELECT code, quantity, wavelength_nm, value, source_file, sheet, " *
+                    "cell_range " *
                     "FROM spectra ORDER BY code, quantity, wavelength_nm"
             )
         )
@@ -314,7 +323,8 @@ function open_database(path::AbstractString)
         observer = _records(
             ObserverRecord, _query(
                 con,
-                "SELECT wavelength_nm, x_bar, y_bar, z_bar, d65 FROM observer ORDER BY wavelength_nm"
+                "SELECT wavelength_nm, x_bar, y_bar, z_bar, d65 FROM observer " *
+                    "ORDER BY wavelength_nm"
             )
         )
 
@@ -395,7 +405,8 @@ function _read_observer(con, path::AbstractString)
     expected = ["wavelength_nm", "x_bar", "y_bar", "z_bar", "d65"]
     names(df) == expected || throw(
         InputError(
-            "observer file $path has header $(join(names(df), ",")), expected $(join(expected, ","))"
+            "observer file $path has header $(join(names(df), ",")), " *
+                "expected $(join(expected, ","))"
         )
     )
     return _records(ObserverRecord, df)
@@ -417,7 +428,8 @@ function load_spreadsheet_inputs(
     primary = joinpath(root, inputs["primary"])
     observer_file = joinpath(root, inputs["observer_file"])
     isfile(primary) || throw(InputError("primary input $primary does not exist"))
-    isfile(observer_file) || throw(InputError("observer input $observer_file does not exist"))
+    isfile(observer_file) ||
+        throw(InputError("observer input $observer_file does not exist"))
 
     primary_sha = bytes2hex(sha256(read(primary)))
     observer_sha = bytes2hex(sha256(read(observer_file)))

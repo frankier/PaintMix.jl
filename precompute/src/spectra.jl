@@ -102,13 +102,15 @@ function load_spectra(cfg::AbstractDict, db::InputDatabase)
             isempty(rows) && throw(InputError("no $quantity spectrum for pigment $code"))
             length(rows) == expected || throw(
                 InputError(
-                    "$code $quantity has $(length(rows)) samples, the configuration grid has $expected"
+                    "$code $quantity has $(length(rows)) samples, " *
+                        "the configuration grid has $expected"
                 )
             )
             for (j, r) in enumerate(rows)
                 r.wavelength_nm == grid[j] || throw(
                     InputError(
-                        "$code $quantity sample $j is at $(r.wavelength_nm) nm, expected $(grid[j])"
+                        "$code $quantity sample $j is at $(r.wavelength_nm) nm, " *
+                            "expected $(grid[j])"
                     )
                 )
                 out[i, j] = r.value
@@ -160,7 +162,8 @@ function build_quadrature(cfg::AbstractDict, db::InputDatabase)
     obs = sort(db.observer; by = r -> r.wavelength_nm)
     length(obs) == length(grid) || throw(
         InputError(
-            "observer table has $(length(obs)) samples, the configuration grid has $(length(grid))"
+            "observer table has $(length(obs)) samples, " *
+                "the configuration grid has $(length(grid))"
         )
     )
     W = length(grid)
@@ -249,7 +252,9 @@ A copy of `model` with new `4 x W` pigment-major absorption and scattering
 matrices. Used by the surrogate fit to evaluate candidate pigments against
 the fixed quadrature.
 """
-function with_parameters(model::SpectralModel{T}, K::AbstractMatrix, S::AbstractMatrix) where {T}
+function with_parameters(
+        model::SpectralModel{T}, K::AbstractMatrix, S::AbstractMatrix
+    ) where {T}
     W, _ = size(model.K)
     size(K) == (4, W) || throw(InputError("K must be 4 x $W, got $(size(K))"))
     size(S) == (4, W) || throw(InputError("S must be 4 x $W, got $(size(S))"))

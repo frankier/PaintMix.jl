@@ -52,7 +52,8 @@ function dummy_model(n::Integer; seed::UInt64 = 0x0000007061696e74)
 end
 
 function main(args)
-    isempty(args) && error("usage: make_dummy_payload.jl <tiny|small|full|grid N> <out.pmx>")
+    isempty(args) &&
+        error("usage: make_dummy_payload.jl <tiny|small|full|grid N> <out.pmx>")
     profile = args[1]
     n = if haskey(PROFILES, profile)
         PROFILES[profile]

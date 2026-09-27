@@ -242,8 +242,12 @@ function roundtrip_report(
     end
     return Dict{String, Any}(
         "samples" => length(points),
-        "float32" => Dict{String, Any}("max" => maximum(err32), "mean" => sum(err32) / length(err32)),
-        "float64" => Dict{String, Any}("max" => maximum(err64), "mean" => sum(err64) / length(err64)),
+        "float32" => Dict{String, Any}(
+            "max" => maximum(err32), "mean" => sum(err32) / length(err32)
+        ),
+        "float64" => Dict{String, Any}(
+            "max" => maximum(err64), "mean" => sum(err64) / length(err64)
+        ),
     )
 end
 
@@ -391,8 +395,12 @@ function behavior_report(
     white = SVector(1.0, 1.0, 1.0)
     settings = unmix_settings(cfg)
     scratch = SolverScratch()
-    cblue, rblue = spectral_encode(spectral, T.(blue); settings = settings, scratch = scratch)
-    cyellow, ryellow = spectral_encode(spectral, T.(yellow); settings = settings, scratch = scratch)
+    cblue, rblue = spectral_encode(
+        spectral, T.(blue); settings = settings, scratch = scratch
+    )
+    cyellow, ryellow = spectral_encode(
+        spectral, T.(yellow); settings = settings, scratch = scratch
+    )
     cmagenta, rmagenta =
         spectral_encode(spectral, T.(magenta); settings = settings, scratch = scratch)
 

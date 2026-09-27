@@ -332,7 +332,8 @@ function _polish!(
 end
 
 """
-    _solve_adaptive!(sc, model, rgb, seed, settings) -> (c, sse, n, active, iters, converged)
+    _solve_adaptive!(sc, model, rgb, seed, settings) ->
+        (c, sse, n, active, iters, converged)
 
 Solve from `seed`, then repeatedly drop the smallest concentration while it
 is below `settings.face_threshold` and re-solve on the reduced face. This is
@@ -356,7 +357,8 @@ end
         active::Active4, n::Int, c::SVector{4, T}, settings::UnmixSettings,
     ) where {T}
     n == 4 && return _polish!(sc, model, rgb, active, c, settings)
-    n == 3 && return _polish!(sc, model, rgb, (active[1], active[2], active[3]), c, settings)
+    n == 3 &&
+        return _polish!(sc, model, rgb, (active[1], active[2], active[3]), c, settings)
     n == 2 && return _polish!(sc, model, rgb, (active[1], active[2]), c, settings)
     return _polish!(sc, model, rgb, (active[1],), c, settings)
 end

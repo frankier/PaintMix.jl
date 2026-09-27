@@ -137,10 +137,14 @@ function _theta_from_c(active::NTuple{K, Int}, c::SVector{4, T}) where {K, T}
     )
 end
 
-# Allocation-free active-set packing: returns `(n, i1, i2, i3, i4)` with the
-# active indices in `i1..in` and zeros elsewhere. Returning a fixed 5-tuple
-# keeps this off the heap, which matters because it runs once per seed per
-# table vertex.
+const Active4 = NTuple{4, Int}
+
+# Allocation-free active-set packing: returns `(n, active)` with the active
+# indices in the first `n` slots and zeros after. The fixed width is
+# deliberate: a `Tuple{Int}` / `NTuple{2,Int}` / ... chain infers as
+# `Tuple{Vararg{Int}}`, which made every active set a boxed value and cost
+# `unmix_bulk!` about 96 bytes per grid vertex. A fixed-width tuple plus a
+# separate count allocates nothing.
 @inline function _active_pack(c::AbstractVector{T}, threshold::T) where {T}
     n = 0
     i1 = 0
@@ -166,27 +170,25 @@ end
         @inbounds for i in 2:4
             c[i] > c[m] && (m = i)
         end
-        return 1, m, 0, 0, 0
+        return 1, (m, 0, 0, 0)
     end
-    return n, i1, i2, i3, i4
+    return n, (i1, i2, i3, i4)
 end
 
-# Pack an active set into a concrete `NTuple{4,Int}`, zero padded. Keeping
-# the arity out of the type is deliberate: a `Tuple{Int}` / `NTuple{2,Int}`
-# / ... chain infers as `Tuple{Vararg{Int}}`, which made every active set a
-# boxed value and cost `unmix_bulk!` about 96 bytes per grid vertex. A
-# fixed-width tuple plus a separate count allocates nothing.
-@inline function _pad4(active::NTuple{K, Int}) where {K}
-    return ntuple(i -> i <= K ? active[i] : 0, Val(4))
+@inline function _active_count(a::Active4)
+    n = 0
+    @inbounds for i in 1:4
+        n += a[i] != 0
+    end
+    return n
 end
 
-@inline _drop_active(a::NTuple{2, Int}, j::Int) = j == 1 ? (a[2],) : (a[1],)
-@inline _drop_active(a::NTuple{3, Int}, j::Int) =
-    j == 1 ? (a[2], a[3]) : j == 2 ? (a[1], a[3]) : (a[1], a[2])
-@inline _drop_active(a::NTuple{4, Int}, j::Int) =
-    j == 1 ? (a[2], a[3], a[4]) :
-    j == 2 ? (a[1], a[3], a[4]) :
-    j == 3 ? (a[1], a[2], a[4]) : (a[1], a[2], a[3])
+# Drop the pigment in slot `j` of an `n`-element active set and shift the
+# remaining indices left. The zero padding absorbs the shifted hole, so no
+# arity-specific methods are needed.
+@inline function _drop_active(a::Active4, n::Int, j::Int)
+    return ntuple(i -> i < n ? a[i + (i >= j)] : 0, Val(4))
+end
 
 @inline function _sse(rgb::SVector{3, T}, m::SVector{3, S}) where {T, S}
     return sum(abs2, m - rgb)
@@ -342,41 +344,52 @@ function _solve_adaptive!(
         sc::SolverScratch, model, rgb::SVector{3, T},
         seed::SVector{4, T}, settings::UnmixSettings,
     ) where {T}
-    n, i1, i2, i3, i4 = _active_pack(seed, settings.face_threshold)
-    if n == 4
-        return _adaptive_face!(sc, model, rgb, (i1, i2, i3, i4), seed, settings)
-    elseif n == 3
-        return _adaptive_face!(sc, model, rgb, (i1, i2, i3), seed, settings)
-    elseif n == 2
-        return _adaptive_face!(sc, model, rgb, (i1, i2), seed, settings)
-    end
-    return _adaptive_face!(sc, model, rgb, (i1,), seed, settings)
+    n, active = _active_pack(seed, settings.face_threshold)
+    return _adaptive_face!(sc, model, rgb, active, n, seed, settings)
 end
 
-# Recursion on the active-set size keeps every frame specialized on `K`, so
-# the reduced face is a concrete tuple type rather than a union. The *return*
-# value carries the active set as a fixed-width `(n, NTuple{4,Int})` pair,
-# which is what keeps the boundary of the solver allocation-free.
+# The softmax kernel is static-length, so the padded active set is unpacked
+# into a concrete `NTuple{n,Int}` here, one branch per face. This is the only
+# place the arity is recovered.
+@inline function _polish_face!(
+        sc::SolverScratch, model, rgb::SVector{3, T},
+        active::Active4, n::Int, c::SVector{4, T}, settings::UnmixSettings,
+    ) where {T}
+    n == 4 && return _polish!(sc, model, rgb, active, c, settings)
+    n == 3 && return _polish!(sc, model, rgb, (active[1], active[2], active[3]), c, settings)
+    n == 2 && return _polish!(sc, model, rgb, (active[1], active[2]), c, settings)
+    return _polish!(sc, model, rgb, (active[1],), c, settings)
+end
+
+# Repeatedly drop the smallest concentration while it is below
+# `settings.face_threshold` and re-solve on the reduced face. The active set
+# stays a fixed-width `(n, NTuple{4,Int})` pair throughout, so the loop is
+# allocation-free without an arity recursion.
 function _adaptive_face!(
         sc::SolverScratch, model, rgb::SVector{3, T},
-        active::NTuple{K, Int}, c::SVector{4, T}, settings::UnmixSettings,
-    ) where {T, K}
-    c, sse, iters, converged = _polish!(sc, model, rgb, active, c, settings)
-    K == 1 && return c, sse, K, _pad4(active), iters, converged
-    smallest = 0
-    smallest_val = T(Inf)
-    for (j, idx) in enumerate(active)
-        if c[idx] < smallest_val
-            smallest_val = c[idx]
-            smallest = j
+        active::Active4, n::Int, c::SVector{4, T}, settings::UnmixSettings,
+    ) where {T}
+    iters = 0
+    converged = false
+    while true
+        c, sse, k, conv = _polish_face!(sc, model, rgb, active, n, c, settings)
+        iters += k
+        converged |= conv
+        n == 1 && return c, sse, 1, active, iters, converged
+        smallest = 0
+        smallest_val = T(Inf)
+        @inbounds for i in 1:n
+            if c[active[i]] < smallest_val
+                smallest_val = c[active[i]]
+                smallest = i
+            end
         end
+        smallest_val > settings.face_threshold &&
+            return c, sse, n, active, iters, converged
+        active = _drop_active(active, n, smallest)
+        n -= 1
     end
-    smallest_val > settings.face_threshold &&
-        return c, sse, K, _pad4(active), iters, converged
-    reduced = _drop_active(active, smallest)
-    c2, sse2, n2, a2, iters2, converged2 =
-        _adaptive_face!(sc, model, rgb, reduced, c, settings)
-    return c2, sse2, n2, a2, iters + iters2, converged | converged2
+    return
 end
 
 # --- public solvers --------------------------------------------------------
@@ -403,9 +416,9 @@ function unmix_reference(
         SVector(T(0.25), T(0.25), T(0.25), T(0.25)), T(Inf), 0, false, 0,
     )
     _reference_pass!(state, scratch, model, rgb, settings, _all_subsets())
-    nactive, a1, a2, a3, a4 = _active_pack(state.c, zero(T))
+    nactive, active = _active_pack(state.c, zero(T))
     return UnmixResult(
-        state.c, state.sse, (a1, a2, a3, a4), nactive, state.iters,
+        state.c, state.sse, active, nactive, state.iters,
         state.converged, state.restarts
     )
 end
@@ -420,32 +433,26 @@ mutable struct _ReferenceState{T <: AbstractFloat}
     restarts::Int
 end
 
-# Walk the fixed subset tuple one element at a time. The tuple is
-# heterogeneous, so the element type has to stay in the signature: with an
-# abstract `subsets::Tuple`, `first(subsets)` infers as `Any`, every active
-# set is boxed, and a reference solve allocates some hundreds of bytes. With
-# `S<:Tuple` each level specializes on what is left of the tuple, so the
-# active set stays concrete. The early exit matters: once the interior solve
-# is exact there is no reason to enumerate the faces.
+# The subset list is a homogeneous `NTuple{15, NTuple{4,Int}}`, so a plain
+# loop over it keeps the active set concrete. The early exit matters: once
+# the interior solve is exact there is no reason to enumerate the faces.
 function _reference_pass!(
         state::_ReferenceState, sc::SolverScratch, model, rgb::SVector{3, T},
-        settings::UnmixSettings, subsets::S,
-    ) where {T, S <: Tuple}
-    state.sse < T(1.0e-18) && return nothing
-    _subset_pass!(state, sc, model, rgb, first(subsets), settings)
-    return _reference_pass!(state, sc, model, rgb, settings, Base.tail(subsets))
+        settings::UnmixSettings, subsets,
+    ) where {T}
+    for active in subsets
+        state.sse < T(1.0e-18) && return nothing
+        _subset_pass!(state, sc, model, rgb, active, settings)
+    end
+    return nothing
 end
-
-_reference_pass!(
-    state::_ReferenceState, sc::SolverScratch, model, rgb::SVector{3, T},
-    settings::UnmixSettings, ::Tuple{},
-) where {T} = nothing
 
 function _subset_pass!(
         state::_ReferenceState{T}, sc::SolverScratch, model, rgb::SVector{3, T},
-        active::NTuple{K, Int}, settings::UnmixSettings,
-    ) where {T, K}
-    if K == 1
+        active::Active4, settings::UnmixSettings,
+    ) where {T}
+    n = _active_count(active)
+    if n == 1
         c = SVector{4, T}(ntuple(i -> i == active[1] ? one(T) : zero(T), Val(4)))
         s = _sse(rgb, _mix(model, c))
         if s < state.sse
@@ -457,14 +464,14 @@ function _subset_pass!(
     end
     for r in 1:max(settings.restarts, 1)
         seed = if r == 1
-            _uniform_on(active, T)
+            _uniform_on(active, n, T)
         elseif r == 2 && isfinite(state.sse)
-            _project_onto(active, state.c)
+            _project_onto(active, n, state.c)
         else
             _random_on(active, r)
         end
         state.restarts = max(state.restarts, r)
-        c, s, it, conv = _polish!(sc, model, rgb, active, seed, settings)
+        c, s, it, conv = _polish_face!(sc, model, rgb, active, n, seed, settings)
         state.iters += it
         state.converged |= conv
         if s < state.sse
@@ -475,17 +482,17 @@ function _subset_pass!(
     return nothing
 end
 
-@inline function _uniform_on(active::NTuple{K, Int}, ::Type{T}) where {K, T}
-    n = one(T) / K
-    return SVector{4, T}(ntuple(i -> _findpos(active, i) == 0 ? zero(T) : n, Val(4)))
+@inline function _uniform_on(active::Active4, n::Int, ::Type{T}) where {T}
+    w = one(T) / n
+    return SVector{4, T}(ntuple(i -> _findpos(active, i) == 0 ? zero(T) : w, Val(4)))
 end
 
-function _project_onto(active::NTuple{K, Int}, c::SVector{4, T}) where {K, T}
+function _project_onto(active::Active4, n::Int, c::SVector{4, T}) where {T}
     s = zero(T)
-    @inbounds for idx in active
-        s += c[idx]
+    @inbounds for i in 1:n
+        s += c[active[i]]
     end
-    s <= 0 && return _uniform_on(active, T)
+    s <= 0 && return _uniform_on(active, n, T)
     # `inv_s` is assigned once, so the closure below captures an immutable
     # binding. Capturing `s` itself would box it, because `s` is mutated by
     # the loop above.
@@ -499,7 +506,7 @@ end
 
 # Deterministic perturbation, not RNG: restart `r` shifts the uniform seed in
 # a fixed pattern so runs are reproducible.
-function _random_on(active::NTuple{K, Int}, r::Int) where {K}
+function _random_on(active::Active4, r::Int)
     T = Float64
     raw = SVector{4, T}(
         ntuple(Val(4)) do i
@@ -511,16 +518,17 @@ function _random_on(active::NTuple{K, Int}, r::Int) where {K}
     return raw / sum(raw)
 end
 
-# The 15 nonempty subsets of {1,2,3,4}, in a fixed order. The full simplex
-# comes first: for a point inside the gamut the interior solve is exact and
-# the enumeration can stop immediately, which is what makes the accuracy path
-# affordable. Faces follow, largest first.
+# The 15 nonempty subsets of {1,2,3,4}, zero padded so the whole list is one
+# concrete type, in a fixed order. The full simplex comes first: for a point
+# inside the gamut the interior solve is exact and the enumeration can stop
+# immediately, which is what makes the accuracy path affordable. Faces
+# follow, largest first.
 function _all_subsets()
     return (
         (1, 2, 3, 4),
-        (1, 2, 3), (1, 2, 4), (1, 3, 4), (2, 3, 4),
-        (1, 2), (1, 3), (1, 4), (2, 3), (2, 4), (3, 4),
-        (1,), (2,), (3,), (4,),
+        (1, 2, 3, 0), (1, 2, 4, 0), (1, 3, 4, 0), (2, 3, 4, 0),
+        (1, 2, 0, 0), (1, 3, 0, 0), (1, 4, 0, 0), (2, 3, 0, 0), (2, 4, 0, 0), (3, 4, 0, 0),
+        (1, 0, 0, 0), (2, 0, 0, 0), (3, 0, 0, 0), (4, 0, 0, 0),
     )
 end
 
@@ -537,9 +545,7 @@ function unmix_bulk!(
     ) where {T, N}
     best_c = seeds[1]
     best_sse = T(Inf)
-    n0, a1, a2, a3, a4 = _active_pack(seeds[1], settings.face_threshold)
-    best_active = (a1, a2, a3, a4)
-    best_n = n0
+    best_n, best_active = _active_pack(seeds[1], settings.face_threshold)
     total_iters = 0
     converged = false
     for seed in seeds

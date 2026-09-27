@@ -116,15 +116,16 @@ On this machine (12 physical cores, `julia -t 14`, `surface_divisions = 20`):
 
 The inverse solver is allocation-free in the hot path: `unmix_bulk!` and
 `_solve_adaptive!` allocate nothing per solve, and a test asserts it. Getting
-there took two rounds. An earlier round removed the `ntuple` closures in the
-softmax kernel. This round removed two remaining boxes: the active set now
-travels as a concrete `(count, NTuple{4,Int})` pair instead of a
-`Tuple{Int}` / `NTuple{2,Int}` / ... chain, and `_project_onto` captures an
-immutable reciprocal instead of the sum its loop mutates. Together those
-cost about 96 bytes per grid vertex on the bulk path, which is gigabytes of
-garbage at 256³. `unmix_reference` still allocates a little inside its
-subset recursion; the test bounds it as a regression guard rather than
-claiming zero.
+there took a few rounds. An earlier round removed the `ntuple` closures in the
+softmax kernel. The active set is now a fixed-width `(count, NTuple{4,Int})`
+pair: it travels through the adaptive face reduction and the reference subset
+loop without an arity chain, and `_polish_face!` is the single place that
+unpacks it into the static-length tuple the softmax kernel needs. `_project_onto`
+captures an immutable reciprocal instead of the sum its loop mutates. The old
+`Tuple{Int}` / `NTuple{2,Int}` / ... chain cost about 96 bytes per grid vertex on
+the bulk path, which is gigabytes of garbage at 256³. `unmix_reference` still
+allocates a little per solve; the test bounds it as a regression guard rather
+than claiming zero.
 
 A later change replaced the fixed-arity tuple arithmetic with `SVector` and
 `SMatrix` throughout both packages, which retired the four-way `_softmax_k`

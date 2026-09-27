@@ -81,7 +81,7 @@ The values were extracted from the `colour-science` datasets, which reproduce
 the published CIE tables; at 10 nm they agree with the standard tabulation
 (for example `x_bar(380) = 0.001368`, `y_bar(555) = 1.0`). D65 is stored as
 the standard relative SPD (unscaled). The shipped configuration pins the
-observer name and the illuminant, and `build_quadrature` rejects an observer
+observer name and the illuminant, and `Quadrature(cfg, db)` rejects an observer
 grid that does not match `spectra` exactly, so resampling the file would be a
 new model, not a runtime option.
 

@@ -86,9 +86,11 @@ function synthetic_database(cfg::AbstractDict; rng_seed::Integer = 1)
         source_file = "synthetic", sheet = "synthetic", note = "synthetic",
     )
     db = InputDatabase(
-        [("synthetic", "synthetic.xlsx", repeat("0", 64))], pigments, spectra, saunderson,
-        observer, ("observer", "synthetic.csv", repeat("1", 64)),
-        Dict{String, String}("tool" => "test"),
+        source_files = [("synthetic", "synthetic.xlsx", repeat("0", 64))],
+        pigments = pigments, spectra = spectra, saunderson = saunderson,
+        observer = observer,
+        observer_source = ("observer", "synthetic.csv", repeat("1", 64)),
+        build_info = Dict{String, String}("tool" => "test"),
     )
     return validate_database(db)
 end
@@ -101,9 +103,9 @@ Everything a solver test needs, built from [`synthetic_database`](@ref).
 function synthetic_model(; samples::Integer = 6)
     cfg = synthetic_config(; samples = samples)
     db = synthetic_database(cfg)
-    spectra = load_spectra(cfg, db)
-    quad = build_quadrature(cfg, db)
-    return cfg, db, spectra, quad, spectral_model(spectra, quad)
+    spectra = PigmentSpectra(cfg, db)
+    quad = Quadrature(cfg, db)
+    return cfg, db, spectra, quad, SpectralModel(spectra, quad)
 end
 
 """

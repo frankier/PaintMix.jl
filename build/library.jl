@@ -26,7 +26,7 @@ const LATENT_SCALARS = 7
 # checks that are O(1) — magic, version, dimensions, offsets, storage
 # conventions — still run.
 const PAYLOAD_PATH = joinpath(@__DIR__, "data", "payload.pmx")
-const MODEL = PaintMix.model_from_bytes(read(PAYLOAD_PATH); validate = false)
+const MODEL = PaintMix.PigmentModel(read(PAYLOAD_PATH); validate = false)
 
 "Compiled-in ABI version. Bump when a signature changes."
 Base.@ccallable function paintmix_abi_version()::Int32

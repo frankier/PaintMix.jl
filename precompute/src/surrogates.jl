@@ -33,16 +33,16 @@ struct SurfaceQuadrature{T <: AbstractFloat}
 end
 
 """
-    surface_quadrature(cfg_or_divisions) -> SurfaceQuadrature
+    SurfaceQuadrature(d) -> SurfaceQuadrature
+    SurfaceQuadrature(cfg) -> SurfaceQuadrature
 
-Build the equally spaced surface quadrature. Accepts either the configuration
-dictionary (reading `surrogate.surface_divisions`) or the division count.
+The equally spaced surface quadrature for `d` divisions per axis, or read
+`surrogate.surface_divisions` from `cfg`.
 """
-surface_quadrature(divisions::Integer) = _surface_quadrature(Int(divisions))
-surface_quadrature(cfg::AbstractDict) =
-    _surface_quadrature(Int(get(cfg["surrogate"], "surface_divisions", 20)))
+SurfaceQuadrature(cfg::AbstractDict) =
+    SurfaceQuadrature(Int(get(cfg["surrogate"], "surface_divisions", 20)))
 
-function _surface_quadrature(d::Int)
+function SurfaceQuadrature(d::Integer)
     d >= 1 || throw(ArgumentError("surface quadrature needs at least one division"))
     points = SVector{4, Float64}[]
     faces = Int[]
@@ -346,8 +346,8 @@ function fit_surrogates(
     epsilon = Float64(s["epsilon"])
     max_iter = Int(s["max_iterations"])
     time_limit = Float64(get(s, "time_limit_seconds", 3600.0))
-    sq = surface_quadrature(cfg)
-    base = spectral_model(spectra, quad)
+    sq = SurfaceQuadrature(cfg)
+    base = SpectralModel(spectra, quad)
     targets = surface_targets(base, sq)
 
     θ = initial_theta(spectra, epsilon)
@@ -376,7 +376,7 @@ function fit_surrogates(
         result = Optim.optimize(f, g!, θ, Optim.LBFGS(), opts)
         θ = Vector{Float64}(Optim.minimizer(result))
         K, S = theta_parameters(θ, W, epsilon)
-        model = with_parameters(base, K, S)
+        model = SpectralModel(base; K = K, S = S)
         entry = Dict{String, Any}(
             "step" => step,
             "alpha" => α,
@@ -403,7 +403,7 @@ function fit_surrogates(
     end
 
     K, S = theta_parameters(θ, W, epsilon)
-    model = with_parameters(base, K, S)
+    model = SpectralModel(base; K = K, S = S)
     diagnostics = surrogate_diagnostics(model, base, sq, targets)
     return SurrogateFit(K, S, θ, history, diagnostics, sq)
 end
@@ -420,7 +420,7 @@ Finite sampling is evidence, not a proof of continuous gamut containment.
 function surrogate_diagnostics(
         model::SpectralModel, base::SpectralModel, sq::SurfaceQuadrature, targets
     )
-    denser = _surface_quadrature(40)
+    denser = SurfaceQuadrature(40)
     push_fit = Epush(model, sq)
     pull_fit = Epull(model, sq, targets)
     denser_targets = surface_targets(base, denser)

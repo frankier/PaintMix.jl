@@ -66,8 +66,8 @@ extension is installed on first use, which needs network access once.
 `kubelka_munk.jl`).** `import_inputs.jl` reads the selected ranges of
 `data/Final_artist_database.xlsx` through DuckDB's `excel` reader and
 writes a normalized database recording, for every sample, its file, sheet,
-and cell. `load_spectra` turns that into checked matrices;
-`build_quadrature` builds the trapezoidal weights, the D65 and CIE 1931
+and cell. `PigmentSpectra(cfg, db)` turns that into checked matrices;
+`Quadrature(cfg, db)` builds the trapezoidal weights, the D65 and CIE 1931
 2-degree samples, and the pinned XYZ-to-linear-sRGB matrix. `mix_rgb`
 evaluates equations (1)-(7) in generic arithmetic, and `mix_rgb_jacobian!` is
 the analytic `dRGB/dc` used by the inverse solver; a test checks the analytic

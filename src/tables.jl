@@ -84,7 +84,7 @@ size, storage conventions, the model identifier, and payload offsets.
 Exposed for tests and tooling; `PigmentModel` keeps only what the mixing
 path needs.
 """
-struct ModelHeader
+Base.@kwdef struct ModelHeader
     format_version::UInt16
     header_bytes::UInt16
     storage::UInt8
@@ -109,14 +109,16 @@ end
 
 Base.showerror(io::IO, e::InvalidPayload) = print(io, "InvalidPayload: ", e.msg)
 
-_parse_header(b::AbstractVector{UInt8}) = ModelHeader(
-    _hdr_u16(b, 8), _hdr_u16(b, 10), _hdr_u8(b, 12), _hdr_u8(b, 13),
-    _hdr_u8(b, 14), _hdr_u8(b, 15), Int(_hdr_u32(b, 16)), _hdr_u32(b, 20),
-    ntuple(i -> _hdr_u8(b, 23 + i), Val(16)),
-    _hdr_u8(b, 40), _hdr_u8(b, 41), _hdr_u8(b, 42),
-    Int(_hdr_u64(b, 56)), Int(_hdr_u64(b, 64)),
-    Int(_hdr_u64(b, 72)), Int(_hdr_u64(b, 80)),
-)
+function ModelHeader(b::AbstractVector{UInt8})
+    return ModelHeader(
+        _hdr_u16(b, 8), _hdr_u16(b, 10), _hdr_u8(b, 12), _hdr_u8(b, 13),
+        _hdr_u8(b, 14), _hdr_u8(b, 15), Int(_hdr_u32(b, 16)), _hdr_u32(b, 20),
+        ntuple(i -> _hdr_u8(b, 23 + i), Val(16)),
+        _hdr_u8(b, 40), _hdr_u8(b, 41), _hdr_u8(b, 42),
+        Int(_hdr_u64(b, 56)), Int(_hdr_u64(b, 64)),
+        Int(_hdr_u64(b, 72)), Int(_hdr_u64(b, 80)),
+    )
+end
 
 function _check_header(h::ModelHeader)
     h.format_version == FORMAT_VERSION || throw(
@@ -176,7 +178,7 @@ function _check_header(h::ModelHeader)
     return nothing
 end
 
-function _header_bytes(model::PigmentModel)
+function Base.Vector{UInt8}(model::PigmentModel)
     n = grid_n(model)
     payload = 3 * n^3
     b = zeros(UInt8, HEADER_BYTES)
@@ -207,7 +209,7 @@ function _header_bytes(model::PigmentModel)
 end
 
 """
-    model_from_bytes(bytes; validate = true) -> PigmentModel
+    PigmentModel(bytes; validate = true) -> PigmentModel
 
 Parse a `.pmx` payload held in memory.
 
@@ -224,7 +226,7 @@ the bytes were verified elsewhere, not a relaxation of the format.
 Throws `PaintMix.InvalidPayload` on any structural problem. Tables are copied
 out of `bytes`, so the caller may release it afterwards.
 """
-function model_from_bytes(bytes::AbstractVector{UInt8}; validate::Bool = true)
+function PigmentModel(bytes::AbstractVector{UInt8}; validate::Bool = true)
     length(bytes) >= HEADER_BYTES || throw(
         InvalidPayload(
             "payload is $(length(bytes)) bytes, shorter than the $HEADER_BYTES byte header"
@@ -233,7 +235,7 @@ function model_from_bytes(bytes::AbstractVector{UInt8}; validate::Bool = true)
     for (i, m) in enumerate(_MAGIC)
         bytes[i] == m || throw(InvalidPayload("bad magic: not a PaintMix payload"))
     end
-    h = _parse_header(bytes)
+    h = ModelHeader(bytes)
     _check_header(h)
     total = max(h.inverse_offset + h.inverse_bytes, h.forward_offset + h.forward_bytes)
     length(bytes) >= total || throw(
@@ -242,19 +244,26 @@ function model_from_bytes(bytes::AbstractVector{UInt8}; validate::Bool = true)
                 "tables up to byte $total"
         )
     )
-    inverse = _copy_table(bytes, h.inverse_offset, h.inverse_bytes, h.grid_n)
-    forward = _copy_table(bytes, h.forward_offset, h.forward_bytes, h.grid_n)
+    inverse = ByteLUT(bytes, h.inverse_offset, h.grid_n)
+    forward = ByteLUT(bytes, h.forward_offset, h.grid_n)
     model = PigmentModel(h.id, inverse, forward, h.format_version, h.flags)
     validate && validate_model(model)
     return model
 end
 
-function _copy_table(bytes::AbstractVector{UInt8}, offset::Int, len::Int, n::Int)
+"""
+    ByteLUT(bytes, offset, n) -> ByteLUT
+
+Copy an `n`-sized table out of a payload starting at byte `offset`. The
+`3 * n^3` length is implied by `n` and enforced by [`ByteLUT`](@ref).
+"""
+function ByteLUT(bytes::AbstractVector{UInt8}, offset::Integer, n::Integer)
+    len = 3 * Int(n)^3
     data = Vector{UInt8}(undef, len)
     # `copyto!` on two `Vector`s is a memmove, so this stays cheap even when
     # the payload is being loaded by an unoptimized image-building process.
     copyto!(data, 1, bytes, offset + 1, len)
-    return ByteLUT(n, data)
+    return ByteLUT(Int(n), data)
 end
 
 """
@@ -305,7 +314,7 @@ model's own bytes.
 """
 function write_model(io::IO, model::PigmentModel)
     validate_model(model)
-    write(io, _header_bytes(model))
+    write(io, Vector{UInt8}(model))
     write(io, model.inverse.data)
     write(io, model.forward.data)
     return nothing
@@ -330,7 +339,7 @@ end
 
 Read and validate a `.pmx` payload from disk.
 """
-read_model(path::AbstractString) = model_from_bytes(read(path))
+read_model(path::AbstractString) = PigmentModel(read(path))
 
 """
     default_payload_path() -> String

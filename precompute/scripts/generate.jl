@@ -201,7 +201,7 @@ function load_surrogate(path, cfg, hash, W)
         Dict{String, Any}(
             String(k) => v for (k, v) in pairs(get(doc, "diagnostics", Dict{String, Any}()))
         ),
-        surface_quadrature(cfg),
+        SurfaceQuadrature(cfg),
     )
 end
 
@@ -239,9 +239,9 @@ function main(args)
     else
         db = open_database(db_path)
     end
-    spectra = load_spectra(cfg, db)
-    quad = build_quadrature(cfg, db)
-    base = spectral_model(spectra, quad)
+    spectra = PigmentSpectra(cfg, db)
+    quad = Quadrature(cfg, db)
+    base = SpectralModel(spectra, quad)
     W = length(spectra.wavelength)
     @printf("  spectra:  %d wavelengths, k1 = %g, k2 = %g\n", W, spectra.k1, spectra.k2)
     opts["stage"] == "inputs" && return nothing
@@ -274,7 +274,7 @@ function main(args)
     fit === nothing && (fit = load_surrogate(surrogate_path, pcfg, hash, W))
     fit === nothing &&
         error("no cached surrogate fit at $surrogate_path; run --stage fit first")
-    surrogate = with_parameters(base, fit.K, fit.S)
+    surrogate = SpectralModel(base; K = fit.K, S = fit.S)
 
     result = nothing
     ft = nothing
@@ -287,7 +287,7 @@ function main(args)
         forward = generate_forward(surrogate, n; threads = opts["threads"])
         @printf("  forward:  %.1f s\n", time() - t0)
 
-        settings = unmix_settings(pcfg)
+        settings = UnmixSettings(pcfg)
         if opts["solver"] == "coarse"
             g = get(pcfg, "generation", Dict{String, Any}())
             coarse_from_opt =

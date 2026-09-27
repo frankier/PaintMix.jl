@@ -2,7 +2,8 @@
 #
 #   * `PigmentSpectra` — the four absorption and scattering curves on the
 #     configured grid, plus the Saunderson constants.
-#   * `load_spectra` — turn an [`InputDatabase`](@ref) into checked matrices.
+#   * `PigmentSpectra(cfg, db)` — turn an [`InputDatabase`](@ref) into checked
+#     matrices.
 #   * `Quadrature` — trapezoidal weights and the D65/CIE 1931 tables, plus
 #     the pinned XYZ-to-RGB matrix and the `1 / Y_D65` factor.
 #   * `SpectralModel` — spectra plus quadrature, the object equations (1)-(7)
@@ -25,7 +26,7 @@ wavelength grid.
   * `k1`, `k2`: the Saunderson constants of equation (6).
   * `provenance`: free-form record of the source file, sheet, and hashes.
 """
-struct PigmentSpectra{T <: AbstractFloat}
+Base.@kwdef struct PigmentSpectra{T <: AbstractFloat}
     codes::NTuple{4, String}
     names::NTuple{4, String}
     wavelength::Vector{T}
@@ -43,7 +44,7 @@ Everything equation (3)-(7) integration needs, cached once per grid:
 trapezoidal weights, the CIE 1931 2-degree observer functions, D65, the
 pinned XYZ-to-linear-sRGB matrix, and `1 / Y_D65`.
 """
-struct Quadrature{T <: AbstractFloat}
+Base.@kwdef struct Quadrature{T <: AbstractFloat}
     wavelength::Vector{T}
     weights::Vector{T}
     x_bar::Vector{T}
@@ -74,7 +75,7 @@ struct SpectralModel{T <: AbstractFloat}
 end
 
 """
-    load_spectra(cfg, db) -> PigmentSpectra
+    PigmentSpectra(cfg, db) -> PigmentSpectra
 
 Build the four spectral curves from the validated input database.
 
@@ -83,7 +84,7 @@ wavelength grid, in order, and finite positive values, and that the source
 Saunderson constants agree with the configuration. Throws
 [`InputError`](@ref) on the first problem.
 """
-function load_spectra(cfg::AbstractDict, db::InputDatabase)
+function PigmentSpectra(cfg::AbstractDict, db::InputDatabase)
     validate_database(db)
     validate_config(cfg)
     grid = collect(Float64, wavelength_grid(cfg))
@@ -144,11 +145,14 @@ function load_spectra(cfg::AbstractDict, db::InputDatabase)
             "kins is ignored: the source lists 1.0 and 0.0, and the paper's " *
             "equation (6) has no added specular term",
     )
-    return PigmentSpectra(codes, names, grid, K, S, k1, k2, provenance)
+    return PigmentSpectra(;
+        codes = codes, names = names, wavelength = grid, K = K, S = S,
+        k1 = k1, k2 = k2, provenance = provenance,
+    )
 end
 
 """
-    build_quadrature(cfg, db) -> Quadrature
+    Quadrature(cfg, db) -> Quadrature
 
 Validate the observer table against the configuration grid and precompute
 trapezoidal weights. `norm = 1 / sum(w * y_bar * D65)` is the `Y_D65`
@@ -157,7 +161,7 @@ normalizer of equation (7).
 The observer grid must be exactly the configuration's grid: resampling would
 be a different model, not a runtime option.
 """
-function build_quadrature(cfg::AbstractDict, db::InputDatabase)
+function Quadrature(cfg::AbstractDict, db::InputDatabase)
     grid = collect(Float64, wavelength_grid(cfg))
     obs = sort(db.observer; by = r -> r.wavelength_nm)
     length(obs) == length(grid) || throw(
@@ -192,8 +196,9 @@ function build_quadrature(cfg::AbstractDict, db::InputDatabase)
     ynorm = sum(weights[j] * ybar[j] * d65[j] for j in 1:W)
     ynorm > 0 || throw(InputError("integral of y_bar * D65 is not positive"))
     matrix = _color_matrix(cfg)
-    return Quadrature(
-        grid, weights, xbar, ybar, zbar, d65, matrix, 1 / ynorm,
+    return Quadrature(;
+        wavelength = grid, weights = weights, x_bar = xbar, y_bar = ybar,
+        z_bar = zbar, d65 = d65, xyz_to_rgb = matrix, norm = 1 / ynorm,
     )
 end
 
@@ -224,12 +229,12 @@ function _color_matrix(cfg::AbstractDict)
 end
 
 """
-    spectral_model(spectra::PigmentSpectra, quad::Quadrature) -> SpectralModel
+    SpectralModel(spectra, quad) -> SpectralModel
 
 Transpose the pigment-major spectra into the wavelength-major layout the
 kernels read.
 """
-function spectral_model(spectra::PigmentSpectra{T}, quad::Quadrature{T}) where {T}
+function SpectralModel(spectra::PigmentSpectra{T}, quad::Quadrature{T}) where {T}
     W = length(quad.wavelength)
     length(spectra.wavelength) == W || throw(
         InputError(
@@ -246,14 +251,14 @@ function spectral_model(spectra::PigmentSpectra{T}, quad::Quadrature{T}) where {
 end
 
 """
-    with_parameters(model::SpectralModel, K, S) -> SpectralModel
+    SpectralModel(model; K, S) -> SpectralModel
 
 A copy of `model` with new `4 x W` pigment-major absorption and scattering
 matrices. Used by the surrogate fit to evaluate candidate pigments against
 the fixed quadrature.
 """
-function with_parameters(
-        model::SpectralModel{T}, K::AbstractMatrix, S::AbstractMatrix
+function SpectralModel(
+        model::SpectralModel{T}; K::AbstractMatrix, S::AbstractMatrix
     ) where {T}
     W, _ = size(model.K)
     size(K) == (4, W) || throw(InputError("K must be 4 x $W, got $(size(K))"))

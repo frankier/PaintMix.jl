@@ -42,7 +42,7 @@ overridden gate names in the sidecar.
 ## Payload layout
 
 A `.pmx` payload is a fixed 128-byte little-endian header followed by two raw
-byte tables. `PaintMix.model_from_bytes` is the reference implementation;
+byte tables. `PaintMix.PigmentModel(bytes)` is the reference implementation;
 `precompute/src/export.jl` writes payloads through `PaintMix.write_model` so
 there is exactly one definition of the format.
 

@@ -5,7 +5,7 @@
 # header is written directly, so the file is well-formed but invalid.
 function bytes_for_test(model::PigmentModel)
     io = IOBuffer()
-    write(io, PaintMix._header_bytes(model))
+    write(io, Vector{UInt8}(model))
     write(io, model.inverse.data)
     write(io, model.forward.data)
     return take!(io)
@@ -15,7 +15,7 @@ end
     model = random_model(17, 4)
     bytes = model_to_bytes(model)
     @test length(bytes) == HEADER_BYTES + 6 * 4^3
-    back = model_from_bytes(bytes)
+    back = PigmentModel(bytes)
     @test back.inverse.data == model.inverse.data
     @test back.forward.data == model.forward.data
     @test back.id == model.id
@@ -29,7 +29,7 @@ end
 
 @testset "header conventions are recorded in the payload" begin
     model = identity_model(3)
-    h = PaintMix._parse_header(model_to_bytes(model))
+    h = ModelHeader(model_to_bytes(model))
     @test h.header_bytes == HEADER_BYTES
     @test h.storage == PaintMix.STORAGE_U8
     @test h.channels == 3
@@ -62,34 +62,34 @@ end
 
     bad_magic = copy(good)
     bad_magic[1] = 0x00
-    @test_throws InvalidPayload model_from_bytes(bad_magic)
+    @test_throws InvalidPayload PigmentModel(bad_magic)
 
     version = copy(good)
     PaintMix._put_u16!(version, 8, 99)
-    @test_throws InvalidPayload model_from_bytes(version)
+    @test_throws InvalidPayload PigmentModel(version)
 
     short = good[1:(end - 1)]
-    @test_throws InvalidPayload model_from_bytes(short)
-    @test_throws InvalidPayload model_from_bytes(UInt8[])
+    @test_throws InvalidPayload PigmentModel(short)
+    @test_throws InvalidPayload PigmentModel(UInt8[])
 
     wrong_n = copy(good)
     PaintMix._put_u32!(wrong_n, 16, 5)
-    @test_throws InvalidPayload model_from_bytes(wrong_n)
+    @test_throws InvalidPayload PigmentModel(wrong_n)
 
     wrong_storage = copy(good)
     PaintMix._put_u8!(wrong_storage, 12, PaintMix.STORAGE_F64)
-    @test_throws InvalidPayload model_from_bytes(wrong_storage)
+    @test_throws InvalidPayload PigmentModel(wrong_storage)
 
     wrong_scale = copy(good)
     PaintMix._put_u8!(wrong_scale, 40, 0x01)
-    @test_throws InvalidPayload model_from_bytes(wrong_scale)
+    @test_throws InvalidPayload PigmentModel(wrong_scale)
 
     # Table bytes are not checked. A truncated payload is caught by the
     # header offsets, but a flipped table byte is accepted; only the simplex
     # invariant, checked separately, can reject a table at load time.
     flipped = copy(good)
     flipped[end] ⊻= 0xff
-    @test model_from_bytes(flipped) isa PigmentModel
+    @test PigmentModel(flipped) isa PigmentModel
 end
 
 @testset "simplex validation" begin
@@ -108,9 +108,9 @@ end
     )
     @test_throws ArgumentError validate_model(broken)
     bytes = bytes_for_test(broken)
-    @test_throws ArgumentError model_from_bytes(bytes)
+    @test_throws ArgumentError PigmentModel(bytes)
     # Without the simplex check the payload is structurally acceptable.
-    @test model_from_bytes(bytes; validate = false) isa PigmentModel
+    @test PigmentModel(bytes; validate = false) isa PigmentModel
 end
 
 

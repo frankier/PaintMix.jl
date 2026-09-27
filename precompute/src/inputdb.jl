@@ -76,7 +76,7 @@ Construction is checked by [`validate_database`](@ref); reading and writing
 against a `.duckdb` file go through [`open_database`](@ref) and
 [`save_database`](@ref).
 """
-struct InputDatabase
+Base.@kwdef struct InputDatabase
     source_files::Vector{SourceFile}
     pigments::Vector{PigmentRecord}
     spectra::Vector{SpectrumRecord}
@@ -352,8 +352,9 @@ function open_database(path::AbstractString)
         )
 
         db = InputDatabase(
-            source_files, pigments, spectra, saunderson, observer, observer_source,
-            build_info,
+            source_files = source_files, pigments = pigments, spectra = spectra,
+            saunderson = saunderson, observer = observer,
+            observer_source = observer_source, build_info = build_info,
         )
         return validate_database(db)
     finally
@@ -525,8 +526,10 @@ function load_spreadsheet_inputs(
         "schema" => "1",
     )
     db = InputDatabase(
-        source_files, pigments, spectra, saunderson, observer,
-        ("observer", inputs["observer_file"], observer_sha), build_info,
+        source_files = source_files, pigments = pigments, spectra = spectra,
+        saunderson = saunderson, observer = observer,
+        observer_source = ("observer", inputs["observer_file"], observer_sha),
+        build_info = build_info,
     )
     return validate_database(db)
 end

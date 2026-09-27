@@ -68,10 +68,6 @@ export ConfigError,
     PigmentSpectra,
     Quadrature,
     SpectralModel,
-    load_spectra,
-    build_quadrature,
-    spectral_model,
-    with_parameters,
     pigment_parameters,
     mix_rgb,
     mix_rgb_params,
@@ -86,7 +82,6 @@ export ConfigError,
     softplus,
     inv_softplus,
     SurfaceQuadrature,
-    surface_quadrature,
     surface_targets,
     Epush,
     Epull,
@@ -100,7 +95,6 @@ export ConfigError,
     fit_surrogates,
     surrogate_diagnostics,
     UnmixSettings,
-    unmix_settings,
     UnmixResult,
     SolverScratch,
     unmix_reference,
@@ -180,7 +174,7 @@ floor.
 
 Throws [`ConfigError`](@ref) naming the first problem. The runtime's own
 payload validation is deliberately separate: this checks a *plan*, while
-`PaintMix.model_from_bytes` checks bytes.
+`PaintMix.PigmentModel` checks bytes.
 """
 function validate_config(cfg::AbstractDict)
     version = get(cfg, "schema_version", nothing)

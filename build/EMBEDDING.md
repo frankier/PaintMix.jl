@@ -61,7 +61,7 @@ The fix keeps validation where it belongs and keeps the embedded path cheap:
     (`PaintMix.read_model`, which checks the simplex invariant) and prints
     the identity it validated.
   * `library.jl` then calls
-    `PaintMix.model_from_bytes(bytes; validate = false)`, which still
+    `PaintMix.PigmentModel(bytes; validate = false)`, which still
     performs every O(1) structural check — magic, version, dimensions,
     offsets in range, storage conventions — but skips the O(n^3) loop.
   * Table copies use `copyto!`, a `memmove` even when interpreted.

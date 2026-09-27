@@ -135,7 +135,7 @@ const eval_jacobian4! = PaintMixPrecompute._jacobian4!
         scaled = deepcopy(spectra)
         scaled.K .= 37.0 .* spectra.K
         scaled.S .= 37.0 .* spectra.S
-        other = spectral_model(scaled, quad)
+        other = SpectralModel(scaled, quad)
         for c in (
                 SVector(0.25, 0.25, 0.25, 0.25), SVector(0.7, 0.1, 0.1, 0.1),
                 SVector(0.0, 0.5, 0.5, 0.0),
@@ -192,7 +192,7 @@ const eval_jacobian4! = PaintMixPrecompute._jacobian4!
     end
 
     @testset "surface quadrature" begin
-        sq = surface_quadrature(5)
+        sq = SurfaceQuadrature(5)
         @test length(sq.points) == length(sq.weights) == length(sq.face)
         @test sum(sq.weights) ≈ 1.0
         for c in sq.points
@@ -302,7 +302,7 @@ const eval_jacobian4! = PaintMixPrecompute._jacobian4!
 
     @testset "inverse solver recovers concentrations" begin
         cfg, _, _, _, model = synthetic_model()
-        settings = unmix_settings(cfg)
+        settings = UnmixSettings(cfg)
         scratch = SolverScratch()
         for c in (
                 SVector(1.0, 0.0, 0.0, 0.0), SVector(0.0, 1.0, 0.0, 0.0),
@@ -329,7 +329,7 @@ const eval_jacobian4! = PaintMixPrecompute._jacobian4!
 
     @testset "inverse solver allocates nothing per solve" begin
         cfg, _, _, _, model = synthetic_model()
-        settings = unmix_settings(cfg)
+        settings = UnmixSettings(cfg)
         scratch = SolverScratch()
         rgb = mix_rgb(model, SVector(0.4, 0.3, 0.2, 0.1))
         seed = SVector(0.4, 0.3, 0.2, 0.1)
@@ -364,7 +364,7 @@ const eval_jacobian4! = PaintMixPrecompute._jacobian4!
         # rather than the analytic Jacobian, on the same least-squares
         # objective.
         cfg, _, _, _, model = synthetic_model()
-        settings = unmix_settings(cfg)
+        settings = UnmixSettings(cfg)
         scratch = SolverScratch()
         # Softmax over three free logits spans the interior of the full
         # simplex, so this is the oracle for optima with every concentration
@@ -439,7 +439,7 @@ const eval_jacobian4! = PaintMixPrecompute._jacobian4!
         )
         m = build_model(ft, cfg, provenance)
         bytes = PaintMix.model_to_bytes(m)
-        back = PaintMix.model_from_bytes(bytes)
+        back = PaintMix.PigmentModel(bytes)
         @test PaintMix.model_id(back) == PaintMix.model_id(m)
         @test back.inverse.data == m.inverse.data
         @test back.forward.data == m.forward.data
@@ -457,7 +457,7 @@ const eval_jacobian4! = PaintMixPrecompute._jacobian4!
         cfg, _, _, _, model = synthetic_model()
         n = 9
         coarse_n = 6
-        settings = unmix_settings(cfg)
+        settings = UnmixSettings(cfg)
         fine = generate_inverse_coarse_to_fine(
             model, n; coarse_n = coarse_n, threads = 1,
             settings = UnmixSettings{Float64}(15, 1.0e-10, 1.0e-6, 1),

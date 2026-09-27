@@ -89,7 +89,7 @@ function quality_report(
         model::PaintMix.PigmentModel, spectral::SpectralModel{T}, cfg::AbstractDict;
         colors::Integer = 512, pairs::Integer = 20000, seed::Integer = 20210913,
     ) where {T}
-    settings = unmix_settings(cfg)
+    settings = UnmixSettings(cfg)
     scratch = SolverScratch()
     rng = Xoshiro(seed)
     points = corpus(rng, colors)
@@ -393,7 +393,7 @@ function behavior_report(
     yellow = SVector(0.71, 0.62, 0.02)
     magenta = SVector(0.55, 0.02, 0.12)
     white = SVector(1.0, 1.0, 1.0)
-    settings = unmix_settings(cfg)
+    settings = UnmixSettings(cfg)
     scratch = SolverScratch()
     cblue, rblue = spectral_encode(
         spectral, T.(blue); settings = settings, scratch = scratch

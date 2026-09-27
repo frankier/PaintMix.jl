@@ -29,7 +29,12 @@ struct UnmixSettings{T <: AbstractFloat}
     restarts::Int
 end
 
-function unmix_settings(cfg::AbstractDict)
+"""
+    UnmixSettings(cfg) -> UnmixSettings
+
+Read the solver settings from the configuration's `unmix` section.
+"""
+function UnmixSettings(cfg::AbstractDict)
     u = cfg["unmix"]
     T = Float64
     return UnmixSettings{T}(
@@ -46,7 +51,7 @@ end
 One inverse solve: the concentrations, the squared RGB residual, the active
 pigment indices, and how the solver finished.
 """
-struct UnmixResult{T <: AbstractFloat}
+Base.@kwdef struct UnmixResult{T <: AbstractFloat}
     c::SVector{4, T}
     sse::T
     active::NTuple{4, Int}   # active indices, zero-padded
@@ -420,8 +425,9 @@ function unmix_reference(
     _reference_pass!(state, scratch, model, rgb, settings, _all_subsets())
     nactive, active = _active_pack(state.c, zero(T))
     return UnmixResult(
-        state.c, state.sse, active, nactive, state.iters,
-        state.converged, state.restarts
+        c = state.c, sse = state.sse, active = active, nactive = nactive,
+        iterations = state.iters, converged = state.converged,
+        restarts = state.restarts,
     )
 end
 
@@ -560,5 +566,8 @@ function unmix_bulk!(
             best_n = n
         end
     end
-    return UnmixResult(best_c, best_sse, best_active, best_n, total_iters, converged, N)
+    return UnmixResult(
+        c = best_c, sse = best_sse, active = best_active, nactive = best_n,
+        iterations = total_iters, converged = converged, restarts = N,
+    )
 end

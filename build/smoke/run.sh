@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run the compiled-ABI smoke tests: C and Python clients against Julia
+# Run the compiled-ABI smoke tests: C, Python, and R clients against Julia
 # reference values derived from the same embedded payload.
 #
 #   build/smoke/run.sh [out-dir] [payload]
@@ -39,6 +39,20 @@ status=0
 
 echo "== Python client"
 python3 "$here/client.py" "$out" "$out/reference.txt" || status=1
+
+# The R package needs rdyncall and the R toolchain. Skip with a message when
+# they are not installed, so the C and Python checks still run on a host
+# without R.
+if command -v Rscript >/dev/null 2>&1 && \
+    Rscript --vanilla -e 'quit(status = !requireNamespace("rdyncall", quietly = TRUE))' >/dev/null 2>&1; then
+    echo "== R client"
+    rlib="$work/rlib"
+    mkdir -p "$rlib"
+    R CMD INSTALL --no-multiarch --no-docs -l "$rlib" "$out/paintmix" >/dev/null || status=1
+    R_LIBS="$rlib" Rscript "$here/client.R" "$out" "$out/reference.txt" || status=1
+else
+    echo "== R client (skipped: Rscript or rdyncall is not available)"
+fi
 
 if [ "$status" -ne 0 ]; then
     echo "smoke tests FAILED" >&2

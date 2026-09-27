@@ -126,6 +126,14 @@ model.
 """
 @inline function encode(model::PigmentModel, rgb::RGB{T}) where {T <: AbstractFloat}
     _check(rgb)
+    return _encode_unchecked(model, rgb)
+end
+
+# Finite-checking split out so the status-code kernels, which validate the
+# whole buffer up front, do not re-check every element.
+@inline function _encode_unchecked(
+        model::PigmentModel, rgb::RGB{T}
+    ) where {T <: AbstractFloat}
     x, y, z = rgb
     c = _repair_simplex(trilinear(model.inverse, x, y, z)...)
     c4 = max(zero(T), one(T) - (c[1] + c[2] + c[3]))
@@ -171,11 +179,19 @@ function mix(
     _check(a)
     _check(b)
     _check_fraction(t)
+    return _mix_unchecked(model, a, b, t)
+end
+
+# Finite-checking split out, as in `_encode_unchecked`. Endpoint clamping
+# and the two exact-endpoint shortcuts stay here so the kernels match `mix`.
+@inline function _mix_unchecked(
+        model::PigmentModel, a::RGB{T}, b::RGB{T}, t::T
+    ) where {T <: AbstractFloat}
     t == zero(T) && return a
     t == one(T) && return b
     tc = clamp(t, zero(T), one(T))
-    za = encode(model, a)
-    zb = encode(model, b)
+    za = _encode_unchecked(model, a)
+    zb = _encode_unchecked(model, b)
     return decode(model, _latent_lerp(za, zb, tc))
 end
 
@@ -232,7 +248,7 @@ function bulk_mix_kernel!(
         isfinite(ts[i]) || return PM_ERR_NONFINITE
     end
     @inbounds for i in 1:n
-        c = mix(
+        c = _mix_unchecked(
             model, SVector(as[3i - 2], as[3i - 1], as[3i]),
             SVector(bs[3i - 2], bs[3i - 1], bs[3i]), ts[i]
         )
@@ -320,7 +336,7 @@ function weighted_mix_kernel!(
     @inbounds for i in 1:n
         w = weights[i]
         w == zero(T) && continue
-        zi = encode(model, SVector(colors[3i - 2], colors[3i - 1], colors[3i]))
+        zi = _encode_unchecked(model, SVector(colors[3i - 2], colors[3i - 1], colors[3i]))
         ac += w * zi.c
         ar += w * zi.r
     end

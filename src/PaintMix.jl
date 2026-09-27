@@ -25,13 +25,15 @@ matching equation (7) of the paper. Use [`linear_from_srgb8`](@ref) and
 
 The module is a pure evaluator. It owns no optimizer, no spectral model, and
 no file-format dependencies beyond the packaged `.pmx` payload. Table
-generation lives in the separate `PaintMixPrecompute` package.
+generation lives in the separate `PaintMixPrecompute` package, which shares
+the [`LUTKernels`](@ref) submodule.
 """
 module PaintMix
 
 using StaticArrays: SVector
 
 export ByteLUT,
+    LUTKernels,
     PigmentModel,
     Latent,
     ModelHeader,
@@ -70,6 +72,7 @@ export ByteLUT,
     PM_ERR_WEIGHT,
     PM_ERR_TOTAL
 
+include("lutkernels.jl")
 include("types.jl")
 include("srgb.jl")
 include("lookup.jl")

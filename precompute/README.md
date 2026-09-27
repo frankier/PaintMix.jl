@@ -28,6 +28,10 @@ input data.
 The dependency direction is one-way: `precompute -> PaintMix`. The runtime
 package never depends on anything here.
 
+The forward table and the coarse concentration field interpolate through
+`PaintMix.LUTKernels`, the runtime package's documented shared-kernel
+interface. This is the only runtime code this project calls.
+
 ## Naming
 
 Public names are ASCII (`theta_parameters`, `initial_theta`,

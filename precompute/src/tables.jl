@@ -562,24 +562,24 @@ _scalar_type(::SpectralModel{T}) where {T} = T
 _scalar_type(::ForwardFloatLUT{T}) where {T} = T
 
 @inline function _mix(f::ForwardFloatLUT{T}, c::AbstractVector{S}) where {T, S <: Real}
-    corners, fx, fy, fz = _cell(f.data, f.n, T(c[1]), T(c[2]), T(c[3]), one(T))
-    return _trilinear3(corners, fx, fy, fz)
+    corners, fx, fy, fz = cell(f.data, f.n, T(c[1]), T(c[2]), T(c[3]), one(T))
+    return trilinear3(corners, fx, fy, fz)
 end
 
 @inline function _jacobian4!(
         J::AbstractMatrix, f::ForwardFloatLUT{T}, c::AbstractVector{S}
     ) where {T, S <: Real}
-    corners, fx, fy, fz = _cell(f.data, f.n, T(c[1]), T(c[2]), T(c[3]), one(T))
+    corners, fx, fy, fz = cell(f.data, f.n, T(c[1]), T(c[2]), T(c[3]), one(T))
     c000, c100, c010, c110, c001, c101, c011, c111 = corners
-    c00, c10, c01, c11, c0, c1 = _stages(corners, fx, fy)
+    c00, c10, c01, c11, c0, c1 = stages(corners, fx, fy)
     g = T(f.n - 1)
     # d/dx
-    dx = _lerp3(
-        _lerp3(c100 - c000, c110 - c010, fy),
-        _lerp3(c101 - c001, c111 - c011, fy), fz,
+    dx = lerp3(
+        lerp3(c100 - c000, c110 - c010, fy),
+        lerp3(c101 - c001, c111 - c011, fy), fz,
     ) * g
     # d/dy
-    dy = _lerp3(c10 - c00, c11 - c01, fz) * g
+    dy = lerp3(c10 - c00, c11 - c01, fz) * g
     # d/dz
     dz = (c1 - c0) * g
     @inbounds begin
@@ -622,8 +622,8 @@ reconstructed.
 @inline function coarse_seed(
         coarse::AbstractVector{T}, cn::Int, r::T, g::T, b::T
     ) where {T <: AbstractFloat}
-    corners, fx, fy, fz = _cell(coarse, cn, r, g, b, one(T))
-    c = _trilinear3(corners, fx, fy, fz)
+    corners, fx, fy, fz = cell(coarse, cn, r, g, b, one(T))
+    c = trilinear3(corners, fx, fy, fz)
     return SVector(c[1], c[2], c[3], one(T) - c[1] - c[2] - c[3])
 end
 

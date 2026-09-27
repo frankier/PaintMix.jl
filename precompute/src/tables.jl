@@ -169,6 +169,64 @@ simplex projection when `(c1, c2, c3)` lies outside the simplex.
     return nothing
 end
 
+# --- slab driver -----------------------------------------------------------
+#
+# Every table generator walks independent slabs `0:n-1`. Threading and the
+# per-worker scratch context live here once, so the generators only supply a
+# setup and a body.
+
+const _SLAB_CTX_KEY = gensym(:paintmix_slab_ctx)
+
+# One context per worker task, reused across the slabs that task handles.
+@inline function _slab_context(setup)
+    tls = task_local_storage()
+    haskey(tls, _SLAB_CTX_KEY) && return tls[_SLAB_CTX_KEY]
+    ctx = setup()
+    tls[_SLAB_CTX_KEY] = ctx
+    return ctx
+end
+
+# Function barrier: a context read from task-local storage is typed `Any`, so
+# re-dispatch before touching its fields and keep `body` a static call.
+@inline function _slab_body!(body, ctx, k)
+    body(ctx, k)
+    return nothing
+end
+
+"""
+    _run_slabs!(setup, body, n, threads)
+
+Run `body(ctx, k)` for every slab `0:n-1`. `setup()` builds the per-worker
+scratch context: once for single-threaded runs, once per worker task
+otherwise.
+"""
+function _run_slabs!(setup, body, n::Int, threads::Integer)
+    krange = 0:(n - 1)
+    if threads <= 1 || n < 8
+        ctx = setup()
+        for k in krange
+            _slab_body!(body, ctx, k)
+        end
+    else
+        Threads.@threads for k in krange
+            _slab_body!(body, _slab_context(setup), k)
+        end
+    end
+    return nothing
+end
+
+"""
+    forward_slab!(dest, model, n, k)
+
+Fill slab `k` of the forward table.
+"""
+function forward_slab!(dest::AbstractVector, model, n::Int, k::Int)
+    @inbounds for j in 0:(n - 1), i in 0:(n - 1)
+        forward_vertex!(dest, model, n, i, j, k)
+    end
+    return nothing
+end
+
 """
     generate_forward(model, n; threads) -> Vector{T}
 
@@ -180,18 +238,7 @@ function generate_forward(
     n = Int(n)
     n >= 2 || throw(ArgumentError("table size must be >= 2, got $n"))
     out = Vector{T}(undef, 3 * n^3)
-    krange = 0:(n - 1)
-    if threads <= 1 || n < 8
-        for k in krange, j in 0:(n - 1), i in 0:(n - 1)
-            forward_vertex!(out, model, n, i, j, k)
-        end
-    else
-        Threads.@threads for k in krange
-            for j in 0:(n - 1), i in 0:(n - 1)
-                forward_vertex!(out, model, n, i, j, k)
-            end
-        end
-    end
+    _run_slabs!(() -> nothing, (_, k) -> forward_slab!(out, model, n, k), n, threads)
     return out
 end
 
@@ -301,31 +348,24 @@ function generate_inverse(
         )
     )
     out = Vector{T}(undef, 3 * n^3)
-    krange = collect(0:(n - 1))
-    if threads <= 1 || n < 8
-        seedrow = Vector{SVector{4, T}}(undef, n)
-        prevrow = Vector{SVector{4, T}}(undef, n)
+    setup = function ()
         scratch = SolverScratch()
-        for k in krange
-            _slab_or_generate!(
-                out, model, n, k, scratch, st, seedrow, prevrow, resume, on_slab, solver
-            )
-        end
-    else
-        Threads.@threads for k in krange
+        if solver === :reference
+            fill = k -> reference_slab!(out, model, n, k, scratch, st)
+        else
             seedrow = Vector{SVector{4, T}}(undef, n)
             prevrow = Vector{SVector{4, T}}(undef, n)
-            scratch = SolverScratch()
-            _slab_or_generate!(
-                out, model, n, k, scratch, st, seedrow, prevrow, resume, on_slab, solver
-            )
+            fill = k -> inverse_slab!(out, model, n, k, scratch, st, seedrow, prevrow)
         end
+        return (fill = fill,)
     end
+    body = (ctx, k) -> _slab_or_generate!(out, n, k, ctx.fill, resume, on_slab)
+    _run_slabs!(setup, body, n, threads)
     return out
 end
 
 function _slab_or_generate!(
-        out, model, n, k, scratch, settings, seedrow, prevrow, resume, on_slab, solver,
+        out, n, k, fill_slab!, resume, on_slab,
     )
     if resume !== nothing
         loaded = resume(k)
@@ -335,11 +375,7 @@ function _slab_or_generate!(
             return nothing
         end
     end
-    if solver === :reference
-        reference_slab!(out, model, n, k, scratch, settings)
-    else
-        inverse_slab!(out, model, n, k, scratch, settings, seedrow, prevrow)
-    end
+    fill_slab!(k)
     if on_slab !== nothing
         o = 3 * k * n * n
         on_slab(k, view(out, (o + 1):(o + 3 * n * n)))
@@ -652,40 +688,12 @@ function generate_inverse_coarse_to_fine(
         UnmixSettings{T}(50, T(1.0e-10), T(1.0e-6), 4) : coarse_settings
     coarse = generate_inverse(model, coarse_n; threads = threads, settings = cs, solver = :reference)
     out = Vector{T}(undef, 3 * n^3)
-    krange = collect(0:(n - 1))
-    if threads <= 1 || n < 8
-        scratch = SolverScratch()
-        for k in krange
-            _coarse_slab_or_generate!(
-                out, model, n, k, scratch, fine_settings, coarse, coarse_n, resume, on_slab
-            )
-        end
-    else
-        Threads.@threads for k in krange
-            scratch = SolverScratch()
-            _coarse_slab_or_generate!(
-                out, model, n, k, scratch, fine_settings, coarse, coarse_n, resume, on_slab
-            )
-        end
-    end
-    return out
-end
-
-function _coarse_slab_or_generate!(
-        out, model, n, k, scratch, settings, coarse, cn, resume, on_slab,
+    setup = () -> SolverScratch()
+    body = (ctx, k) -> _slab_or_generate!(
+        out, n, k,
+        kk -> coarse_to_fine_slab!(out, model, n, kk, ctx, fine_settings, coarse, coarse_n),
+        resume, on_slab,
     )
-    if resume !== nothing
-        loaded = resume(k)
-        if loaded !== nothing
-            o = 3 * k * n * n
-            copyto!(out, o + 1, loaded, 1, 3 * n * n)
-            return nothing
-        end
-    end
-    coarse_to_fine_slab!(out, model, n, k, scratch, settings, coarse, cn)
-    if on_slab !== nothing
-        o = 3 * k * n * n
-        on_slab(k, view(out, (o + 1):(o + 3 * n * n)))
-    end
-    return nothing
+    _run_slabs!(setup, body, n, threads)
+    return out
 end

@@ -471,6 +471,13 @@ const eval_jacobian4! = PaintMixPrecompute._jacobian4!
             @test sum(abs2, mix_rgb(model, SVector(c1, c2, c3, 1 - c1 - c2 - c3)) .- rgb) <=
                 res.sse + 1.0e-3
         end
+        # Slab threading does not change the result.
+        fine_threaded = generate_inverse_coarse_to_fine(
+            model, n; coarse_n = coarse_n, threads = 2,
+            settings = UnmixSettings{Float64}(15, 1.0e-10, 1.0e-6, 1),
+            coarse_settings = settings,
+        )
+        @test fine_threaded == fine
     end
 
     @testset "slab checkpointing" begin
@@ -501,6 +508,20 @@ const eval_jacobian4! = PaintMixPrecompute._jacobian4!
         )
         @test resumed == full
         @test completed_slabs(store) == collect(0:(n - 1))
+
+        # The bulk solver over the threaded driver resumes to the same table.
+        # `n8 > 8` forces the threaded branch even on a single-threaded run.
+        n8 = 8
+        full_bulk = generate_inverse(model, n8; threads = 1, solver = :bulk)
+        dir2 = mktempdir()
+        store2 = CheckpointStore(joinpath(dir2, "cp"), "job", n8, "inverse")
+        write_slab(store2, 2, view(full_bulk, (3 * 2 * n8^2 + 1):(3 * 3 * n8^2)))
+        resumed_bulk = generate_inverse(
+            model, n8; threads = 2, solver = :bulk,
+            resume = slab_resume_function(store2), on_slab = slab_callback_function(store2),
+        )
+        @test resumed_bulk == full_bulk
+        @test completed_slabs(store2) == collect(0:(n8 - 1))
     end
 
     @testset "provenance text is deterministic and convention-sensitive" begin

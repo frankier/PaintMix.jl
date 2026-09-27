@@ -23,6 +23,7 @@
 # `library.jl` reads while the image is built.
 
 push!(LOAD_PATH, joinpath(@__DIR__, "build-env"))
+using ArgParse
 using JuliaLibWrapping
 using JuliaC
 using Libdl: Libdl
@@ -33,40 +34,46 @@ const BUILD_DIR = @__DIR__
 const DEFAULT_PAYLOAD = joinpath(BUILD_DIR, "data", "payload.pmx")
 
 function parse_args(args)
-    opts = Dict{String, Any}(
-        "payload" => DEFAULT_PAYLOAD,
-        "profile" => nothing,
-        "out" => joinpath(BUILD_DIR, "out"),
-        "libname" => "paintmix",
-        "bundle" => false,
-        "c" => true,
-        "python" => true,
-        "r" => true,
-        "rname" => nothing,
+    s = ArgParseSettings(
+        prog = "compile.jl",
+        description = "Build the shared library and its C header, Python bindings, and R package.",
     )
-    i = 1
-    while i <= length(args)
-        a = args[i]
-        if a == "--bundle"
-            opts["bundle"] = true
-        elseif a == "--no-python"
-            opts["python"] = false
-        elseif a == "--no-r"
-            opts["r"] = false
-        elseif a == "--no-c"
-            opts["c"] = false
-        elseif a in ("--payload", "--profile", "--out", "--libname", "--rname")
-            i <= length(args) - 1 || error("$a needs a value")
-            opts[a[3:end]] = args[i + 1]
-            i += 1
-        elseif startswith(a, "--")
-            error("unknown option $a")
-        else
-            error("unexpected argument $a")
-        end
-        i += 1
+    @add_arg_table! s begin
+        "--payload"
+        help = "payload to embed"
+        arg_type = String
+        default = DEFAULT_PAYLOAD
+        "--profile"
+        help = "regenerate the payload first: tiny, small, full, or \"grid N\""
+        arg_type = String
+        "--out"
+        help = "artifact directory"
+        arg_type = String
+        default = joinpath(BUILD_DIR, "out")
+        "--libname"
+        help = "library name"
+        arg_type = String
+        default = "paintmix"
+        "--rname"
+        help = "R package name (default: the library name)"
+        arg_type = String
+        "--bundle"
+        help = "also produce a self-contained runtime bundle"
+        action = :store_true
+        "--no-c"
+        help = "skip the C header target"
+        action = :store_false
+        dest_name = "c"
+        "--no-python"
+        help = "skip the Python package target"
+        action = :store_false
+        dest_name = "python"
+        "--no-r"
+        help = "skip the R package target"
+        action = :store_false
+        dest_name = "r"
     end
-    return opts
+    return ArgParse.parse_args(args, s)
 end
 
 function make_payload(profile::AbstractString)

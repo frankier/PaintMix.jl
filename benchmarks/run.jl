@@ -14,6 +14,7 @@
 # leaving it uninterpolated makes the macro resolve it as a `Main` global.
 # A closure over typed locals measures the same thing without either problem.
 
+using ArgParse
 using PaintMix
 using Printf: @printf
 using Random: Xoshiro
@@ -45,21 +46,21 @@ function synthetic_model(n::Integer)
 end
 
 function parse_args(args)
-    opts = Dict{String, Any}("payload" => nothing, "n" => 256, "samples" => 100_000)
-    i = 1
-    while i <= length(args)
-        a = args[i]
-        if a in ("--payload", "--n", "--samples")
-            i < length(args) || error("$a needs a value")
-            key = a[3:end]
-            opts[key] = key == "payload" ? args[i + 1] : parse(Int, args[i + 1])
-            i += 1
-        else
-            error("unknown argument $a")
-        end
-        i += 1
+    s = ArgParseSettings(prog = "run.jl", description = "Runtime benchmarks.")
+    @add_arg_table! s begin
+        "--payload"
+        help = "payload to measure; without it a synthetic table is used"
+        arg_type = String
+        "--n"
+        help = "synthetic table edge"
+        arg_type = Int
+        default = 256
+        "--samples"
+        help = "bulk sample count"
+        arg_type = Int
+        default = 100_000
     end
-    return opts
+    return ArgParse.parse_args(args, s)
 end
 
 """

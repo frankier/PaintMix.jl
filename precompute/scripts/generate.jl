@@ -22,6 +22,7 @@
 # configuration, input hashes, grid, and surrogate settings match.
 
 import PaintMix
+using ArgParse
 using PaintMixPrecompute
 using Printf: @printf
 using SHA: sha256
@@ -29,73 +30,56 @@ using TOML: TOML
 
 const ROOT = normpath(joinpath(@__DIR__, "..", ".."))
 const STAGES = ("inputs", "fit", "tables", "validate", "promote", "all")
-const VALUE_OPTIONS = (
-    "--config", "--profile", "--out", "--stage", "--solver", "--threads", "--coarse",
-)
-
-function usage()
-    return """
-    usage: generate.jl [options]
-
-      --config PATH     configuration file (default: config/default.toml)
-      --profile NAME    dev or release (default: dev)
-      --out DIR         artifact directory (default: precompute/output/<profile>)
-      --stage NAME      inputs|fit|tables|validate|promote|all (default: all)
-      --solver NAME     coarse|reference|bulk inverse solver (default: coarse)
-      --coarse N        coarse grid edge for the coarse solver (default: config)
-      --threads N       worker threads for table generation (default: Julia's)
-      --no-promote      never copy into data/default/
-      --force           promote even when the provisional quality targets fail,
-                        recording which gates were overridden
-      --check-inputs    verify input checksums and exit
-      --force-import    re-import the DuckDB database
-      --help
-    """
-end
 
 function parse_args(args)
-    opts = Dict{String, Any}(
-        "config" => PaintMixPrecompute.DEFAULT_CONFIG_PATH,
-        "profile" => "dev",
-        "out" => nothing,
-        "stage" => "all",
-        "solver" => "coarse",
-        "threads" => Threads.nthreads(),
-        "coarse" => nothing,
-        "promote" => true,
-        "force" => false,
-        "check-inputs" => false,
-        "force-import" => false,
-    )
-    i = 1
-    while i <= length(args)
-        a = args[i]
-        if a == "--help" || a == "-h"
-            print(usage())
-            exit(0)
-        elseif a == "--no-promote"
-            opts["promote"] = false
-        elseif a == "--force"
-            opts["force"] = true
-        elseif a == "--check-inputs"
-            opts["check-inputs"] = true
-        elseif a == "--force-import"
-            opts["force-import"] = true
-        elseif a in VALUE_OPTIONS
-            i < length(args) || error("$a needs a value")
-            opts[a[3:end]] = args[i + 1]
-            i += 1
-        else
-            error("unknown argument $a\n" * usage())
-        end
-        i += 1
+    s = ArgParseSettings(prog = "generate.jl", description = "Generate a PaintMix payload.")
+    @add_arg_table! s begin
+        "--config"
+        help = "configuration file"
+        arg_type = String
+        default = PaintMixPrecompute.DEFAULT_CONFIG_PATH
+        "--profile"
+        help = "dev or release"
+        arg_type = String
+        default = "dev"
+        "--out"
+        help = "artifact directory (default: precompute/output/<profile>)"
+        arg_type = String
+        "--stage"
+        help = "inputs|fit|tables|validate|promote|all"
+        arg_type = String
+        default = "all"
+        "--solver"
+        help = "coarse|reference|bulk inverse solver"
+        arg_type = String
+        default = "coarse"
+        "--coarse"
+        help = "coarse grid edge for the coarse solver (default: config)"
+        arg_type = Int
+        "--threads"
+        help = "worker threads for table generation"
+        arg_type = Int
+        default = Threads.nthreads()
+        "--no-promote"
+        help = "never copy into data/default/"
+        action = :store_false
+        dest_name = "promote"
+        "--force"
+        help = "promote even when the provisional quality targets fail"
+        action = :store_true
+        "--check-inputs"
+        help = "verify input checksums and exit"
+        action = :store_true
+        "--force-import"
+        help = "re-import the DuckDB database"
+        action = :store_true
     end
+    opts = ArgParse.parse_args(args, s)
     opts["profile"] in ("dev", "release") ||
         error("--profile must be dev or release, got $(opts["profile"])")
     opts["stage"] in STAGES || error("--stage must be one of $(join(STAGES, ", "))")
     opts["solver"] in ("reference", "bulk", "coarse") ||
         error("--solver must be reference, bulk, or coarse")
-    opts["threads"] = parse(Int, string(opts["threads"]))
     return opts
 end
 

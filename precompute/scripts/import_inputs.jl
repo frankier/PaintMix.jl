@@ -17,43 +17,30 @@
 # through DuckDB.jl, whose `excel` extension is installed on first use (which
 # needs network access once).
 
+using ArgParse
 using PaintMixPrecompute
 using Printf: @printf
 
 const ROOT = normpath(joinpath(@__DIR__, "..", ".."))
 
 function parse_args(args)
-    opts = Dict{String, Any}(
-        "config" => PaintMixPrecompute.DEFAULT_CONFIG_PATH,
-        "db" => nothing,
-        "force" => false,
+    s = ArgParseSettings(
+        prog = "import_inputs.jl",
+        description = "Import the selected spreadsheet ranges into a DuckDB database.",
     )
-    i = 1
-    while i <= length(args)
-        a = args[i]
-        if a in ("--config", "--db")
-            i < length(args) || error("$a needs a value")
-            opts[a[3:end]] = args[i + 1]
-            i += 1
-        elseif a == "--force"
-            opts["force"] = true
-        elseif a == "--help" || a == "-h"
-            print(
-                """
-                usage: import_inputs.jl [options]
-
-                  --config PATH   configuration file (default: config/default.toml)
-                  --db PATH       output database (default: from the configuration)
-                  --force         overwrite an existing database
-                """
-            )
-            exit(0)
-        else
-            error("unknown argument $a")
-        end
-        i += 1
+    @add_arg_table! s begin
+        "--config"
+        help = "configuration file"
+        arg_type = String
+        default = PaintMixPrecompute.DEFAULT_CONFIG_PATH
+        "--db"
+        help = "output database (default: from the configuration)"
+        arg_type = String
+        "--force"
+        help = "overwrite an existing database"
+        action = :store_true
     end
-    return opts
+    return ArgParse.parse_args(args, s)
 end
 
 function main(args)

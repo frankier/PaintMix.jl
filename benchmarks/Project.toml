@@ -1,7 +1,11 @@
 [deps]
+ArgParse = "c7e460c6-2fb9-53a9-8c5b-16f535851c63"
 PaintMix = "baf22a60-1c55-4971-a207-55391bb51cf2"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
+
+[compat]
+ArgParse = "1"
 
 [sources]
 PaintMix = {path = ".."}

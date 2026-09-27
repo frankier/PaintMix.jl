@@ -2,7 +2,7 @@
 
 julia_version = "1.13.0"
 manifest_format = "2.1"
-project_hash = "35cc023cce5cff982c2bc1ec815653a84840b499"
+project_hash = "3fc3f10f6d80a0a10db22d0267100fd91ecff889"
 
 [[deps.ADTypes]]
 deps = ["PrecompileTools"]
@@ -46,6 +46,13 @@ git-tree-sha1 = "4537cc8ed3fba5d88b844a18f7e9bb93f07d2742"
 registries = "General"
 uuid = "4c88cf16-eb10-579e-8560-4a9242c79595"
 version = "0.8.16"
+
+[[deps.ArgParse]]
+deps = ["Logging", "TextWrap"]
+git-tree-sha1 = "22cf435ac22956a7b45b0168abbc871176e7eecc"
+registries = "General"
+uuid = "c7e460c6-2fb9-53a9-8c5b-16f535851c63"
+version = "1.2.0"
 
 [[deps.ArgTools]]
 uuid = "0dad84c5-d112-42e6-8d28-ef12dabb789f"
@@ -592,7 +599,7 @@ uuid = "02c30ab6-0f6b-4cce-b39c-6cfbbc18ec0f"
 version = "0.1.0"
 
 [[deps.PaintMixPrecompute]]
-deps = ["DataFrames", "Dates", "DuckDB", "ForwardDiff", "Optim", "PaintMix", "Printf", "Random", "SHA", "StaticArrays", "TOML"]
+deps = ["ArgParse", "DataFrames", "Dates", "DuckDB", "ForwardDiff", "Optim", "PaintMix", "Printf", "Random", "SHA", "StaticArrays", "TOML"]
 path = "precompute"
 uuid = "eeffd428-b4c8-40bd-84d3-0fe91856487d"
 version = "0.1.0"
@@ -824,6 +831,12 @@ version = "1.10.0"
 deps = ["InteractiveUtils", "Logging", "Random", "Serialization"]
 uuid = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 version = "1.11.0"
+
+[[deps.TextWrap]]
+git-tree-sha1 = "43044b737fa70bc12f6105061d3da38f881a3e3c"
+registries = "General"
+uuid = "b718987f-49a8-5099-9789-dcd902bef87d"
+version = "1.0.2"
 
 [[deps.UUIDs]]
 deps = ["Random", "SHA"]

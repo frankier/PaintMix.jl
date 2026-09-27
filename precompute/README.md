@@ -28,6 +28,13 @@ input data.
 The dependency direction is one-way: `precompute -> PaintMix`. The runtime
 package never depends on anything here.
 
+## Naming
+
+Public names are ASCII (`theta_parameters`, `initial_theta`,
+`alpha_schedule`). Scratch variables in the math and the solvers use Greek
+letters (`θ`, `λ`, `δ`, `α`, `φ`) to match the paper's notation. Nothing
+stored, exported, or hashed uses a Greek name.
+
 ## Running the pipeline
 
 ```sh

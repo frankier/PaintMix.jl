@@ -1,5 +1,7 @@
 # PaintMix.jl
 
+[![SciML Code Style](https://img.shields.io/static/v1?label=code%20style&message=SciML&color=9558b2&labelColor=389826)](https://github.com/SciML/SciMLStyle)
+
 Practical pigment mixing in RGB, after Sochorová and Jamriška, *Practical
 Pigment Mixing for Digital Painting* (2021), for Julia 1.13+.
 

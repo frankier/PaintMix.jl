@@ -246,3 +246,42 @@ table.readout td.cells {
 .caption table.data {
   margin-bottom: 0.5rem;
 }
+
+/* Palette page -------------------------------------------------------- */
+
+.ramp {
+  display: block;
+  height: 22px;
+  min-width: 90px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+}
+
+table.ramp-matrix {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+table.ramp-matrix th,
+table.ramp-matrix td {
+  padding: 0.2rem 0.35rem;
+  text-align: left;
+  color: var(--muted);
+}
+
+.mixer-swatch {
+  width: 100%;
+  height: 120px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-bottom: 0.5rem;
+}
+
+.mixer-ramp {
+  margin-bottom: 0.75rem;
+}
+
+.mixer-row {
+  margin-top: 0.75rem;
+}

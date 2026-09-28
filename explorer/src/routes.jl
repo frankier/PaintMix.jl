@@ -111,6 +111,19 @@ function register_routes!()
         )
     end
 
+    @get "/palette" function (req::HTTP.Request)
+        d = explorer_data()
+        head = head_content()
+        body = app_html(palette_cube_app(d)) * app_html(palette_mixer_app(d)) *
+            palette_ramp_matrix(d) * palette_caption(d)
+        return Oxygen.html(
+            render_page(
+                "palette"; title = "PaintMix explorer — palette", head = head,
+                body = body
+            )
+        )
+    end
+
     # Standalone figure page for debugging and iframes, one per app.
     @get "/fig/spectra" function (req::HTTP.Request)
         return Bonnie.app_page(
@@ -121,6 +134,12 @@ function register_routes!()
     @get "/fig/cie" function (req::HTTP.Request)
         return Bonnie.app_page(
             cie_app(explorer_data()); title = "PaintMix explorer — CIE 1931 figure"
+        )
+    end
+
+    @get "/fig/palette" function (req::HTTP.Request)
+        return Bonnie.app_page(
+            palette_cube_app(explorer_data()); title = "PaintMix explorer — palette figure"
         )
     end
 

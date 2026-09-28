@@ -63,6 +63,12 @@ else
                     goto!(page, "$url/cie")
                     expect(locator(page, "body"); to_have_text = r"CIE 1931")
                     screenshot(page; path = joinpath(E2E_ARTIFACTS, "cie.png"))
+
+                    goto!(page, "$url/palette")
+                    expect(
+                        locator(page, "body"); to_have_text = r"Pairwise mixture ramps"
+                    )
+                    screenshot(page; path = joinpath(E2E_ARTIFACTS, "palette.png"))
                 finally
                     close!(browser)
                 end

@@ -14,16 +14,19 @@ run what exists now.
 
 ## Status
 
-Phases 0–2 are implemented: the data layer, the server skeleton, the
-`/spectra` figure, and the `/cie` chromaticity diagram.
+Phases 0–3 are implemented: the data layer, the server skeleton, the
+`/spectra` figure, the `/cie` chromaticity diagram, and the `/palette` cube
+and mixer.
 
 | Route | Contents |
 | --- | --- |
 | `GET /` | overview: provenance banner, data card, links, live Bonito probe |
 | `GET /spectra` | measured, fitted, and derived K, S, K/S, R∞, R′ curves with a wavelength crosshair and readout |
 | `GET /cie` | CIE 1931 locus with a wavelength crown, sRGB triangle, the three pigment chromaticity layers, nominal colors, mixture gamut, and click-to-probe |
+| `GET /palette` | sRGB cube with the pure-pigment vertices and the mixing path of a selected pair, the pairwise mixture ramp matrix, the mixer ramp, and the nominal table |
 | `GET /fig/spectra` | the spectra figure alone (debug/iframe) |
 | `GET /fig/cie` | the CIE figure alone (debug/iframe) |
+| `GET /fig/palette` | the palette cube alone (debug/iframe) |
 | `GET /provenance` | configuration, inputs and hashes, environment, payload header, acceptance gates, caveats |
 | `GET /healthz` | JSON: model id, grid, source, sidecar state, notes |
 | `GET /static/...` | CSS |
@@ -47,8 +50,20 @@ the reconstructed color, the residual, and the nearest pigment. The caption
 lists the primaries, D65, the pigment layers, and the nominal paper colors.
 It degrades to a note when the input database is absent.
 
-The remaining figure pages (`/palette`, `/paint`, `/tables`, `/fit`) come in
-later phases.
+`/palette` draws the sRGB cube with its edges, the four pure-pigment runtime
+vertices, the nominal paper colors, and the D65 white point. A dropdown picks
+a pigment pair and draws the paint mixing path through the cube, with the
+naive linear-RGB line dashed for contrast. A 4×4 matrix of server-rendered
+strips shows every pairwise mixture ramp. The mixer has one weight slider per
+pigment, a paper-to-mixture fraction, a large swatch, and the encoded hex and
+recovered concentrations. The nominal table lists each slot's design color
+against its runtime vertex and the per-channel residual. The cube and mixer
+need only the runtime payload, so the page still works without the input
+database; the chromaticity column then shows a dash. The workbook's other
+twenty pigments are deliberately not shown, because the
+C.I.-name-to-column mapping is unverified (PLAN.md, problem 6).
+
+The remaining figure pages (`/paint`, `/tables`, `/fit`) come in later phases.
 
 ## Run
 
@@ -114,9 +129,12 @@ lookup, and the readout on a hand-built `DerivedCurves`, then checks the
 caption against the real database when it is present. `test_cie.jl` checks the
 hull and clipper on hand-built points, then the locus, primaries, pigment
 layers, mixture gamut, probe, and caption against the real database.
-`test_server.jl` starts a server on an ephemeral port and checks the routes,
-the JSON contract, the degraded sidecar, spectra, and CIE pages, and a Bonito
-websocket handshake modeled on Bonnie's canary.
+`test_palette.jl` checks the pure vertices, the mixing curve endpoints and
+naive line, the ramp matrix, the mixer, and the nominal rows on the synthetic
+model, then the spectral pure RGB and the chromaticity column against the real
+database. `test_server.jl` starts a server on an ephemeral port and checks the
+routes, the JSON contract, the degraded sidecar, spectra, CIE, and palette
+pages, and a Bonito websocket handshake modeled on Bonnie's canary.
 
 The browser lane is opt-in and heavy. Install the driver and browsers once:
 

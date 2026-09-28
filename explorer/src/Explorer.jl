@@ -10,8 +10,9 @@ web server, a browser toolkit, or a template engine. The dependency direction
 is one way: `Explorer -> PaintMixPrecompute -> PaintMix`.
 
 Phase 0 exposes the data layer and the server skeleton (`/`, `/provenance`,
-`/healthz`); phase 1 adds the `/spectra` figure and phase 2 the `/cie`
-chromaticity diagram. Later phases add one figure page at a time.
+`/healthz`); phase 1 adds the `/spectra` figure, phase 2 the `/cie`
+chromaticity diagram, and phase 3 the `/palette` cube and mixer. Later phases
+add one figure page at a time.
 """
 module Explorer
 
@@ -35,9 +36,11 @@ using WGLMakie: Makie
 
 include("colorimetry.jl")
 include("data.jl")
+include("palette.jl")
 include("templates.jl")
 include("apps/spectra.jl")
 include("apps/cie.jl")
+include("apps/palette.jl")
 include("routes.jl")
 
 export ExplorerData,
@@ -61,6 +64,24 @@ export ExplorerData,
     clip_convex,
     probe_xy,
     NOMINAL_COLORS,
+    MixCurve,
+    MixerResult,
+    NominalRow,
+    pigment_rgb,
+    pigment_rgbs,
+    pigment_label,
+    nominal_rgb,
+    mix_curve,
+    ramp_hex,
+    ramp_gradient,
+    pairwise_ramps,
+    mixer_result,
+    mixer_ramp,
+    nominal_rows,
+    palette_cube_app,
+    palette_mixer_app,
+    palette_ramp_matrix,
+    palette_caption,
     SPECTRA_QUANTITY_KEYS,
     quantity_label,
     quantity_log,

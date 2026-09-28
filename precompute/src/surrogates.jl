@@ -331,6 +331,8 @@ end
 
 Solve equation (15) with a warm-started `Optim.LBFGS` over the transformed
 parameters, halving `alpha` from `alpha_initial` towards `alpha_final`.
+`cfg` must have come from [`load_config`](@ref) or the profile derivation
+built on it.
 
 Returns the fitted surrogates together with the convergence history and
 diagnostics. The caller is responsible for caching and for deciding whether
@@ -341,7 +343,6 @@ function fit_surrogates(
         cfg::AbstractDict, spectra::PigmentSpectra{T}, quad::Quadrature{T};
         log = nothing,
     ) where {T}
-    validate_config(cfg)
     s = cfg["surrogate"]
     epsilon = Float64(s["epsilon"])
     max_iter = Int(s["max_iterations"])

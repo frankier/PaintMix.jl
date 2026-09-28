@@ -103,7 +103,7 @@ function profile_config(cfg::AbstractDict, profile::AbstractString)
         s["alpha_halvings"] =
             min(Int(s["alpha_halvings"]), Int(get(g, "dev_alpha_halvings", 12)))
     end
-    return out
+    return validate_config(out)
 end
 
 """

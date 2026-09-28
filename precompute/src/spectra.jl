@@ -77,7 +77,8 @@ end
 """
     PigmentSpectra(cfg, db) -> PigmentSpectra
 
-Build the four spectral curves from the validated input database.
+Build the four spectral curves from the validated input database. `cfg` must
+have come from [`load_config`](@ref).
 
 Checks that every pigment/quantity pair has exactly the configuration's
 wavelength grid, in order, and finite positive values, and that the source
@@ -86,7 +87,6 @@ Saunderson constants agree with the configuration. Throws
 """
 function PigmentSpectra(cfg::AbstractDict, db::InputDatabase)
     validate_database(db)
-    validate_config(cfg)
     grid = collect(Float64, wavelength_grid(cfg))
     expected = length(grid)
     codes = pigment_codes(cfg)

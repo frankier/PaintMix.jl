@@ -66,6 +66,13 @@ const ObserverRecord = @NamedTuple{
 }
 
 """
+    BuildInfoRecord
+
+One key/value row of the free-form build metadata table.
+"""
+const BuildInfoRecord = @NamedTuple{key::String, value::String}
+
+"""
     InputDatabase
 
 Everything the numerical pipeline reads, in memory: source files and their
@@ -204,7 +211,61 @@ end
 
 # --- writing ---------------------------------------------------------------
 
-function _write_table(con, name::AbstractString, df::DataFrame)
+function _source_file_records(db::InputDatabase)
+    files = copy(db.source_files)
+    any(f -> f.role == "observer", files) || push!(files, db.observer_source)
+    return files
+end
+
+_source_files(db::InputDatabase) = _source_file_records(db)
+_source_pigments(db::InputDatabase) = db.pigments
+_source_spectra(db::InputDatabase) = db.spectra
+_source_saunderson(db::InputDatabase) = [db.saunderson]
+_source_observer(db::InputDatabase) = db.observer
+function _source_build_info(db::InputDatabase)
+    ks = sort!(collect(Base.keys(db.build_info)))
+    return [(key = k, value = db.build_info[k]) for k in ks]
+end
+
+"""
+    _TABLES
+
+The flat table-per-record-type layout that [`save_database`](@ref) writes and
+[`open_database`](@ref) reads. `order` is the read order (`nothing` to keep
+the stored order), `rename` maps a record field to a differently spelled
+database column, and `source` derives the rows to write from an
+[`InputDatabase`](@ref).
+"""
+const _TABLES = (
+    (
+        name = "source_files", type = SourceFile, order = "role", rename = (),
+        source = _source_files,
+    ),
+    (
+        name = "pigments", type = PigmentRecord, order = "slot",
+        rename = (:column => :column_name,), source = _source_pigments,
+    ),
+    (
+        name = "spectra", type = SpectrumRecord,
+        order = "code, quantity, wavelength_nm", rename = (), source = _source_spectra,
+    ),
+    (
+        name = "saunderson", type = SaundersonRecord, order = nothing, rename = (),
+        source = _source_saunderson,
+    ),
+    (
+        name = "observer", type = ObserverRecord, order = "wavelength_nm", rename = (),
+        source = _source_observer,
+    ),
+    (
+        name = "build_info", type = BuildInfoRecord, order = nothing, rename = (),
+        source = _source_build_info,
+    ),
+)
+
+function _write_table(con, name::AbstractString, source, rename)
+    df = DataFrame(source)
+    isempty(rename) || rename!(df, rename...)
     view = "src_" * name
     DuckDB.register_data_frame(con, df, view)
     try
@@ -213,17 +274,6 @@ function _write_table(con, name::AbstractString, df::DataFrame)
         DuckDB.unregister_data_frame(con, view)
     end
     return nothing
-end
-
-function _source_file_records(db::InputDatabase)
-    files = copy(db.source_files)
-    any(f -> f.role == "observer", files) || push!(files, db.observer_source)
-    return files
-end
-
-function _build_info_frame(db::InputDatabase)
-    ks = sort!(collect(Base.keys(db.build_info)))
-    return DataFrame(key = ks, value = String[db.build_info[k] for k in ks])
 end
 
 """
@@ -242,15 +292,9 @@ function save_database(db::InputDatabase, path::AbstractString)
     isfile(path) && rm(path)
     con = _connect(path)
     try
-        _write_table(con, "source_files", DataFrame(_source_file_records(db)))
-        _write_table(
-            con, "pigments",
-            rename!(DataFrame(db.pigments), :column => :column_name)
-        )
-        _write_table(con, "spectra", DataFrame(db.spectra))
-        _write_table(con, "saunderson", DataFrame([db.saunderson]))
-        _write_table(con, "observer", DataFrame(db.observer))
-        _write_table(con, "build_info", _build_info_frame(db))
+        for t in _TABLES
+            _write_table(con, t.name, t.source(db), t.rename)
+        end
     finally
         DBInterface.close!(con)
     end
@@ -259,9 +303,34 @@ end
 
 # --- reading ---------------------------------------------------------------
 
-const _TABLES = (
-    "source_files", "pigments", "spectra", "saunderson", "observer", "build_info",
+"The observer CSV source used when a database records no observer row."
+const DEFAULT_OBSERVER_SOURCE = SourceFile(
+    (
+        role = "observer",
+        path = "precompute/inputs/cie_1931_2deg_d65_10nm.csv",
+        sha256 = "",
+    )
 )
+
+"""
+    _read_table(con, spec) -> Vector
+
+Read one `_TABLES` table, restore the record's field names, and check that
+the stored columns match the record exactly.
+"""
+function _read_table(con, spec)
+    sql = "SELECT * FROM " * spec.name
+    spec.order === nothing || (sql *= " ORDER BY " * spec.order)
+    df = _query(con, sql)
+    isempty(spec.rename) || rename!(df, Dict(db => field for (field, db) in spec.rename))
+    Set(Symbol.(names(df))) == Set(fieldnames(spec.type)) || throw(
+        InputError(
+            "table $(spec.name) has columns $(join(string.(names(df)), ", ")), " *
+                "expected $(join(string.(fieldnames(spec.type)), ", "))"
+        )
+    )
+    return _records(spec.type, df)
+end
 
 """
     open_database(path) -> InputDatabase
@@ -285,76 +354,25 @@ function open_database(path::AbstractString)
                 ).table_name
             )
         )
-        for needed in _TABLES
-            needed in present || throw(InputError("database $path has no table $needed"))
+        for t in _TABLES
+            t.name in present || throw(InputError("database $path has no table $(t.name)"))
         end
 
-        source_files = _records(
-            SourceFile, _query(
-                con,
-                "SELECT role, path, sha256 FROM source_files ORDER BY role"
-            )
-        )
-        pigments = _records(
-            PigmentRecord, rename!(
-                _query(
-                    con,
-                    "SELECT slot, code, name, ci, column_name FROM pigments ORDER BY slot"
-                ),
-                :column_name => :column
-            )
-        )
-        spectra = _records(
-            SpectrumRecord, _query(
-                con,
-                "SELECT code, quantity, wavelength_nm, value, source_file, sheet, " *
-                    "cell_range " *
-                    "FROM spectra ORDER BY code, quantity, wavelength_nm"
-            )
-        )
-
-        saunderson_rows = _query(
-            con,
-            "SELECT k1, k2, source_file, sheet, note FROM saunderson LIMIT 1"
-        )
-        nrow(saunderson_rows) == 1 || throw(InputError("database has no Saunderson row"))
-        saunderson = only(_records(SaundersonRecord, saunderson_rows))
-
-        observer = _records(
-            ObserverRecord, _query(
-                con,
-                "SELECT wavelength_nm, x_bar, y_bar, z_bar, d65 FROM observer " *
-                    "ORDER BY wavelength_nm"
-            )
-        )
-
-        observer_rows = _query(
-            con,
-            "SELECT path, sha256 FROM source_files WHERE role = 'observer' LIMIT 1"
-        )
-        observer_source = nrow(observer_rows) == 0 ? SourceFile(
-                (
-                    role = "observer",
-                    path = "precompute/inputs/cie_1931_2deg_d65_10nm.csv",
-                    sha256 = "",
-                )
-            ) : SourceFile(
-                (
-                    role = "observer",
-                    path = String(observer_rows.path[1]),
-                    sha256 = String(observer_rows.sha256[1]),
-                )
-            )
-
-        info = _query(con, "SELECT key, value FROM build_info")
-        build_info = Dict{String, String}(
-            String(info.key[i]) => String(info.value[i]) for i in 1:nrow(info)
-        )
+        by_name = Dict(t.name => _read_table(con, t) for t in _TABLES)
+        source_files = by_name["source_files"]
+        saunderson_rows = by_name["saunderson"]
+        length(saunderson_rows) == 1 || throw(InputError("database has no Saunderson row"))
+        observer_index = findfirst(f -> f.role == "observer", source_files)
+        observer_source = observer_index === nothing ? DEFAULT_OBSERVER_SOURCE :
+            source_files[observer_index]
 
         db = InputDatabase(
-            source_files = source_files, pigments = pigments, spectra = spectra,
-            saunderson = saunderson, observer = observer,
-            observer_source = observer_source, build_info = build_info,
+            source_files = source_files, pigments = by_name["pigments"],
+            spectra = by_name["spectra"], saunderson = only(saunderson_rows),
+            observer = by_name["observer"], observer_source = observer_source,
+            build_info = Dict{String, String}(
+                r.key => r.value for r in by_name["build_info"]
+            ),
         )
         return validate_database(db)
     finally
@@ -418,13 +436,13 @@ end
 
 Read the selected spreadsheet ranges and the observer CSV into an
 [`InputDatabase`](@ref). This is the only function that knows the workbook
-layout; `import_inputs.jl` and the tests both call it.
+layout; `import_inputs.jl` and the tests both call it. `cfg` must have come
+from [`load_config`](@ref).
 """
 function load_spreadsheet_inputs(
         cfg::AbstractDict, cfg_path::AbstractString;
         root::AbstractString = normpath(joinpath(dirname(cfg_path), "..", "..")),
     )
-    validate_config(cfg)
     inputs = cfg["inputs"]
     primary = joinpath(root, inputs["primary"])
     observer_file = joinpath(root, inputs["observer_file"])

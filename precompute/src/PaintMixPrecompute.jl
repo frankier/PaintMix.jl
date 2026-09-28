@@ -26,7 +26,7 @@ module PaintMixPrecompute
 
 import PaintMix
 using PaintMix.LUTKernels: cell, lerp3, stages, trilinear3
-using DataFrames: DataFrame, eachrow, nrow, rename!, select, stack
+using DataFrames: DataFrame, eachrow, rename!, select, stack
 using Dates: Dates
 using DuckDB
 using ForwardDiff: ForwardDiff
@@ -307,10 +307,11 @@ pigment_codes(cfg::AbstractDict) = ntuple(i -> String(cfg["pigments"][i]["code"]
 """
     wavelength_grid(cfg) -> StepRangeLen
 
-The validated wavelength grid in nanometres, inclusive of both ends.
+The validated wavelength grid in nanometres, inclusive of both ends. `cfg`
+must have come from [`load_config`](@ref); this derives the grid without
+re-checking it.
 """
 function wavelength_grid(cfg::AbstractDict)
-    validate_config(cfg)
     s = cfg["spectra"]
     return s["wavelength_min_nm"]:s["wavelength_step_nm"]:s["wavelength_max_nm"]
 end

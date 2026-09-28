@@ -99,7 +99,11 @@ function _remainder_order(rem::NTuple{4, T}) where {T}
 end
 
 @inline function _swap_at(t::NTuple{N, T}, i::Int, j::Int) where {N, T}
-    return ntuple(k -> k == i ? t[j] : (k == j ? t[i] : t[k]), Val(N))
+    return ntuple(Val(N)) do k
+        k == i && return t[j]
+        k == j && return t[i]
+        return t[k]
+    end
 end
 
 @inline function _add_at(t::NTuple{N, T}, i::Int, d::T) where {N, T}
@@ -321,6 +325,26 @@ function reference_slab!(
     return nothing
 end
 
+# The `solver` keyword is a user-facing `Symbol`. Validate it and turn it
+# into a `Val` once; `_check_solver` and the two `_solver_setup` methods then
+# make the two paths dispatch instead of branching on the symbol.
+_check_solver(::Val{:reference}) = nothing
+_check_solver(::Val{:bulk}) = nothing
+_check_solver(::Val{S}) where {S} =
+    throw(ArgumentError("solver must be :reference or :bulk, got $(repr(S))"))
+
+function _solver_setup(::Val{:reference}, out, model, n, st)
+    scratch = SolverScratch()
+    return (fill = k -> reference_slab!(out, model, n, k, scratch, st),)
+end
+
+function _solver_setup(::Val{:bulk}, out, model, n, st)
+    scratch = SolverScratch()
+    seedrow = Vector{SVector{4, eltype(out)}}(undef, n)
+    prevrow = Vector{SVector{4, eltype(out)}}(undef, n)
+    return (fill = k -> inverse_slab!(out, model, n, k, scratch, st, seedrow, prevrow),)
+end
+
 """
     generate_inverse(model, n; threads, settings, on_slab, resume) -> Vector{T}
 
@@ -342,23 +366,10 @@ function generate_inverse(
     st = settings === nothing ? UnmixSettings{T}(100, T(1.0e-10), T(1.0e-6), 4) : settings
     n = Int(n)
     n >= 2 || throw(ArgumentError("table size must be >= 2, got $n"))
-    solver in (:reference, :bulk) || throw(
-        ArgumentError(
-            "solver must be :reference or :bulk, got $(repr(solver))"
-        )
-    )
+    solver_val = Val(solver)
+    _check_solver(solver_val)
     out = Vector{T}(undef, 3 * n^3)
-    setup = function ()
-        scratch = SolverScratch()
-        if solver === :reference
-            fill = k -> reference_slab!(out, model, n, k, scratch, st)
-        else
-            seedrow = Vector{SVector{4, T}}(undef, n)
-            prevrow = Vector{SVector{4, T}}(undef, n)
-            fill = k -> inverse_slab!(out, model, n, k, scratch, st, seedrow, prevrow)
-        end
-        return (fill = fill,)
-    end
+    setup = () -> _solver_setup(solver_val, out, model, n, st)
     body = (ctx, k) -> _slab_or_generate!(out, n, k, ctx.fill, resume, on_slab)
     _run_slabs!(setup, body, n, threads)
     return out

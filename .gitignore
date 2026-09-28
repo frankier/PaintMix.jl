@@ -10,6 +10,8 @@
 /test/Manifest.toml
 /benchmarks/Manifest.toml
 /precompute/test/Manifest.toml
+# The explorer is a standalone dev project, not a root workspace member.
+/explorer/Manifest.toml
 
 # Generated build trees, virtualenvs, and packaging metadata are not committed
 /build/**/venv/

@@ -1,0 +1,110 @@
+# Fast server tests: real HTTP and a real websocket, no browser. The websocket
+# canary mirrors Bonnie's `test/test_canary.jl` so a broken Bonito embedding
+# surface is caught here.
+
+using Test
+using HTTP
+using HTTP.WebSockets: WebSockets
+using Bonito
+using Bonnie
+using Explorer
+using PaintMix
+
+include("helpers.jl")
+
+const SYNTHETIC_ID = "00000000000000000000000000000000"
+
+@testset "server" begin
+    @testset "routes render through Bonnie" begin
+        data = Explorer.ExplorerData(; model = Explorer.synthetic_model())
+        port = free_port()
+        viewer = Explorer.serve_explorer(data; port = port, async = true)
+        base = "http://127.0.0.1:$port"
+        try
+            resp = HTTP.get("$base/"; retry = false)
+            @test resp.status == 200
+            body = String(resp.body)
+            @test startswith(body, "<!doctype html>")
+            @test occursin("Bonito.init_session", body)
+            @test occursin("/bonito/assets/", body)
+            @test occursin(SYNTHETIC_ID, body)
+            # A forgotten `|> safe` would render the bootstrap as text.
+            @test !occursin("&lt;script", body)
+
+            css = HTTP.get("$base/static/explorer.css"; retry = false)
+            @test css.status == 200
+            @test occursin("--bg", String(css.body))
+
+            resp = HTTP.get("$base/nope"; status_exception = false, retry = false)
+            @test resp.status == 404
+        finally
+            Explorer.close_explorer(viewer)
+        end
+    end
+
+    @testset "/healthz JSON contract" begin
+        data = Explorer.ExplorerData(;
+            model = Explorer.synthetic_model(), source = "synthetic",
+            notes = ["a note"],
+        )
+        port = free_port()
+        viewer = Explorer.serve_explorer(data; port = port, async = true)
+        try
+            resp = HTTP.get("http://127.0.0.1:$port/healthz"; retry = false)
+            @test resp.status == 200
+            @test occursin("application/json", string(resp.headers))
+            body = String(resp.body)
+            @test occursin("\"status\":\"ok\"", body)
+            @test occursin("\"model_id\":\"$SYNTHETIC_ID\"", body)
+            @test occursin("\"sidecar\":false", body)
+            @test occursin("a note", body)
+        finally
+            Explorer.close_explorer(viewer)
+        end
+    end
+
+    @testset "degraded page shows the not-available state" begin
+        data = Explorer.ExplorerData(;
+            model = Explorer.synthetic_model(), source = "synthetic",
+            notes = ["sidecar disabled (--no-sidecar)"],
+        )
+        port = free_port()
+        viewer = Explorer.serve_explorer(data; port = port, async = true)
+        try
+            body = String(HTTP.get("http://127.0.0.1:$port/provenance"; retry = false).body)
+            @test occursin("Not available: no sidecar.", body)
+            @test occursin("sidecar disabled (--no-sidecar)", body)
+        finally
+            Explorer.close_explorer(viewer)
+        end
+    end
+
+    @testset "websocket canary: session handshake" begin
+        data = Explorer.ExplorerData(; model = Explorer.synthetic_model())
+        port = free_port()
+        viewer = Explorer.serve_explorer(data; port = port, async = true)
+        try
+            body = String(HTTP.get("http://127.0.0.1:$port/"; retry = false).body)
+            id = root_session_id(body)
+            sessions = viewer.handle.context.sessions
+            @test length(sessions) == 1
+            session = Bonnie.lookup(sessions, id)
+            @test session !== nothing
+
+            WebSockets.open("ws://127.0.0.1:$port/bonito/ws/$id") do ws
+                WebSockets.send(
+                    ws, client_message(
+                        session, Dict{String, Any}(
+                            "msg_type" => Bonito.JSDoneLoading, "exception" => "nothing",
+                            "session" => id,
+                        )
+                    )
+                )
+                @test wait_for(() -> Bonito.isready(session; throw = false))
+                @test isopen(session)
+            end
+        finally
+            Explorer.close_explorer(viewer)
+        end
+    end
+end

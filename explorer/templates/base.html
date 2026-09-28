@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ title }}</title>
+<link rel="stylesheet" href="/static/explorer.css">
+{{ head |> safe }}
+</head>
+<body>
+<header>
+  <div class="masthead">
+    <a class="brand" href="/">PaintMix explorer</a>
+    <nav>
+      <a href="/">Overview</a>
+      <a href="/provenance">Provenance</a>
+    </nav>
+  </div>
+  {{ banner |> safe }}
+</header>
+<main>
+{% block body %}{% endblock %}
+</main>
+<footer>
+  <span>Development tool. Not part of the runtime package or its dependency graph.</span>
+</footer>
+</body>
+</html>

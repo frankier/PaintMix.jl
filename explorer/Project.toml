@@ -1,0 +1,50 @@
+# Interactive viewer for the PaintMix input database, precompute
+# intermediates, and runtime payload. A standalone development project, not a
+# member of the root workspace: the tracked root Manifest.toml must stay free
+# of Makie, Oxygen, and Bonito. The dependency direction is one way,
+# explorer -> precompute -> PaintMix.
+name = "Explorer"
+uuid = "8f4a2b3c-5d6e-4f70-8192-a3b4c5d6e7f8"
+version = "0.1.0"
+
+[deps]
+Bonito = "824d6782-a2ef-11e9-3a09-e5662e0c26f8"
+Bonnie = "6f62f684-a5f8-44b1-bc4e-a9317abb7de4"
+HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
+OteraEngine = "b2d7f28f-acd6-4007-8b26-bc27716e5513"
+Oxygen = "df9a0d86-3283-4920-82dc-4555fc0d1d8b"
+PaintMix = "baf22a60-1c55-4971-a207-55391bb51cf2"
+PaintMixPrecompute = "eeffd428-b4c8-40bd-84d3-0fe91856487d"
+Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
+TOML = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
+WGLMakie = "276b4fcb-3e11-5398-bf8b-a0c2d153d008"
+
+[sources]
+PaintMix = { path = ".." }
+# PaintMixPrecompute itself sources PaintMix; declare it here too so the
+# resolver sees the path regardless of which project is active.
+PaintMixPrecompute = { path = "../precompute" }
+# Upstream Bonnie, which targets the released Oxygen 1.11 (HTTP 2.6). Pinned
+# to a commit SHA because it is pre-release: Pkg gives no SemVer protection
+# otherwise. Do not use a sibling checkout and do not add an Oxygen [sources]
+# entry; Oxygen resolves from the registry.
+Bonnie = { url = "https://github.com/frankier/Bonnie.jl.git", rev = "82aa2209a35a10a7dc70f5521a14ddbab1568795" }
+# Test-only; see [extras]/[targets] below. Also unregistered, so pinned.
+Playwright = { url = "https://github.com/frankier/playwright-julia", rev = "842508085c3a3a7d12d485adb0073e374cbdf334" }
+
+[compat]
+Bonito = "5.1"
+HTTP = "2.6"
+OteraEngine = "1.1"
+Oxygen = "1.11"
+WGLMakie = "0.13"
+julia = "1.13"
+
+[extras]
+Playwright = "d777c63b-3b21-49c6-865f-99d0e068a423"
+Sockets = "6462fe0b-24de-5631-8697-dd941f90decc"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test", "Playwright", "Sockets"]

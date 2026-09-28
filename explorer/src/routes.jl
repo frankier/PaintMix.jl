@@ -90,6 +90,25 @@ function register_routes!()
         )
     end
 
+    @get "/spectra" function (req::HTTP.Request)
+        d = explorer_data()
+        head = head_content()
+        body = app_html(spectra_app(d)) * spectra_caption(d)
+        return Oxygen.html(
+            render_page(
+                "spectra"; title = "PaintMix explorer — spectra", head = head,
+                body = body
+            )
+        )
+    end
+
+    # Standalone figure page for debugging and iframes, one per app.
+    @get "/fig/spectra" function (req::HTTP.Request)
+        return Bonnie.app_page(
+            spectra_app(explorer_data()); title = "PaintMix explorer — spectra figure"
+        )
+    end
+
     @get "/healthz" function (req::HTTP.Request)
         d = explorer_data()
         return json(

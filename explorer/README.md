@@ -14,16 +14,27 @@ run what exists now.
 
 ## Status
 
-Phase 0 is implemented: the data layer and the server skeleton.
+Phases 0 and 1 are implemented: the data layer, the server skeleton, and the
+`/spectra` figure.
 
 | Route | Contents |
 | --- | --- |
 | `GET /` | overview: provenance banner, data card, links, live Bonito probe |
+| `GET /spectra` | measured, fitted, and derived K, S, K/S, R∞, R′ curves with a wavelength crosshair and readout |
+| `GET /fig/spectra` | the spectra figure alone (debug/iframe) |
 | `GET /provenance` | configuration, inputs and hashes, environment, payload header, acceptance gates, caveats |
 | `GET /healthz` | JSON: model id, grid, source, sidecar state, notes |
 | `GET /static/...` | CSS |
 
-Figure pages (`/spectra`, `/cie`, `/palette`, `/paint`, `/tables`, `/fit`)
+`/spectra` is one WGLMakie figure built inside a Bonito `App`. Pigment and
+quantity checkboxes, a measured/fitted toggle (shown only when a sidecar
+supplied surrogate parameters), and a log-scale toggle drive it. A wavelength
+slider moves the crosshair; a server-rendered readout table follows it and
+carries the source spreadsheet cell of each K and S sample. The caption lists
+the grid and the Saunderson constants and surfaces the `kins` contradiction.
+The figure degrades to a note when the input database is absent.
+
+The remaining figure pages (`/cie`, `/palette`, `/paint`, `/tables`, `/fit`)
 come in later phases.
 
 ## Run
@@ -85,9 +96,12 @@ julia --project=explorer -e 'using Pkg; Pkg.test()'
 `test_colorimetry.jl` pins the sRGB primaries and D65 from the configuration
 matrix, and checks that `xy(mix_rgb(m, eᵢ))` agrees with a direct `R′·D65`
 integral. The pigment tests skip when the input database is absent.
-`test_server.jl` starts a server on an ephemeral port and checks the routes,
-the JSON contract, the degraded sidecar page, and a Bonito websocket
-handshake modeled on Bonnie's canary.
+`test_spectra.jl` exercises the quantity accessors, the nearest-wavelength
+lookup, and the readout on a hand-built `DerivedCurves`, then checks the
+caption against the real database when it is present. `test_server.jl` starts a
+server on an ephemeral port and checks the routes, the JSON contract, the
+degraded sidecar and spectra pages, and a Bonito websocket handshake modeled on
+Bonnie's canary.
 
 The browser lane is opt-in and heavy. Install the driver and browsers once:
 

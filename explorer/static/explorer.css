@@ -144,3 +144,105 @@ footer {
   color: var(--muted);
   font-size: 12px;
 }
+
+/* Spectra page -------------------------------------------------------- */
+
+.spectra-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(240px, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+@media (max-width: 860px) {
+  .spectra-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.figure-panel {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem;
+  overflow: hidden;
+}
+
+.spectra-controls {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+}
+
+.spectra-controls h3 {
+  margin: 0.75rem 0 0.25rem;
+  font-size: 0.9rem;
+  color: var(--accent);
+}
+
+.spectra-controls h3:first-child {
+  margin-top: 0;
+}
+
+.spectra-controls label {
+  display: block;
+  margin: 0.2rem 0;
+  color: var(--text);
+}
+
+.spectra-controls input[type="range"] {
+  width: 100%;
+}
+
+.readout-lambda {
+  color: var(--muted);
+}
+
+.readout-wrap {
+  margin-top: 0.75rem;
+  overflow-x: auto;
+}
+
+table.readout {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+table.readout caption {
+  text-align: left;
+  color: var(--muted);
+  padding-bottom: 0.25rem;
+}
+
+table.readout th,
+table.readout td {
+  text-align: right;
+  padding: 0.2rem 0.4rem;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+table.readout th:first-child,
+table.readout td:first-child {
+  text-align: left;
+}
+
+table.readout td.cells {
+  color: var(--muted);
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+.swatch {
+  display: inline-block;
+  width: 0.85em;
+  height: 0.85em;
+  border-radius: 2px;
+  border: 1px solid var(--border);
+  vertical-align: -0.1em;
+}
+
+.caption table.data {
+  margin-bottom: 0.5rem;
+}

@@ -79,6 +79,52 @@ const SYNTHETIC_ID = "00000000000000000000000000000000"
         end
     end
 
+    @testset "/spectra degrades without the spectral reference" begin
+        data = Explorer.ExplorerData(; model = Explorer.synthetic_model(), source = "synthetic")
+        port = free_port()
+        viewer = Explorer.serve_explorer(data; port = port, async = true)
+        try
+            body = String(HTTP.get("http://127.0.0.1:$port/spectra"; retry = false).body)
+            @test occursin("Bonito.init_session", body)
+            @test occursin("Spectral reference not available", body)
+            @test !occursin("&lt;script", body)
+
+            fig = HTTP.get("http://127.0.0.1:$port/fig/spectra"; retry = false)
+            @test fig.status == 200
+            @test occursin("Bonito.init_session", String(fig.body))
+        finally
+            Explorer.close_explorer(viewer)
+        end
+    end
+
+    @testset "/spectra renders the figure against real spectra" begin
+        ref = spectral_reference()
+        if ref === nothing
+            @test_skip "input database absent; spectra figure not served"
+        else
+            curves = Explorer.derive_curves(
+                ref.spectra, ref.quad, ref.spectral, nothing,
+                Explorer.synthetic_model(), ref.db,
+            )
+            data = Explorer.ExplorerData(;
+                cfg = ref.cfg, db = ref.db, spectra = ref.spectra, quad = ref.quad,
+                spectral = ref.spectral, model = Explorer.synthetic_model(),
+                derived = curves,
+            )
+            port = free_port()
+            viewer = Explorer.serve_explorer(data; port = port, async = true)
+            try
+                body = String(HTTP.get("http://127.0.0.1:$port/spectra"; retry = false).body)
+                @test occursin("Bonito.init_session", body)
+                @test occursin("canvas", body)
+                @test occursin("Spectra caption", body)
+                @test occursin("kins", body)
+            finally
+                Explorer.close_explorer(viewer)
+            end
+        end
+    end
+
     @testset "websocket canary: session handshake" begin
         data = Explorer.ExplorerData(; model = Explorer.synthetic_model())
         port = free_port()

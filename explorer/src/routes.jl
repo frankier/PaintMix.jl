@@ -102,10 +102,25 @@ function register_routes!()
         )
     end
 
+    @get "/cie" function (req::HTTP.Request)
+        d = explorer_data()
+        head = head_content()
+        body = app_html(cie_app(d)) * cie_caption(d)
+        return Oxygen.html(
+            render_page("cie"; title = "PaintMix explorer — CIE 1931", head = head, body = body)
+        )
+    end
+
     # Standalone figure page for debugging and iframes, one per app.
     @get "/fig/spectra" function (req::HTTP.Request)
         return Bonnie.app_page(
             spectra_app(explorer_data()); title = "PaintMix explorer — spectra figure"
+        )
+    end
+
+    @get "/fig/cie" function (req::HTTP.Request)
+        return Bonnie.app_page(
+            cie_app(explorer_data()); title = "PaintMix explorer — CIE 1931 figure"
         )
     end
 

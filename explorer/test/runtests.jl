@@ -9,6 +9,7 @@ using Test
 @testset "Explorer" begin
     include("test_colorimetry.jl")
     include("test_spectra.jl")
+    include("test_cie.jl")
     include("test_data.jl")
     include("test_server.jl")
 end

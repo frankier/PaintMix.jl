@@ -299,3 +299,323 @@ function spectra_readout(
     wavelength = j == 0 ? NaN : d.wavelength[j]
     return SpectraReadout(wavelength, keys, rows)
 end
+
+# --- CIE 1931 chromaticity diagram ----------------------------------------
+#
+# Everything on `/cie` is derived here: the spectral locus, the sRGB
+# chromaticity triangle, the displayable color of each grid wavelength, the
+# mixture gamut, and the click-to-probe inverse lookup. Chromaticities are
+# plain `(x, y)` tuples; the diagram is a Makie 2D axis.
+
+"""
+    spectral_locus(quad) -> Vector{Tuple{Float64, Float64}}
+
+The CIE 1931 locus at every grid wavelength. A monochromatic stimulus has
+`XYZ ∝ (x̄, ȳ, z̄)`, so the chromaticity is the observer row sum-normalized.
+The caller closes the curve with the line of purples.
+"""
+function spectral_locus(quad::Quadrature)
+    n = length(quad.wavelength)
+    points = Vector{Tuple{Float64, Float64}}(undef, n)
+    @inbounds for j in 1:n
+        s = quad.x_bar[j] + quad.y_bar[j] + quad.z_bar[j]
+        points[j] = (Float64(quad.x_bar[j] / s), Float64(quad.y_bar[j] / s))
+    end
+    return points
+end
+
+"""
+    srgb_primaries(quad) -> NTuple{3, Tuple{Float64, Float64}}
+
+The chromaticity of the sRGB primaries: the columns of `inv(xyz_to_rgb)`,
+sum-normalized. The `[0, 1]³` cube projects to exactly the triangle these
+three points span.
+"""
+function srgb_primaries(quad::Quadrature)
+    m = inv(quad.xyz_to_rgb)
+    return ntuple(Val(3)) do i
+        col = m[:, i]
+        s = sum(col)
+        (Float64(col[1] / s), Float64(col[2] / s))
+    end
+end
+
+"""
+    d65_xy(quad) -> (x, y)
+
+The chromaticity of the D65 white point, `(1, 1, 1)` in linear light.
+"""
+d65_xy(quad::Quadrature) = xy_of_linear(quad, SVector(1.0, 1.0, 1.0))
+
+"""
+    wavelength_linear(quad, j) -> SVector{3, Float64}
+
+The displayable linear-light sRGB color of grid wavelength `j`: the
+monochromatic `XYZ` at unit luminance, desaturated toward white until it lies
+in the sRGB cube. The locus point itself is the exact, unclamped
+chromaticity; only this fill color is adjusted for display.
+"""
+function wavelength_linear(quad::Quadrature, j::Integer)
+    y = Float64(quad.y_bar[j])
+    y <= 0 && return _ZERO_RGB3
+    xyz = SVector(Float64(quad.x_bar[j]) / y, 1.0, Float64(quad.z_bar[j]) / y)
+    rgb = quad.xyz_to_rgb * xyz
+    m = min(rgb[1], rgb[2], rgb[3])
+    if m < 0
+        # Add the smallest amount of white that lifts the worst channel to 0.
+        t = -m / (1 - m)
+        rgb = rgb .+ t .* (1 .- rgb)
+    end
+    return SVector{3, Float64}(
+        clamp(rgb[1], 0.0, 1.0), clamp(rgb[2], 0.0, 1.0), clamp(rgb[3], 0.0, 1.0)
+    )
+end
+
+"""
+    hex_from_linear(c) -> String
+
+The `#rrggbb` encoded-sRGB string of a linear-light triple, clipped to the
+cube exactly as `srgb8_from_linear` clips.
+"""
+function hex_from_linear(c)
+    b = encoded(c)
+    return @sprintf("#%02x%02x%02x", b[1], b[2], b[3])
+end
+
+"""
+    linear_color(c) -> Makie.RGBf
+
+The displayable Makie color of a linear-light sRGB triple, clipped and
+gamma-encoded for an sRGB canvas.
+"""
+function linear_color(c)
+    s = PaintMix.srgb_from_linear(
+        SVector{3, Float32}(Float32(c[1]), Float32(c[2]), Float32(c[3]))
+    )
+    return Makie.RGBf(
+        clamp(s[1], 0.0f0, 1.0f0), clamp(s[2], 0.0f0, 1.0f0), clamp(s[3], 0.0f0, 1.0f0)
+    )
+end
+
+"""
+    PigmentChromaticity
+
+One pigment's three chromaticity layers: the raw K/S spectral model
+(`measured`), the fitted surrogate (`fitted`, or `nothing` without a
+sidecar), and the 8-bit runtime forward table (`runtime`).
+"""
+struct PigmentChromaticity
+    code::String
+    measured::Tuple{Float64, Float64}
+    fitted::Union{Nothing, Tuple{Float64, Float64}}
+    runtime::Tuple{Float64, Float64}
+end
+
+"""
+    pigment_chromaticities(d) -> Vector{PigmentChromaticity}
+
+The three chromaticity layers of every pigment, in slot order.
+"""
+function pigment_chromaticities(d::DerivedCurves)
+    return [
+        PigmentChromaticity(
+            d.codes[i], d.measured_xy[i],
+            d.fitted_xy === nothing ? nothing : d.fitted_xy[i], d.runtime_xy[i],
+        ) for i in 1:4
+    ]
+end
+
+"""
+    NOMINAL_COLORS
+
+The nominal paper colors of the four pigments, in the same slot order as the
+model, as `(name, linear RGB)` pairs. These are design targets, not
+measurements.
+"""
+const NOMINAL_COLORS = (
+    ("blue", (0.02, 0.09, 0.42)),
+    ("magenta", (0.55, 0.02, 0.12)),
+    ("yellow", (0.71, 0.62, 0.02)),
+    ("white", (1.0, 1.0, 1.0)),
+)
+
+"""
+    nominal_xy(quad) -> NTuple{4, Tuple{Float64, Float64}}
+
+The chromaticity of the four nominal paper colors.
+"""
+function nominal_xy(quad::Quadrature)
+    return ntuple(Val(4)) do i
+        xy_of_linear(quad, SVector{3, Float64}(NOMINAL_COLORS[i][2]...))
+    end
+end
+
+"""
+    mixture_gamut(spectral, quad; d = 20) -> Vector{Tuple{Float64, Float64}}
+
+The chromaticity of the spectral model at every point of the concentration
+simplex surface with `d` divisions per axis. The convex hull of these points
+is the reachable chromaticity region.
+"""
+function mixture_gamut(spectral::SpectralModel, quad::Quadrature; d::Integer = 20)
+    sq = SurfaceQuadrature(d)
+    return [xy_of_linear(quad, mix_rgb(spectral, c)) for c in sq.points]
+end
+
+"""
+    mixture_gamut(model, quad; d = 20) -> Vector{Tuple{Float64, Float64}}
+
+The same region for the runtime payload, evaluated on the forward table.
+"""
+function mixture_gamut(model::PigmentModel, quad::Quadrature; d::Integer = 20)
+    sq = SurfaceQuadrature(d)
+    return [xy_of_linear(quad, PaintMix.forward_rgb(model, c)) for c in sq.points]
+end
+
+"""
+    convex_hull(points) -> Vector{Tuple{Float64, Float64}}
+
+The convex hull of 2D points, counterclockwise, by Andrew's monotone chain.
+Collinear points on the hull edges are dropped.
+"""
+function convex_hull(points)
+    pts = sort!(unique!([(Float64(p[1]), Float64(p[2])) for p in points]))
+    length(pts) <= 2 && return pts
+    cross(o, a, b) = (a[1] - o[1]) * (b[2] - o[2]) - (a[2] - o[2]) * (b[1] - o[1])
+    function chain(iter)
+        h = Tuple{Float64, Float64}[]
+        for p in iter
+            while length(h) >= 2 && cross(h[end - 1], h[end], p) <= 0
+                pop!(h)
+            end
+            push!(h, p)
+        end
+        return h
+    end
+    lower = chain(pts)
+    upper = chain(Iterators.reverse(pts))
+    return vcat(lower[1:(end - 1)], upper[1:(end - 1)])
+end
+
+# Signed area of a polygon; positive when counterclockwise.
+function _signed_area(poly)
+    a = 0.0
+    n = length(poly)
+    for i in 1:n
+        p, q = poly[i], poly[mod1(i + 1, n)]
+        a += p[1] * q[2] - q[1] * p[2]
+    end
+    return a / 2
+end
+
+# Is `p` on the left of the directed line `a -> b`?
+_left_of(a, b, p) = (b[1] - a[1]) * (p[2] - a[2]) - (b[2] - a[2]) * (p[1] - a[1]) >= 0
+
+# Intersection of segments `p -> q` and `a -> b`, used by the clipper.
+function _intersect(p, q, a, b)
+    rx, ry = q[1] - p[1], q[2] - p[2]
+    sx, sy = b[1] - a[1], b[2] - a[2]
+    denom = rx * sy - ry * sx
+    denom == 0 && return q
+    t = ((a[1] - p[1]) * sy - (a[2] - p[2]) * sx) / denom
+    return (p[1] + t * rx, p[2] + t * ry)
+end
+
+"""
+    clip_convex(subject, clip) -> Vector{Tuple{Float64, Float64}}
+
+Sutherland–Hodgman clip of a polygon to a convex clip polygon. Used to keep
+the mixture gamut inside the sRGB triangle for display.
+"""
+function clip_convex(subject, clip)
+    isempty(subject) && return Tuple{Float64, Float64}[]
+    poly = collect(clip)
+    _signed_area(poly) < 0 && reverse!(poly)
+    out = [(Float64(p[1]), Float64(p[2])) for p in subject]
+    n = length(poly)
+    for i in 1:n
+        a, b = poly[i], poly[mod1(i + 1, n)]
+        input = out
+        out = Tuple{Float64, Float64}[]
+        isempty(input) && break
+        for j in eachindex(input)
+            cur = input[j]
+            prev = input[mod1(j - 1, length(input))]
+            cur_in = _left_of(a, b, cur)
+            prev_in = _left_of(a, b, prev)
+            if cur_in
+                prev_in || push!(out, _intersect(prev, cur, a, b))
+                push!(out, cur)
+            elseif prev_in
+                push!(out, _intersect(prev, cur, a, b))
+            end
+        end
+    end
+    return out
+end
+
+"""
+    CieProbe
+
+The result of a click on the chromaticity diagram: the target point, whether
+it was inside the sRGB gamut, the clamped displayable target color, the
+inverse lookup's four concentrations, the reconstructed color, the residual,
+and the nearest pigment.
+"""
+struct CieProbe
+    xy::Tuple{Float64, Float64}
+    in_gamut::Bool
+    target_rgb::SVector{3, Float64}
+    target_hex::String
+    concentrations::SVector{4, Float32}
+    reconstructed_rgb::SVector{3, Float64}
+    reconstructed_hex::String
+    residual::SVector{3, Float64}
+    nearest_pigment::Union{Nothing, String}
+    nearest_distance::Float64
+end
+
+"""
+    probe_xy(model, quad, x, y; derived = nothing) -> Union{Nothing, CieProbe}
+
+Run the inverse lookup at a clicked chromaticity. `y = 1` fixes luminance and
+`z` follows from `x + y + z = 1`; the resulting linear-light color is clamped
+to the cube for display and then encoded. Returns `nothing` for `y ≈ 0`,
+where the chromaticity is not a color.
+"""
+function probe_xy(
+        model::PigmentModel, quad::Quadrature, x::Real, y::Real;
+        derived::Union{Nothing, DerivedCurves} = nothing,
+    )
+    xf, yf = Float64(x), Float64(y)
+    yf <= 1.0e-6 && return nothing
+    xyz = SVector(xf / yf, 1.0, (1.0 - xf - yf) / yf)
+    raw = quad.xyz_to_rgb * xyz
+    in_gamut = all(c -> -1.0e-6 <= c <= 1.0 + 1.0e-6, raw)
+    lin = SVector{3, Float64}(
+        clamp(raw[1], 0.0, 1.0), clamp(raw[2], 0.0, 1.0), clamp(raw[3], 0.0, 1.0)
+    )
+    z = PaintMix.encode(model, SVector{3, Float32}(lin[1], lin[2], lin[3]))
+    rec = PaintMix.decode(model, z)
+    nearest = nothing
+    distance = NaN
+    if derived !== nothing
+        best = Inf
+        for i in 1:4
+            m = derived.measured_xy[i]
+            dd = hypot(m[1] - xf, m[2] - yf)
+            if dd < best
+                best = dd
+                nearest = derived.codes[i]
+            end
+        end
+        distance = best
+    end
+    c = PaintMix.concentrations(z)
+    r = PaintMix.residual(z)
+    return CieProbe(
+        (xf, yf), in_gamut, lin, hex_from_linear(lin), c,
+        SVector{3, Float64}(rec[1], rec[2], rec[3]), hex_from_linear(rec),
+        SVector{3, Float64}(r[1], r[2], r[3]), nearest, distance,
+    )
+end

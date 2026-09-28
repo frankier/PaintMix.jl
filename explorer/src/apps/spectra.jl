@@ -9,22 +9,12 @@
 
 const SPECTRA_DEFAULT_NM = 550.0
 
-# Display color of a pigment: its measured pure color, clamped (PY74's blue
+# Display color of a pigment: its measured pure color, clipped (PY74's blue
 # channel is negative in linear light) and gamma encoded for an sRGB canvas.
-function pigment_color(d::DerivedCurves, i::Integer)
-    c = d.measured_rgb[i]
-    lin = SVector{3, Float32}(
-        clamp(Float32(c[1]), 0.0f0, 1.0f0),
-        clamp(Float32(c[2]), 0.0f0, 1.0f0),
-        clamp(Float32(c[3]), 0.0f0, 1.0f0),
-    )
-    s = PaintMix.srgb_from_linear(lin)
-    return Makie.RGBf(clamp(s[1], 0.0f0, 1.0f0), clamp(s[2], 0.0f0, 1.0f0), clamp(s[3], 0.0f0, 1.0f0))
-end
+pigment_color(d::DerivedCurves, i::Integer) = linear_color(d.measured_rgb[i])
 
 function pigment_hex(d::DerivedCurves, i::Integer)
-    b = encoded(d.measured_rgb[i])
-    return @sprintf("#%02x%02x%02x", b[1], b[2], b[3])
+    return hex_from_linear(d.measured_rgb[i])
 end
 
 """

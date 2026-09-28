@@ -10,8 +10,8 @@ web server, a browser toolkit, or a template engine. The dependency direction
 is one way: `Explorer -> PaintMixPrecompute -> PaintMix`.
 
 Phase 0 exposes the data layer and the server skeleton (`/`, `/provenance`,
-`/healthz`); phase 1 adds the `/spectra` figure. Later phases add one figure
-page at a time.
+`/healthz`); phase 1 adds the `/spectra` figure and phase 2 the `/cie`
+chromaticity diagram. Later phases add one figure page at a time.
 """
 module Explorer
 
@@ -37,15 +37,30 @@ include("colorimetry.jl")
 include("data.jl")
 include("templates.jl")
 include("apps/spectra.jl")
+include("apps/cie.jl")
 include("routes.jl")
 
 export ExplorerData,
     DerivedCurves,
     SpectraReadout,
     SpectraReadoutRow,
+    PigmentChromaticity,
+    CieProbe,
     encoded,
     linear,
     xy_of_linear,
+    hex_from_linear,
+    spectral_locus,
+    srgb_primaries,
+    d65_xy,
+    wavelength_linear,
+    pigment_chromaticities,
+    nominal_xy,
+    mixture_gamut,
+    convex_hull,
+    clip_convex,
+    probe_xy,
+    NOMINAL_COLORS,
     SPECTRA_QUANTITY_KEYS,
     quantity_label,
     quantity_log,
@@ -55,6 +70,8 @@ export ExplorerData,
     spectra_readout,
     spectra_app,
     spectra_caption,
+    cie_app,
+    cie_caption,
     load_explorer_data,
     serve_explorer,
     close_explorer,

@@ -14,14 +14,16 @@ run what exists now.
 
 ## Status
 
-Phases 0 and 1 are implemented: the data layer, the server skeleton, and the
-`/spectra` figure.
+Phases 0–2 are implemented: the data layer, the server skeleton, the
+`/spectra` figure, and the `/cie` chromaticity diagram.
 
 | Route | Contents |
 | --- | --- |
 | `GET /` | overview: provenance banner, data card, links, live Bonito probe |
 | `GET /spectra` | measured, fitted, and derived K, S, K/S, R∞, R′ curves with a wavelength crosshair and readout |
+| `GET /cie` | CIE 1931 locus with a wavelength crown, sRGB triangle, the three pigment chromaticity layers, nominal colors, mixture gamut, and click-to-probe |
 | `GET /fig/spectra` | the spectra figure alone (debug/iframe) |
+| `GET /fig/cie` | the CIE figure alone (debug/iframe) |
 | `GET /provenance` | configuration, inputs and hashes, environment, payload header, acceptance gates, caveats |
 | `GET /healthz` | JSON: model id, grid, source, sidecar state, notes |
 | `GET /static/...` | CSS |
@@ -34,8 +36,19 @@ carries the source spreadsheet cell of each K and S sample. The caption lists
 the grid and the Saunderson constants and surfaces the `kins` contradiction.
 The figure degrades to a note when the input database is absent.
 
-The remaining figure pages (`/cie`, `/palette`, `/paint`, `/tables`, `/fit`)
-come in later phases.
+`/cie` draws the spectral locus closed by the line of purples, with a radial
+crown of wavelength ticks and labels; the sRGB chromaticity triangle and D65;
+and each pigment three times — the raw K/S point, the fitted surrogate ring,
+and the runtime forward-table cross — joined so the fit and quantization
+displacement is visible. Toggles hide pigments and layers, and switch the
+spectral and runtime mixture-gamut hulls. Clicking the diagram runs the
+inverse lookup at that chromaticity and shows the recovered concentrations,
+the reconstructed color, the residual, and the nearest pigment. The caption
+lists the primaries, D65, the pigment layers, and the nominal paper colors.
+It degrades to a note when the input database is absent.
+
+The remaining figure pages (`/palette`, `/paint`, `/tables`, `/fit`) come in
+later phases.
 
 ## Run
 
@@ -98,10 +111,12 @@ matrix, and checks that `xy(mix_rgb(m, eᵢ))` agrees with a direct `R′·D65`
 integral. The pigment tests skip when the input database is absent.
 `test_spectra.jl` exercises the quantity accessors, the nearest-wavelength
 lookup, and the readout on a hand-built `DerivedCurves`, then checks the
-caption against the real database when it is present. `test_server.jl` starts a
-server on an ephemeral port and checks the routes, the JSON contract, the
-degraded sidecar and spectra pages, and a Bonito websocket handshake modeled on
-Bonnie's canary.
+caption against the real database when it is present. `test_cie.jl` checks the
+hull and clipper on hand-built points, then the locus, primaries, pigment
+layers, mixture gamut, probe, and caption against the real database.
+`test_server.jl` starts a server on an ephemeral port and checks the routes,
+the JSON contract, the degraded sidecar, spectra, and CIE pages, and a Bonito
+websocket handshake modeled on Bonnie's canary.
 
 The browser lane is opt-in and heavy. Install the driver and browsers once:
 

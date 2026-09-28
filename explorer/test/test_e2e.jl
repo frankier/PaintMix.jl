@@ -59,6 +59,10 @@ else
                         locator(page, "body"); to_have_text = r"Acceptance gates"
                     )
                     screenshot(page; path = joinpath(E2E_ARTIFACTS, "provenance.png"))
+
+                    goto!(page, "$url/cie")
+                    expect(locator(page, "body"); to_have_text = r"CIE 1931")
+                    screenshot(page; path = joinpath(E2E_ARTIFACTS, "cie.png"))
                 finally
                     close!(browser)
                 end

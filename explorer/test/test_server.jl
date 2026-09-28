@@ -193,6 +193,27 @@ const SYNTHETIC_ID = "00000000000000000000000000000000"
         end
     end
 
+    @testset "/paint renders the canvas and mixer from the model alone" begin
+        data = Explorer.ExplorerData(; model = Explorer.synthetic_model())
+        port = free_port()
+        viewer = Explorer.serve_explorer(data; port = port, async = true)
+        try
+            body = String(HTTP.get("http://127.0.0.1:$port/paint"; retry = false).body)
+            @test occursin("Bonito.init_session", body)
+            @test occursin("canvas", body)
+            @test occursin("How the dab works", body)
+            @test occursin("Mixer ramp", body)
+            @test occursin("linear-gradient", body)
+            @test !occursin("&lt;script", body)
+
+            fig = HTTP.get("http://127.0.0.1:$port/fig/paint"; retry = false)
+            @test fig.status == 200
+            @test occursin("Bonito.init_session", String(fig.body))
+        finally
+            Explorer.close_explorer(viewer)
+        end
+    end
+
     @testset "websocket canary: session handshake" begin
         data = Explorer.ExplorerData(; model = Explorer.synthetic_model())
         port = free_port()

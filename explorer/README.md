@@ -14,9 +14,9 @@ run what exists now.
 
 ## Status
 
-Phases 0–3 are implemented: the data layer, the server skeleton, the
-`/spectra` figure, the `/cie` chromaticity diagram, and the `/palette` cube
-and mixer.
+Phases 0–4 are implemented: the data layer, the server skeleton, the
+`/spectra` figure, the `/cie` chromaticity diagram, the `/palette` cube and
+mixer, and the `/paint` canvas.
 
 | Route | Contents |
 | --- | --- |
@@ -24,9 +24,11 @@ and mixer.
 | `GET /spectra` | measured, fitted, and derived K, S, K/S, R∞, R′ curves with a wavelength crosshair and readout |
 | `GET /cie` | CIE 1931 locus with a wavelength crown, sRGB triangle, the three pigment chromaticity layers, nominal colors, mixture gamut, and click-to-probe |
 | `GET /palette` | sRGB cube with the pure-pigment vertices and the mixing path of a selected pair, the pairwise mixture ramp matrix, the mixer ramp, and the nominal table |
+| `GET /paint` | brush canvas with pigment weights, radius, flow, brush source, paint-vs-RGB toggle, color picker, and the mixer ramp |
 | `GET /fig/spectra` | the spectra figure alone (debug/iframe) |
 | `GET /fig/cie` | the CIE figure alone (debug/iframe) |
 | `GET /fig/palette` | the palette cube alone (debug/iframe) |
+| `GET /fig/paint` | the paint canvas alone (debug/iframe) |
 | `GET /provenance` | configuration, inputs and hashes, environment, payload header, acceptance gates, caveats |
 | `GET /healthz` | JSON: model id, grid, source, sidecar state, notes |
 | `GET /static/...` | CSS |
@@ -63,7 +65,21 @@ database; the chromaticity column then shows a dash. The workbook's other
 twenty pigments are deliberately not shown, because the
 C.I.-name-to-column mapping is unverified (PLAN.md, problem 6).
 
-The remaining figure pages (`/paint`, `/tables`, `/fit`) come in later phases.
+`/paint` is a coarse `Latent{Float32}` bitmap (default 128²) streamed as an
+sRGB display matrix. A mouse drag stamps a hard-edged disc; each covered pixel
+lerps its latent toward the brush latent and decodes, which is exactly
+`PaintMix.mix`, so overlapping strokes compose without re-encoding and the
+signed residual survives the stroke. The brush is a `weighted_mix` of the
+selected pigments or the `encode` of a picked `#rrggbb` color; the picker
+shows the recovered concentrations and residual. A toggle switches the blend
+to naive linear-RGB interpolation, which re-encodes and drops the residual,
+for side-by-side comparison. Frames are throttled to 20 Hz while dragging and
+flushed on release. At the default 128² a frame is 192 KiB (`3 * 4 * 128²`
+bytes), so a full-speed drag streams about 3.8 MiB/s; the dirty rectangle
+bounds the per-dab decode, and the frame copy is the cost that sets the
+default edge. The page needs only the runtime payload.
+
+The remaining figure pages (`/tables`, `/fit`) come in later phases.
 
 ## Run
 
@@ -132,9 +148,12 @@ layers, mixture gamut, probe, and caption against the real database.
 `test_palette.jl` checks the pure vertices, the mixing curve endpoints and
 naive line, the ramp matrix, the mixer, and the nominal rows on the synthetic
 model, then the spectral pure RGB and the chromaticity column against the real
-database. `test_server.jl` starts a server on an ephemeral port and checks the
-routes, the JSON contract, the degraded sidecar, spectra, CIE, and palette
-pages, and a Bonito websocket handshake modeled on Bonnie's canary.
+database. `test_paint.jl` checks the white canvas, the brush sources, the hex
+parser and pick readout, the dab disc and its dirty rectangle, the RGB blend,
+`clear!`, and the image-axis mapping. `test_server.jl` starts a server on an
+ephemeral port and checks the routes, the JSON contract, the degraded sidecar,
+spectra, CIE, palette, and paint pages, and a Bonito websocket handshake
+modeled on Bonnie's canary.
 
 The browser lane is opt-in and heavy. Install the driver and browsers once:
 

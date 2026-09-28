@@ -11,8 +11,8 @@ is one way: `Explorer -> PaintMixPrecompute -> PaintMix`.
 
 Phase 0 exposes the data layer and the server skeleton (`/`, `/provenance`,
 `/healthz`); phase 1 adds the `/spectra` figure, phase 2 the `/cie`
-chromaticity diagram, and phase 3 the `/palette` cube and mixer. Later phases
-add one figure page at a time.
+chromaticity diagram, phase 3 the `/palette` cube and mixer, and phase 4 the
+`/paint` canvas. Later phases add one figure page at a time.
 """
 module Explorer
 
@@ -37,10 +37,12 @@ using WGLMakie: Makie
 include("colorimetry.jl")
 include("data.jl")
 include("palette.jl")
+include("paint.jl")
 include("templates.jl")
 include("apps/spectra.jl")
 include("apps/cie.jl")
 include("apps/palette.jl")
+include("apps/paint.jl")
 include("routes.jl")
 
 export ExplorerData,
@@ -82,6 +84,21 @@ export ExplorerData,
     palette_mixer_app,
     palette_ramp_matrix,
     palette_caption,
+    Brush,
+    PaintCanvas,
+    PickResult,
+    paint_canvas,
+    brush_from_weights,
+    brush_from_linear,
+    brush_from_hex,
+    picked_result,
+    dab!,
+    clear!,
+    paint_pixel,
+    canvas_image,
+    paint_app,
+    paint_caption,
+    PAINT_DEFAULT_SIZE,
     SPECTRA_QUANTITY_KEYS,
     quantity_label,
     quantity_log,

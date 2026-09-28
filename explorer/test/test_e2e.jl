@@ -69,6 +69,11 @@ else
                         locator(page, "body"); to_have_text = r"Pairwise mixture ramps"
                     )
                     screenshot(page; path = joinpath(E2E_ARTIFACTS, "palette.png"))
+
+                    goto!(page, "$url/paint")
+                    expect(locator(page, "body"); to_have_text = r"How the dab works")
+                    expect(locator(page, "body"); to_have_text = r"Mixer ramp")
+                    screenshot(page; path = joinpath(E2E_ARTIFACTS, "paint.png"))
                 finally
                     close!(browser)
                 end

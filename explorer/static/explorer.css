@@ -285,3 +285,19 @@ table.ramp-matrix td {
 .mixer-row {
   margin-top: 0.75rem;
 }
+
+/* Paint page ---------------------------------------------------------- */
+
+.spectra-controls input[type="color"] {
+  width: 100%;
+  height: 2rem;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--panel-2);
+  cursor: pointer;
+}
+
+.spectra-controls button {
+  margin-top: 0.25rem;
+}

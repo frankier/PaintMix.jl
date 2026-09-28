@@ -7,7 +7,7 @@
 # error. The page templates use OteraEngine's `|>` filter syntax, not Jinja's
 # `|`.
 
-const PAGE_NAMES = ("index", "provenance", "spectra", "cie", "palette")
+const PAGE_NAMES = ("index", "provenance", "spectra", "cie", "palette", "paint")
 
 const TPL = Dict{String, Template}()
 
@@ -153,9 +153,10 @@ function index_body(d::ExplorerData)
           <li><a href="/spectra">Spectra</a> — measured, fitted, and derived curves</li>
           <li><a href="/cie">CIE 1931</a> — locus, gamut, pigment points, click-to-probe</li>
           <li><a href="/palette">Palette</a> — sRGB cube, mixing curves, ramps, mixer</li>
+          <li><a href="/paint">Paint</a> — brush canvas and mixer ramp</li>
           <li><a href="/healthz">/healthz</a> — JSON status</li>
         </ul>
-        <p class="muted">Figure pages (paint, tables, fit) are added
+        <p class="muted">Figure pages (tables, fit) are added
         in later phases.</p>
       </article>
     </section>

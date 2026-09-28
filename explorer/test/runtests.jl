@@ -11,6 +11,7 @@ using Test
     include("test_spectra.jl")
     include("test_cie.jl")
     include("test_palette.jl")
+    include("test_paint.jl")
     include("test_data.jl")
     include("test_server.jl")
 end

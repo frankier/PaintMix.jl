@@ -215,71 +215,45 @@ end
 
 # --- exported entrypoints --------------------------------------------------
 
-# Encode a linear-light sRGB color into seven scalars: c1, c2, c3, c4, r, g, b.
-Base.@ccallable function paintmix_encode_f64(
-        rgb::CVector{:borrowed, Float64}, latent::CVector{:borrowed, Float64}
-    )::JLWStatus
-    return _status(_encode!(rgb, latent))
-end
+# The f32 and f64 entrypoints differ only in the scalar type, so the pairs are
+# generated together and cannot drift apart. `paintmix_abi_version` and
+# `paintmix_model_info` take no scalar and stay literal.
+for (T, tag) in ((Float64, "f64"), (Float32, "f32"))
+    @eval begin
+        # Encode a linear-light sRGB color into seven scalars: c1, c2, c3, c4, r, g, b.
+        Base.@ccallable function $(Symbol("paintmix_encode_", tag))(
+                rgb::CVector{:borrowed, $T}, latent::CVector{:borrowed, $T}
+            )::JLWStatus
+            return _status(_encode!(rgb, latent))
+        end
 
-Base.@ccallable function paintmix_encode_f32(
-        rgb::CVector{:borrowed, Float32}, latent::CVector{:borrowed, Float32}
-    )::JLWStatus
-    return _status(_encode!(rgb, latent))
-end
+        Base.@ccallable function $(Symbol("paintmix_decode_", tag))(
+                latent::CVector{:borrowed, $T}, rgb::CVector{:borrowed, $T}
+            )::JLWStatus
+            return _status(_decode!(latent, rgb))
+        end
 
-Base.@ccallable function paintmix_decode_f64(
-        latent::CVector{:borrowed, Float64}, rgb::CVector{:borrowed, Float64}
-    )::JLWStatus
-    return _status(_decode!(latent, rgb))
-end
+        Base.@ccallable function $(Symbol("paintmix_mix_", tag))(
+                a::CVector{:borrowed, $T}, b::CVector{:borrowed, $T}, t::$T,
+                out::CVector{:borrowed, $T}
+            )::JLWStatus
+            return _status(_mix!(a, b, t, out))
+        end
 
-Base.@ccallable function paintmix_decode_f32(
-        latent::CVector{:borrowed, Float32}, rgb::CVector{:borrowed, Float32}
-    )::JLWStatus
-    return _status(_decode!(latent, rgb))
-end
+        Base.@ccallable function $(Symbol("paintmix_bulk_mix_", tag))(
+                a::CVector{:borrowed, $T}, b::CVector{:borrowed, $T},
+                t::CVector{:borrowed, $T}, out::CVector{:borrowed, $T}, count::Int64
+            )::JLWStatus
+            return _status(_bulk_mix!(a, b, t, out, count))
+        end
 
-Base.@ccallable function paintmix_mix_f64(
-        a::CVector{:borrowed, Float64}, b::CVector{:borrowed, Float64}, t::Float64,
-        out::CVector{:borrowed, Float64}
-    )::JLWStatus
-    return _status(_mix!(a, b, t, out))
-end
-
-Base.@ccallable function paintmix_mix_f32(
-        a::CVector{:borrowed, Float32}, b::CVector{:borrowed, Float32}, t::Float32,
-        out::CVector{:borrowed, Float32}
-    )::JLWStatus
-    return _status(_mix!(a, b, t, out))
-end
-
-Base.@ccallable function paintmix_bulk_mix_f64(
-        a::CVector{:borrowed, Float64}, b::CVector{:borrowed, Float64},
-        t::CVector{:borrowed, Float64}, out::CVector{:borrowed, Float64}, count::Int64
-    )::JLWStatus
-    return _status(_bulk_mix!(a, b, t, out, count))
-end
-
-Base.@ccallable function paintmix_bulk_mix_f32(
-        a::CVector{:borrowed, Float32}, b::CVector{:borrowed, Float32},
-        t::CVector{:borrowed, Float32}, out::CVector{:borrowed, Float32}, count::Int64
-    )::JLWStatus
-    return _status(_bulk_mix!(a, b, t, out, count))
-end
-
-Base.@ccallable function paintmix_weighted_mix_f64(
-        colors::CVector{:borrowed, Float64}, weights::CVector{:borrowed, Float64},
-        out::CVector{:borrowed, Float64}, count::Int64
-    )::JLWStatus
-    return _status(_weighted_mix!(colors, weights, out, count))
-end
-
-Base.@ccallable function paintmix_weighted_mix_f32(
-        colors::CVector{:borrowed, Float32}, weights::CVector{:borrowed, Float32},
-        out::CVector{:borrowed, Float32}, count::Int64
-    )::JLWStatus
-    return _status(_weighted_mix!(colors, weights, out, count))
+        Base.@ccallable function $(Symbol("paintmix_weighted_mix_", tag))(
+                colors::CVector{:borrowed, $T}, weights::CVector{:borrowed, $T},
+                out::CVector{:borrowed, $T}, count::Int64
+            )::JLWStatus
+            return _status(_weighted_mix!(colors, weights, out, count))
+        end
+    end
 end
 
 end # module PaintMixLib

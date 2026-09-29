@@ -12,7 +12,8 @@ is one way: `Explorer -> PaintMixPrecompute -> PaintMix`.
 Phase 0 exposes the data layer and the server skeleton (`/`, `/provenance`,
 `/healthz`); phase 1 adds the `/spectra` figure, phase 2 the `/cie`
 chromaticity diagram, phase 3 the `/palette` cube and mixer, phase 4 the
-`/paint` canvas, and phase 5 the `/tables` slices and the `/fit` history.
+`/paint` canvas, phase 5 the `/tables` slices and the `/fit` history, and
+phase 6 the opt-in Playwright browser lane.
 """
 module Explorer
 

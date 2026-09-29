@@ -14,9 +14,10 @@ run what exists now.
 
 ## Status
 
-Phases 0–5 are implemented: the data layer, the server skeleton, the
+Phases 0–6 are implemented: the data layer, the server skeleton, the
 `/spectra` figure, the `/cie` chromaticity diagram, the `/palette` cube and
-mixer, the `/paint` canvas, and the `/tables` and `/fit` pages.
+mixer, the `/paint` canvas, the `/tables` and `/fit` pages, and the opt-in
+Playwright browser lane.
 
 | Route | Contents |
 | --- | --- |
@@ -197,9 +198,24 @@ Then:
 EXPLORER_E2E=1 julia --project=explorer -e 'using Pkg; Pkg.test()'
 ```
 
-`EXPLORER_E2E_BROWSER` swaps the engine (default `chromium`),
+`test_e2e.jl` starts one server on an ephemeral port over a tiny synthetic
+payload (never the 96 MiB release artifact) and a small synthetic sidecar. It
+visits every page and asserts the title and a page-specific string, and it
+writes a screenshot, a console log, and a page-error log per page under
+`EXPLORER_E2E_ARTIFACTS`. It also asserts the `/healthz` JSON contract and the
+model id and acceptance gates on `/` and `/provenance`; toggles a pigment and a
+quantity on `/spectra` and checks the readout table; clicks the diagram on
+`/cie` and checks the probe readout; and paints the same stroke on `/paint` in
+both the paint and naive-RGB modes, comparing the canvas data URL so the two
+blends are shown to differ. The `/spectra` and `/cie` interactions skip when
+the untracked input database is absent, so the lane still runs on a bare
+checkout.
+
+`EXPLORER_E2E_BROWSER` swaps the engine (default `chromium`; WGLMakie can trip
+Firefox's slow-script limit, which the lane disables),
 `EXPLORER_E2E_TIMEOUT` sets the action timeout in milliseconds (default
-`20000`), and `EXPLORER_E2E_ARTIFACTS` sets where screenshots are written.
+`20000`), and `EXPLORER_E2E_ARTIFACTS` sets where the per-page artifacts are
+written.
 
 ## Dependency notes
 

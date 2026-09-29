@@ -12,6 +12,8 @@
 /precompute/test/Manifest.toml
 # The explorer is a standalone dev project, not a root workspace member.
 /explorer/Manifest.toml
+# Per-page browser artifacts from the opt-in EXPLORER_E2E lane.
+/explorer/test/artifacts/
 
 # Generated build trees, virtualenvs, and packaging metadata are not committed
 /build/**/venv/

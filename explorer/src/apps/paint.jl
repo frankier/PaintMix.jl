@@ -27,7 +27,10 @@ end
 function paint_dom(session, d::ExplorerData)
     model = d.model
     canvas = paint_canvas(model; width = PAINT_DEFAULT_SIZE, height = PAINT_DEFAULT_SIZE)
-    frame = Bonito.Observable(canvas.display)
+    # The observable must never hold the same array `dab!` mutates in place:
+    # WGLMakie then compares equal old and new textures and skips the redraw.
+    # It holds a private copy; every frame is another copy.
+    frame = Bonito.Observable(copy(canvas.display))
 
     fig = Makie.Figure(; size = (560, 560))
     ax = Makie.Axis(fig[1, 1]; title = "Paint canvas")

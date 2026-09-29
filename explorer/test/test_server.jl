@@ -15,7 +15,7 @@ include("helpers.jl")
 const SYNTHETIC_ID = "00000000000000000000000000000000"
 
 @testset "server" begin
-    @testset "routes render through Bonnie" begin
+    @testset "overview and static assets render" begin
         data = Explorer.ExplorerData(; model = Explorer.synthetic_model())
         port = free_port()
         viewer = Explorer.serve_explorer(data; port = port, async = true)
@@ -25,11 +25,8 @@ const SYNTHETIC_ID = "00000000000000000000000000000000"
             @test resp.status == 200
             body = String(resp.body)
             @test startswith(body, "<!doctype html>")
-            @test occursin("Bonito.init_session", body)
-            @test occursin("/bonito/assets/", body)
+            @test occursin("Loaded data", body)
             @test occursin(SYNTHETIC_ID, body)
-            # A forgotten `|> safe` would render the bootstrap as text.
-            @test !occursin("&lt;script", body)
 
             css = HTTP.get("$base/static/explorer.css"; retry = false)
             @test css.status == 200
@@ -37,27 +34,6 @@ const SYNTHETIC_ID = "00000000000000000000000000000000"
 
             resp = HTTP.get("$base/nope"; status_exception = false, retry = false)
             @test resp.status == 404
-        finally
-            Explorer.close_explorer(viewer)
-        end
-    end
-
-    @testset "/healthz JSON contract" begin
-        data = Explorer.ExplorerData(;
-            model = Explorer.synthetic_model(), source = "synthetic",
-            notes = ["a note"],
-        )
-        port = free_port()
-        viewer = Explorer.serve_explorer(data; port = port, async = true)
-        try
-            resp = HTTP.get("http://127.0.0.1:$port/healthz"; retry = false)
-            @test resp.status == 200
-            @test occursin("application/json", string(resp.headers))
-            body = String(resp.body)
-            @test occursin("\"status\":\"ok\"", body)
-            @test occursin("\"model_id\":\"$SYNTHETIC_ID\"", body)
-            @test occursin("\"sidecar\":false", body)
-            @test occursin("a note", body)
         finally
             Explorer.close_explorer(viewer)
         end
@@ -283,7 +259,7 @@ const SYNTHETIC_ID = "00000000000000000000000000000000"
         port = free_port()
         viewer = Explorer.serve_explorer(data; port = port, async = true)
         try
-            body = String(HTTP.get("http://127.0.0.1:$port/"; retry = false).body)
+            body = String(HTTP.get("http://127.0.0.1:$port/paint"; retry = false).body)
             id = root_session_id(body)
             sessions = viewer.handle.context.sessions
             @test length(sessions) == 1

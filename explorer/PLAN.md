@@ -250,7 +250,6 @@ end
 | `GET /tables` | table slices + validation reports |
 | `GET /fit` | surrogate-fit figure + history |
 | `GET /provenance` | full metadata tables |
-| `GET /healthz` | JSON: payload id, source, sidecar present, notes |
 | `GET /fig/<name>` | standalone `figure_page` of one app (debug/iframe) |
 
 Templates are constructed once at startup and called inside the handler:
@@ -465,8 +464,8 @@ Keep the fast lane browser-free; the browser lane is opt-in and heavy.
   identity `xy(mix_rgb(m, eᵢ)) == xy` from the `R′·D65` integral. These pin
   the two independent routes to the same chromaticity.
 * `test_server.jl` — start the server on an ephemeral port, `GET /` and
-  `GET /healthz`, assert 200 and that the HTML contains the Bonito bootstrap
-  and the model id. Model the websocket canary on Bonnie's
+  assert 200 and the model id; `GET /paint` and assert the HTML contains the
+  Bonito bootstrap. Model the websocket canary on Bonnie's
   `test/test_canary.jl` so a broken session is caught without a browser.
 * A degradation test: start with `--no-sidecar` and check the pages still
   return 200 with the "not available" note.
@@ -491,7 +490,6 @@ separate, opt-in lane, structured like Bonnie's suite.
 * Coverage:
   * every route returns 200 and writes a screenshot;
   * `/` and `/provenance` show the model id and the gate table;
-  * `/healthz` matches the JSON contract;
   * `/spectra`: toggle a pigment and a quantity, assert the figure redraws;
   * `/cie`: click the diagram, assert the probe readout appears;
   * `/paint`: drag across the canvas and assert it changes, then flip the
@@ -510,7 +508,7 @@ separate, opt-in lane, structured like Bonnie's suite.
 
 | Phase | Contents |
 | --- | --- |
-| 0 | Project, `.gitignore`, standalone-environment decision, `ExplorerData` with an injectable constructor, server skeleton, `base.html`, `/healthz`, `/provenance`, and the split test lanes (fast + `EXPLORER_E2E` scaffolding). Verify the registered Oxygen release resolves with the upstream Bonnie pin before anything else. |
+| 0 | Project, `.gitignore`, standalone-environment decision, `ExplorerData` with an injectable constructor, server skeleton, `base.html`, `/provenance`, and the split test lanes (fast + `EXPLORER_E2E` scaffolding). Verify the registered Oxygen release resolves with the upstream Bonnie pin before anything else. |
 | 1 | `/spectra`: derived curves, crosshair, readout, measured-vs-fitted toggle. |
 | 2 | `/cie`: locus, wavelength crown, sRGB triangle, pigment triples, click-to-probe. |
 | 3 | `/palette`: cube, mixing curves, ramp matrix, mixer ramp, nominal table. |

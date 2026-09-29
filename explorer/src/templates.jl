@@ -158,7 +158,6 @@ function index_body(d::ExplorerData)
           <li><a href="/paint">Paint</a> — brush canvas and mixer ramp</li>
           <li><a href="/tables">Tables</a> — lookup-table slices and validation</li>
           <li><a href="/fit">Fit</a> — surrogate fit and continuation history</li>
-          <li><a href="/healthz">/healthz</a> — JSON status</li>
         </ul>
       </article>
     </section>

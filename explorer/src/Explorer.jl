@@ -9,8 +9,8 @@ root workspace, and it is the only place in the repository that depends on a
 web server, a browser toolkit, or a template engine. The dependency direction
 is one way: `Explorer -> PaintMixPrecompute -> PaintMix`.
 
-Phase 0 exposes the data layer and the server skeleton (`/`, `/provenance`,
-`/healthz`); phase 1 adds the `/spectra` figure, phase 2 the `/cie`
+Phase 0 exposes the data layer and the server skeleton (`/`, `/provenance`);
+phase 1 adds the `/spectra` figure, phase 2 the `/cie`
 chromaticity diagram, phase 3 the `/palette` cube and mixer, phase 4 the
 `/paint` canvas, phase 5 the `/tables` slices and the `/fit` history, and
 phase 6 the opt-in Playwright browser lane.

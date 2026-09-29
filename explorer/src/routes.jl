@@ -40,24 +40,6 @@ function bonnie()
 end
 
 """
-    status_app(d) -> Bonito.App
-
-A tiny live Bonito app. Phase 0 has no figures yet; this exercises the
-bootstrap and websocket path that every later figure page depends on.
-"""
-function status_app(d::ExplorerData)
-    return App() do
-        slider = Bonito.Slider(1:10)
-        return Bonito.DOM.div(
-            Bonito.DOM.p(
-                "Live Bonito session probe (model ", PaintMix.model_id(d.model), ")"
-            ),
-            Bonito.DOM.div(slider, Bonito.DOM.div(slider.value)),
-        )
-    end
-end
-
-"""
     register_routes!()
 
 Register the viewer's routes on this module's Oxygen context. Idempotent.
@@ -70,14 +52,8 @@ function register_routes!()
     dynamicfiles(STATIC, "/static")
 
     @get "/" function (req::HTTP.Request)
-        d = explorer_data()
-        head = head_content()
-        body = app_html(status_app(d))
         return Oxygen.html(
-            render_page(
-                "index"; title = "PaintMix explorer", head = head,
-                body = index_body(d) * body
-            )
+            render_page("index"; title = "PaintMix explorer", body = index_body(explorer_data()))
         )
     end
 
@@ -192,20 +168,6 @@ function register_routes!()
     @get "/fig/fit" function (req::HTTP.Request)
         return Bonnie.app_page(
             fit_app(explorer_data()); title = "PaintMix explorer — fit figure"
-        )
-    end
-
-    @get "/healthz" function (req::HTTP.Request)
-        d = explorer_data()
-        return json(
-            Dict(
-                "status" => "ok",
-                "model_id" => PaintMix.model_id(d.model),
-                "grid_n" => PaintMix.grid_n(d.model),
-                "source" => d.source,
-                "sidecar" => d.sidecar !== nothing,
-                "notes" => d.notes,
-            )
         )
     end
 

@@ -21,7 +21,7 @@ Playwright browser lane.
 
 | Route | Contents |
 | --- | --- |
-| `GET /` | overview: provenance banner, data card, links, live Bonito probe |
+| `GET /` | overview: provenance banner, data card, links |
 | `GET /spectra` | measured, fitted, and derived K, S, K/S, R∞, R′ curves with a wavelength crosshair and readout |
 | `GET /cie` | CIE 1931 locus with a wavelength crown, sRGB triangle, the three pigment chromaticity layers, nominal colors, mixture gamut, and click-to-probe |
 | `GET /palette` | sRGB cube with the pure-pigment vertices and the mixing path of a selected pair, the pairwise mixture ramp matrix, the mixer ramp, and the nominal table |
@@ -35,7 +35,6 @@ Playwright browser lane.
 | `GET /fig/tables` | the table-slice figure alone (debug/iframe) |
 | `GET /fig/fit` | the fit figure alone (debug/iframe) |
 | `GET /provenance` | configuration, inputs and hashes, environment, payload header, acceptance gates, caveats |
-| `GET /healthz` | JSON: model id, grid, source, sidecar state, notes |
 | `GET /static/...` | CSS |
 
 `/spectra` is one WGLMakie figure built inside a Bonito `App`. Pigment and
@@ -202,9 +201,9 @@ EXPLORER_E2E=1 julia --project=explorer -e 'using Pkg; Pkg.test()'
 payload (never the 96 MiB release artifact) and a small synthetic sidecar. It
 visits every page and asserts the title and a page-specific string, and it
 writes a screenshot, a console log, and a page-error log per page under
-`EXPLORER_E2E_ARTIFACTS`. It also asserts the `/healthz` JSON contract and the
-model id and acceptance gates on `/` and `/provenance`; toggles a pigment and a
-quantity on `/spectra` and checks the readout table; clicks the diagram on
+`EXPLORER_E2E_ARTIFACTS`. It also asserts the model id and acceptance gates
+on `/` and `/provenance`; toggles a pigment and a quantity on `/spectra` and
+checks the readout table; clicks the diagram on
 `/cie` and checks the probe readout; and paints the same stroke on `/paint` in
 both the paint and naive-RGB modes, comparing the canvas data URL so the two
 blends are shown to differ. The `/spectra` and `/cie` interactions skip when

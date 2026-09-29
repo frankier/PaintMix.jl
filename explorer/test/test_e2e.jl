@@ -288,17 +288,6 @@ else
                 end
             end
 
-            @testset "/healthz JSON contract" begin
-                resp = HTTP.get("$base/healthz"; retry = false)
-                @test resp.status == 200
-                @test occursin("application/json", string(resp.headers))
-                body = String(resp.body)
-                @test occursin("\"status\":\"ok\"", body)
-                @test occursin("\"model_id\":\"$(PaintMix.model_id(data.model))\"", body)
-                @test occursin("\"grid_n\":2", body)
-                @test occursin("\"sidecar\":true", body)
-            end
-
             if has_spectra
                 @testset "/spectra toggles a pigment and a quantity" begin
                     with_browser() do browser

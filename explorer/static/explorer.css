@@ -301,3 +301,15 @@ table.ramp-matrix td {
 .spectra-controls button {
   margin-top: 0.25rem;
 }
+
+/* Tables and fit pages ------------------------------------------------ */
+
+.fit-stack {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.fail {
+  color: #ff6b6b;
+}

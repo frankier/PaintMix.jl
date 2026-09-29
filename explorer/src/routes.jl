@@ -135,6 +135,29 @@ function register_routes!()
         )
     end
 
+    @get "/tables" function (req::HTTP.Request)
+        d = explorer_data()
+        head = head_content()
+        body = app_html(tables_app(d)) * tables_caption(d)
+        return Oxygen.html(
+            render_page(
+                "tables"; title = "PaintMix explorer — tables", head = head, body = body
+            )
+        )
+    end
+
+    @get "/fit" function (req::HTTP.Request)
+        d = explorer_data()
+        head = head_content()
+        body = app_html(fit_app(d)) * fit_caption(d)
+        return Oxygen.html(
+            render_page(
+                "fit"; title = "PaintMix explorer — surrogate fit", head = head,
+                body = body
+            )
+        )
+    end
+
     # Standalone figure page for debugging and iframes, one per app.
     @get "/fig/spectra" function (req::HTTP.Request)
         return Bonnie.app_page(
@@ -157,6 +180,18 @@ function register_routes!()
     @get "/fig/paint" function (req::HTTP.Request)
         return Bonnie.app_page(
             paint_app(explorer_data()); title = "PaintMix explorer — paint figure"
+        )
+    end
+
+    @get "/fig/tables" function (req::HTTP.Request)
+        return Bonnie.app_page(
+            tables_app(explorer_data()); title = "PaintMix explorer — tables figure"
+        )
+    end
+
+    @get "/fig/fit" function (req::HTTP.Request)
+        return Bonnie.app_page(
+            fit_app(explorer_data()); title = "PaintMix explorer — fit figure"
         )
     end
 

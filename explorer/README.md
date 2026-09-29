@@ -14,9 +14,9 @@ run what exists now.
 
 ## Status
 
-Phases 0–4 are implemented: the data layer, the server skeleton, the
+Phases 0–5 are implemented: the data layer, the server skeleton, the
 `/spectra` figure, the `/cie` chromaticity diagram, the `/palette` cube and
-mixer, and the `/paint` canvas.
+mixer, the `/paint` canvas, and the `/tables` and `/fit` pages.
 
 | Route | Contents |
 | --- | --- |
@@ -25,10 +25,14 @@ mixer, and the `/paint` canvas.
 | `GET /cie` | CIE 1931 locus with a wavelength crown, sRGB triangle, the three pigment chromaticity layers, nominal colors, mixture gamut, and click-to-probe |
 | `GET /palette` | sRGB cube with the pure-pigment vertices and the mixing path of a selected pair, the pairwise mixture ramp matrix, the mixer ramp, and the nominal table |
 | `GET /paint` | brush canvas with pigment weights, radius, flow, brush source, paint-vs-RGB toggle, color picker, and the mixer ramp |
+| `GET /tables` | inverse- and forward-table slices plus the validation reports |
+| `GET /fit` | measured-vs-fitted spectra, continuation history, and fit diagnostics |
 | `GET /fig/spectra` | the spectra figure alone (debug/iframe) |
 | `GET /fig/cie` | the CIE figure alone (debug/iframe) |
 | `GET /fig/palette` | the palette cube alone (debug/iframe) |
 | `GET /fig/paint` | the paint canvas alone (debug/iframe) |
+| `GET /fig/tables` | the table-slice figure alone (debug/iframe) |
+| `GET /fig/fit` | the fit figure alone (debug/iframe) |
 | `GET /provenance` | configuration, inputs and hashes, environment, payload header, acceptance gates, caveats |
 | `GET /healthz` | JSON: model id, grid, source, sidecar state, notes |
 | `GET /static/...` | CSS |
@@ -79,7 +83,28 @@ bytes), so a full-speed drag streams about 3.8 MiB/s; the dirty rectangle
 bounds the per-dab decode, and the frame copy is the cost that sets the
 default edge. The page needs only the runtime payload.
 
-The remaining figure pages (`/tables`, `/fit`) come in later phases.
+`/tables` reads the inverse table at its stored vertices and shows a 2D slice
+for a selected fixed sRGB channel and level: one concentration field per
+pigment, the dominant-pigment basin map, and the residual magnitude
+`‖x − M(U(x))‖`. A second row shows the forward table on a plane with the
+fourth concentration fixed, and the worst channel difference between the
+forward table and the spectral model at the concentrations the runtime inverse
+recovers, at reduced (96²) resolution because it evaluates the spectral model
+per sample. The slice needs only the runtime payload; the spectral-error map
+also needs the input database. The server-rendered cards reproduce the
+sidecar's acceptance gates (with the gates overridden on promotion called
+out), quality, padding-by-depth, continuity, round-trip, and quantization
+reports. Everything but the slice figure degrades to a "not available" note
+without the sidecar.
+
+`/fit` shows the measured (solid) against fitted (dashed) `K`, `S`, `R∞`, and
+`R′` for every pigment, and the continuation history: `Epush`, `Epull`, the
+objective, and elapsed seconds against the step, with the `Epush` tolerance
+and the first step that meets it marked. The cards list the history, the
+surrogate diagnostics (including the dense-cube violation and Oklab
+deviation), and the chromaticity displacement from measured to fitted to
+runtime. The spectra comparison needs the fitted surrogate; the history needs
+the sidecar; the page shows whichever is available and a note for the rest.
 
 ## Run
 
@@ -150,10 +175,14 @@ naive line, the ramp matrix, the mixer, and the nominal rows on the synthetic
 model, then the spectral pure RGB and the chromaticity column against the real
 database. `test_paint.jl` checks the white canvas, the brush sources, the hex
 parser and pick readout, the dab disc and its dirty rectangle, the RGB blend,
-`clear!`, and the image-axis mapping. `test_server.jl` starts a server on an
-ephemeral port and checks the routes, the JSON contract, the degraded sidecar,
-spectra, CIE, palette, and paint pages, and a Bonito websocket handshake
-modeled on Bonnie's canary.
+`clear!`, and the image-axis mapping. `test_tables.jl` checks the slice index
+and level, the simplex concentration fields, the basin and residual maps, the
+forward plane, the sidecar validation accessors, and the spectral-error slice
+against the real database. `test_fit.jl` checks the history and diagnostics
+accessors on a hand-built sidecar, the degraded paths, and the fit cards.
+`test_server.jl` starts a server on an ephemeral port and checks the routes,
+the JSON contract, the degraded sidecar, spectra, CIE, palette, paint, tables,
+and fit pages, and a Bonito websocket handshake modeled on Bonnie's canary.
 
 The browser lane is opt-in and heavy. Install the driver and browsers once:
 

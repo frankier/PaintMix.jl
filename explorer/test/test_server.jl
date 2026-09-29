@@ -214,6 +214,70 @@ const SYNTHETIC_ID = "00000000000000000000000000000000"
         end
     end
 
+    @testset "/tables renders slices from the model alone" begin
+        data = Explorer.ExplorerData(; model = Explorer.synthetic_model())
+        port = free_port()
+        viewer = Explorer.serve_explorer(data; port = port, async = true)
+        try
+            body = String(HTTP.get("http://127.0.0.1:$port/tables"; retry = false).body)
+            @test occursin("Bonito.init_session", body)
+            @test occursin("canvas", body)
+            @test occursin("Forward plane", body)
+            @test occursin("fourth concentration", body)
+            @test occursin("Acceptance gates", body)
+            @test occursin("Not available: no sidecar.", body)
+            @test occursin("not available: the input database is absent", body)
+            @test !occursin("&lt;script", body)
+
+            fig = HTTP.get("http://127.0.0.1:$port/fig/tables"; retry = false)
+            @test fig.status == 200
+            @test occursin("Bonito.init_session", String(fig.body))
+        finally
+            Explorer.close_explorer(viewer)
+        end
+    end
+
+    @testset "/fit degrades without spectra and sidecar" begin
+        data = Explorer.ExplorerData(; model = Explorer.synthetic_model())
+        port = free_port()
+        viewer = Explorer.serve_explorer(data; port = port, async = true)
+        try
+            body = String(HTTP.get("http://127.0.0.1:$port/fit"; retry = false).body)
+            @test occursin("Bonito.init_session", body)
+            @test occursin("Fit data not available", body)
+            @test occursin("Not available: no sidecar.", body)
+            @test !occursin("&lt;script", body)
+
+            fig = HTTP.get("http://127.0.0.1:$port/fig/fit"; retry = false)
+            @test fig.status == 200
+            @test occursin("Bonito.init_session", String(fig.body))
+        finally
+            Explorer.close_explorer(viewer)
+        end
+    end
+
+    @testset "/tables renders the spectral-error map against real spectra" begin
+        ref = spectral_reference()
+        if ref === nothing
+            @test_skip "input database absent; tables spectral map not served"
+        else
+            data = Explorer.ExplorerData(;
+                cfg = ref.cfg, db = ref.db, spectra = ref.spectra, quad = ref.quad,
+                spectral = ref.spectral, model = Explorer.synthetic_model(),
+            )
+            port = free_port()
+            viewer = Explorer.serve_explorer(data; port = port, async = true)
+            try
+                body = String(HTTP.get("http://127.0.0.1:$port/tables"; retry = false).body)
+                @test occursin("Bonito.init_session", body)
+                @test occursin("available at 96² resolution", body)
+                @test occursin("Acceptance gates", body)
+            finally
+                Explorer.close_explorer(viewer)
+            end
+        end
+    end
+
     @testset "websocket canary: session handshake" begin
         data = Explorer.ExplorerData(; model = Explorer.synthetic_model())
         port = free_port()

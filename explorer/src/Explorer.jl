@@ -11,8 +11,8 @@ is one way: `Explorer -> PaintMixPrecompute -> PaintMix`.
 
 Phase 0 exposes the data layer and the server skeleton (`/`, `/provenance`,
 `/healthz`); phase 1 adds the `/spectra` figure, phase 2 the `/cie`
-chromaticity diagram, phase 3 the `/palette` cube and mixer, and phase 4 the
-`/paint` canvas. Later phases add one figure page at a time.
+chromaticity diagram, phase 3 the `/palette` cube and mixer, phase 4 the
+`/paint` canvas, and phase 5 the `/tables` slices and the `/fit` history.
 """
 module Explorer
 
@@ -38,11 +38,15 @@ include("colorimetry.jl")
 include("data.jl")
 include("palette.jl")
 include("paint.jl")
+include("tables.jl")
+include("fit.jl")
 include("templates.jl")
 include("apps/spectra.jl")
 include("apps/cie.jl")
 include("apps/palette.jl")
 include("apps/paint.jl")
+include("apps/tables.jl")
+include("apps/fit.jl")
 include("routes.jl")
 
 export ExplorerData,
@@ -99,6 +103,34 @@ export ExplorerData,
     paint_app,
     paint_caption,
     PAINT_DEFAULT_SIZE,
+    TABLE_AXES,
+    TABLE_SPECTRAL_N,
+    slice_index,
+    slice_level_value,
+    slice_axis_labels,
+    concentration_fields,
+    basin_map,
+    residual_field,
+    ForwardPlane,
+    forward_plane,
+    spectral_error_field,
+    validation_report,
+    acceptance_gate_rows,
+    promoted_gate_names,
+    number,
+    FitHistory,
+    fit_history,
+    push_tolerance,
+    push_met_step,
+    fit_diagnostics,
+    tables_slice_data,
+    forward_image,
+    tables_app,
+    tables_caption,
+    fit_spectra_figure,
+    fit_history_figure,
+    fit_app,
+    fit_caption,
     SPECTRA_QUANTITY_KEYS,
     quantity_label,
     quantity_log,

@@ -1,12 +1,12 @@
 :root {
-  --bg: #101418;
-  --panel: #1a2027;
-  --panel-2: #222b34;
-  --text: #e6edf3;
-  --muted: #8b98a5;
-  --accent: #6cb6ff;
-  --warn: #ffb454;
-  --border: #2d3742;
+  --bg: #ffffff;
+  --panel: #f6f8fa;
+  --panel-2: #eaeef2;
+  --text: #1f2328;
+  --muted: #59636e;
+  --accent: #0969da;
+  --warn: #9a6700;
+  --border: #d0d7de;
 }
 
 * {
@@ -311,5 +311,5 @@ table.ramp-matrix td {
 }
 
 .fail {
-  color: #ff6b6b;
+  color: #cf222e;
 }

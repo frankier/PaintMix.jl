@@ -184,11 +184,12 @@ accessors on a hand-built sidecar, the degraded paths, and the fit cards.
 the JSON contract, the degraded sidecar, spectra, CIE, palette, paint, tables,
 and fit pages, and a Bonito websocket handshake modeled on Bonnie's canary.
 
-The browser lane is opt-in and heavy. Install the driver and browsers once:
+The browser lane is opt-in and heavy. Set `TMPDIR` to disk-backed scratch
+storage, then install the driver and browsers once:
 
 ```sh
-git clone https://github.com/frankier/playwright-julia /tmp/playwright-julia
-julia /tmp/playwright-julia/bin/install.jl
+git clone https://github.com/frankier/playwright-julia "$TMPDIR/playwright-julia"
+julia "$TMPDIR/playwright-julia/bin/install.jl"
 ```
 
 Then:
@@ -230,3 +231,13 @@ Templates use OteraEngine, whose filter syntax is `|>` (not Jinja's `|`).
 Autoescape is on, so every embedded fragment passes through the `safe` filter
 as live markup. `test_server.jl` asserts this: a forgotten filter renders the
 Bonito bootstrap as visible text and no figure ever appears.
+
+## Candidate comparisons
+
+Pass `--comparison RESULTS/comparison.toml` to `explorer/run.jl` to show the
+schema-2 experiment report on `/fit`. Rows compare timing, gamut containment,
+mixing error, termination, and model identity on a common corpus. Generate
+reports with `precompute/scripts/compare.jl`; see
+[`precompute/EXPERIMENTS.md`](../precompute/EXPERIMENTS.md). Fitted spectra are
+loaded from physical absorption/scattering coefficients for every new
+parameterization. Schema-1 softplus-only sidecars remain supported.

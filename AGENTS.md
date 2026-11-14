@@ -43,6 +43,14 @@ direction is one-way: `precompute -> PaintMix` and `build -> PaintMix`.
 Read the relevant file before changing that area. When the format or a
 convention changes, update the README that documents it in the same change.
 
+Keep documentation portable. Do not name particular execution hosts,
+clusters, accounts, or absolute filesystem directories, including home
+directory shortcuts. Use repository-relative paths or documented environment variables
+and placeholders. Describe compute environments and resource requirements
+generically. Apply this to prose, command examples, source comments/docstrings,
+and committed report metadata; preserve numerical results and content digests
+when normalizing generated reports.
+
 ## Style
 
 * Be concise. Prefer short functions, short comments, and short names.
@@ -83,4 +91,4 @@ runic --inplace .      # apply
 
 `prek run --all-files` runs the same check through `prek.toml`. CI runs
 `fredrikekre/runic-action`. Both install Runic in their own environment, so
-neither touches the runtime project's empty `[deps]` section.
+neither touches the runtime project's dependency allow-list.

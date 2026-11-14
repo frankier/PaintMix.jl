@@ -1,0 +1,687 @@
+corpus_sha256 = "40f3ffa15dcff27d1a923fbd2f5230299a6b80435885ef3f3440a85f2a621b75"
+schema_version = 2
+
+[[runs]]
+first_push_target_seconds = -1.0
+fit_job_id = "7ed3fa02be6ca5b6157cdd9bdab6e4439a4a3025c7537f61698b63555d25a8fe"
+fit_seconds = 239.84870505332947
+function_evaluations = 1000
+generation_seconds = 736.4188771247864
+gradient_evaluations = 1000
+model_id = "2e7b0348fa5708a29e930bcfe38ec56e"
+payload_sha256 = "9b06aad29d40a1de1a4d1379fce6c3cff717d83b5020d86d5e89e099af1885c4"
+push_target_reached = false
+table_job_id = "e9c4b4e61bdd06bef684275ce442403da5a6eea392620ff47758ca7ec4b89811"
+termination = "Success"
+variant = "direct-lbfgsb"
+
+    [runs.acceptance_gates]
+    blue_yellow_is_green = true
+    lut_vs_spectral_channel_max = false
+    lut_vs_spectral_channel_p99 = false
+    lut_vs_spectral_oklab_p99 = false
+    magenta_yellow_is_orange = true
+    padding_on_simplex = true
+    quantization_simplex = true
+    roundtrip_float32 = true
+    roundtrip_float64 = true
+    white_tint_monotone = true
+
+    [runs.diagnostics]
+    Epull_dense = 0.0008572946940390145
+    Epull_fit = 0.0010472440269333728
+    Epush_dense = 3.047834748704887e-6
+    Epush_fit = 3.984895037733598e-6
+    algorithm = "OptimizationLBFGSB.LBFGSB(10, 0.5, 10.0, -1.0e20, 1.0e20, 0.0, 1.0e20, 1.0e-8)"
+    dense_divisions = 40
+    derivative = "forwarddiff"
+    max_cube_violation = 0.0163671968400976
+    max_cube_violation_squared = 0.00026788513240250084
+    max_oklab_deviation = 0.14050578097597344
+    parameterization = "direct"
+    termination = "Success"
+
+        [runs.diagnostics.oklab_deviation]
+        max = 0.14050578097597344
+        mean = 0.021444228654531754
+        p99 = 0.07581483465187347
+        samples = 4737
+
+        [runs.diagnostics.quadrature]
+        note = "equations (16)-(17) integrate over the RGB gamut boundary; the fit uses equally spaced concentrations, as the paper describes, and these ratios bound the resulting weighting deviation"
+        samples = 924
+        weighting = "concentration-simplex-area"
+
+            [runs.diagnostics.quadrature.normalized_ratio]
+            max = 9.33841117960617e7
+            mean = 4.971107492177115e6
+            min = 0.0022210345174732507
+
+            [runs.diagnostics.quadrature.rgb_surface_jacobian]
+            max = 1.434076582369013e7
+            mean = 31851.335901416478
+            min = 0.0003410787476458042
+            total = 2.9430634372908827e7
+
+    [runs.environment]
+    forwarddiff_version = "1.4.6"
+    julia_version = "1.13.3"
+    optim_version = "1.13.3"
+    optimization_lbfgsb_version = "1.3.0"
+    optimization_version = "5.4.0"
+    paintmix_version = "0.1.0"
+    paintmixprecompute_version = "0.1.0"
+    threads = 4
+
+    [runs.table_settings]
+    coarse_n = 64
+    evaluator = "spectral"
+    fine_max_iterations = 15
+    n = 256
+    strategy = "coarse"
+    threads = 4
+
+    [runs.validation.behavior]
+    blue_yellow_channel_error = 0.09222761468917799
+    blue_yellow_is_green = true
+    magenta_yellow_channel_error = 0.04450232222932338
+    magenta_yellow_is_orange = true
+    note = "qualitative flags are evaluated on the spectral reference; the runtime values and their channel difference show the approximation"
+    reversal_symmetry_error = 5.551115123125783e-17
+    runtime_blue_yellow_50_50 = [-0.06651955588235295, 0.1923931892156863, 0.1474597]
+    runtime_magenta_yellow_50_50 = [0.5479411764705882, 0.1435071078431372, 0.08946617647058824]
+    same_color_max_error = 0.0
+    spectral_blue_yellow_50_50 = [0.025708058806825047, 0.20115039156232567, 0.1456048932334777]
+    spectral_magenta_yellow_50_50 = [0.5924434986999115, 0.15289566812430835, 0.08803706096922262]
+    white_tint_lightness = [0.098944, 0.16826307689470593, 0.25085001880843133, 0.36883671350333325, 1.0]
+    white_tint_monotone = true
+
+    [runs.validation.continuity]
+    corpus_sha256 = "c27a9e791f3aeaa01a3d7694bfcf37f130fc20144b3bf8d795f31054ed241c38"
+    corpus_version = 2
+    lines = 256
+    note = "runtime-table encode along random RGB segments; a concentration jump much larger than 1/255 with a small color step is a basin change"
+    points_per_line = 65
+    worst_jump_at = [0.6903985738754272, 0.39830151200294495, 0.08251028507947922]
+
+        [runs.validation.continuity.concentration_jump]
+        max = 0.46495234966278076
+        mean = 0.004121770155596033
+        p99 = 0.0310777947306633
+
+        [runs.validation.continuity.decode_error]
+        max = 1.4901161193847656e-8
+        p99 = 7.450580596923828e-9
+
+    [runs.validation.decomposition]
+    corpus_sha256 = "24341e1568a97859b1e2e966de91f147f8254fe8b312e56aa5a6769bf7f83c56"
+    corpus_version = 2
+
+        [runs.validation.decomposition.concentration_quantization_channel]
+        max = 0.23723547717191196
+        mean = 0.0036942210070811847
+        p99 = 0.0772346502006761
+        samples = 460
+
+        [runs.validation.decomposition.forward_interpolation_channel]
+        max = 0.1494627180561905
+        mean = 0.0014713020282788598
+        p99 = 0.037999059890643117
+        samples = 460
+
+        [runs.validation.decomposition.forward_quantization_channel]
+        max = 0.0163671968400976
+        mean = 0.0015229647259835059
+        p99 = 0.016366851788994774
+        samples = 460
+
+        [runs.validation.decomposition.inverse_objective_excess]
+        max = 7.853243543584812e-7
+        mean = 3.485156837013035e-9
+        p99 = 1.50615707683599e-8
+        samples = 256
+
+        [runs.validation.decomposition.inverse_quantization_concentration]
+        max = 0.002247937367820766
+        mean = 0.0009619555062503892
+        p99 = 0.0021896973457013044
+        samples = 256
+
+        [runs.validation.decomposition.surrogate_bias_oklab]
+        max = 0.14050578097597347
+        mean = 0.022999569839403922
+        p99 = 0.14050158453383735
+        samples = 460
+
+    [runs.validation.padding]
+    grid_n = 256
+    padding_rule = "project-to-simplex"
+    samples_per_depth = 7564
+
+        [runs.validation.padding.by_depth."0.0"]
+        max = 0.0163671968400976
+        mean = 0.0015033211903181553
+        p99 = 0.007198580293249503
+
+        [runs.validation.padding.by_depth."0.001"]
+        max = 0.09320148960782104
+        mean = 0.006687201511527548
+        p99 = 0.053860431278768495
+
+        [runs.validation.padding.by_depth."0.005"]
+        max = 0.13517517621301833
+        mean = 0.011761363249918937
+        p99 = 0.0845613929250556
+
+        [runs.validation.padding.by_depth."0.02"]
+        max = 0.007569721939836183
+        mean = 0.002118359580826009
+        p99 = 0.006833115143229818
+
+        [runs.validation.padding.worst]
+        c = [0.0012437810945273634, 0.0012437810945273634, 0.996268656716418, 0.0012437810945273634]
+        depth = 0.005
+        error = 0.13517517621301833
+
+    [runs.validation.quality]
+    corpus_colors = 512
+    corpus_sha256 = "40f3ffa15dcff27d1a923fbd2f5230299a6b80435885ef3f3440a85f2a621b75"
+    corpus_version = 2
+    pairs = 20000
+
+        [runs.validation.quality.channel_error]
+        max = 0.21415387601956604
+        mean = 0.014401029100976837
+        p99 = 0.09725971031993208
+
+        [runs.validation.quality.encoded_channel_error]
+        max = 0.45812847589788125
+        mean = 0.011532362031121469
+        p99 = 0.09819350180911951
+
+        [runs.validation.quality.oklab_error]
+        max = 0.11399970830859092
+        mean = 0.00467561409332504
+        p99 = 0.0356442315992515
+
+        [runs.validation.quality.worst_channel_sample]
+        a = [0.0306883206551245, 0.21350455896112108, 0.4317585928743467]
+        b = [0.6902618843578886, 0.8269098043177392, 0.8527010495718986]
+        error = 0.21415387601956604
+        t = 0.8697218382593529
+
+    [runs.validation.quantization]
+    invalid_vertices = 0
+    note = "sum == 255 means the fourth concentration is zero; a sum below 255 carries positive white pigment"
+    rule = "simplex-largest-remainder"
+    sum_255_fraction = 0.0
+    vertices = 16777216
+
+    [runs.validation.roundtrip]
+    corpus_sha256 = "9e56b9cc3686cef0a6288c7dbb9ec2a6f8320c1bb387c7676929fcc625ec5b4b"
+    corpus_version = 2
+    samples = 2000
+
+        [runs.validation.roundtrip.float32]
+        max = 1.4901161193847656e-8
+        mean = 6.769696483388543e-10
+
+        [runs.validation.roundtrip.float64]
+        max = 8.673617379884035e-19
+        mean = 4.336808689942018e-22
+[[runs]]
+first_push_target_seconds = -1.0
+fit_job_id = "357d9b9b56ff56def9bcd59ead4cb5f8972cd74282f7a658889868f5f8799513"
+fit_seconds = 891.7305769920349
+function_evaluations = 12656
+generation_seconds = 712.8255181312561
+gradient_evaluations = 12656
+model_id = "aa6e717259774af86feb56054ddc6b07"
+payload_sha256 = "517e6ac94e8047ddb8ab94bf87b2357c1053c3ab6672ae1e1061e3675f9c3bf6"
+push_target_reached = false
+table_job_id = "35f7bde61abd90a1e5045b809f4f67dc4bb3043f9022d8ebe302d567b5640f2a"
+termination = "Success"
+variant = "softplus-lbfgs"
+
+    [runs.acceptance_gates]
+    blue_yellow_is_green = true
+    lut_vs_spectral_channel_max = false
+    lut_vs_spectral_channel_p99 = false
+    lut_vs_spectral_oklab_p99 = false
+    magenta_yellow_is_orange = true
+    padding_on_simplex = true
+    quantization_simplex = true
+    roundtrip_float32 = true
+    roundtrip_float64 = true
+    white_tint_monotone = true
+
+    [runs.diagnostics]
+    Epull_dense = 0.00022814899219008062
+    Epull_fit = 0.00023921027402024325
+    Epush_dense = 7.132231810803058e-8
+    Epush_fit = 7.423631510861942e-8
+    algorithm = "Optim.LBFGS{Nothing, LineSearches.InitialStatic{Float64}, LineSearches.HagerZhang{Float64, Base.RefValue{Bool}}, Returns{Nothing}}(10, LineSearches.InitialStatic{Float64}(1.0, false), LineSearches.HagerZhang{Float64, Base.RefValue{Bool}}(0.1, 0.9, Inf, 5.0, 1.0e-6, 0.66, 50, 0.1, 0, Base.RefValue{Bool}(false), nothing, false), nothing, Returns{Nothing}(nothing), Optim.Flat(), true)"
+    dense_divisions = 40
+    derivative = "forwarddiff"
+    max_cube_violation = 0.0019439165248735049
+    max_cube_violation_squared = 3.7788114556762837e-6
+    max_oklab_deviation = 0.043046034847953205
+    parameterization = "softplus"
+    termination = "Success"
+
+        [runs.diagnostics.oklab_deviation]
+        max = 0.043046034847953205
+        mean = 0.01036926543321184
+        p99 = 0.037205663671047016
+        samples = 4737
+
+        [runs.diagnostics.quadrature]
+        note = "equations (16)-(17) integrate over the RGB gamut boundary; the fit uses equally spaced concentrations, as the paper describes, and these ratios bound the resulting weighting deviation"
+        samples = 924
+        weighting = "concentration-simplex-area"
+
+            [runs.diagnostics.quadrature.normalized_ratio]
+            max = 9.036273432662819e9
+            mean = 4.82150785485348e7
+            min = 0.0011345515653969336
+
+            [runs.diagnostics.quadrature.rgb_surface_jacobian]
+            max = 3.5425067912993664e8
+            mean = 401915.6625497962
+            min = 4.447803240404595e-5
+            total = 3.713700721960117e8
+
+    [runs.environment]
+    forwarddiff_version = "1.4.6"
+    julia_version = "1.13.3"
+    optim_version = "1.13.3"
+    optimization_lbfgsb_version = "1.3.0"
+    optimization_version = "5.4.0"
+    paintmix_version = "0.1.0"
+    paintmixprecompute_version = "0.1.0"
+    threads = 4
+
+    [runs.table_settings]
+    coarse_n = 64
+    evaluator = "spectral"
+    fine_max_iterations = 15
+    n = 256
+    strategy = "coarse"
+    threads = 4
+
+    [runs.validation.behavior]
+    blue_yellow_channel_error = 0.1442347616372345
+    blue_yellow_is_green = true
+    magenta_yellow_channel_error = 0.11453798401728649
+    magenta_yellow_is_orange = true
+    note = "qualitative flags are evaluated on the spectral reference; the runtime values and their channel difference show the approximation"
+    reversal_symmetry_error = 1.3877787807814457e-17
+    runtime_blue_yellow_50_50 = [-0.13303921568627455, 0.10401960784313724, 0.07681862745098039]
+    runtime_magenta_yellow_50_50 = [0.4683468137254902, 0.05137254901960783, 0.05823529411764706]
+    same_color_max_error = 0.0
+    spectral_blue_yellow_50_50 = [0.011195545950959958, 0.15352701741840796, 0.07524595777194304]
+    spectral_magenta_yellow_50_50 = [0.5828847977427767, 0.10325153675518751, 0.05742741764102751]
+    white_tint_lightness = [0.098944, 0.15404481372549006, 0.22027490196078425, 0.32182361764705886, 1.0]
+    white_tint_monotone = true
+
+    [runs.validation.continuity]
+    corpus_sha256 = "c27a9e791f3aeaa01a3d7694bfcf37f130fc20144b3bf8d795f31054ed241c38"
+    corpus_version = 2
+    lines = 256
+    note = "runtime-table encode along random RGB segments; a concentration jump much larger than 1/255 with a small color step is a basin change"
+    points_per_line = 65
+    worst_jump_at = [0.6566044688224792, 0.5101331472396851, 0.18373209238052368]
+
+        [runs.validation.continuity.concentration_jump]
+        max = 0.7865131497383118
+        mean = 0.005071679888334346
+        p99 = 0.037417471408843994
+
+        [runs.validation.continuity.decode_error]
+        max = 1.4901161193847656e-8
+        p99 = 7.450580596923828e-9
+
+    [runs.validation.decomposition]
+    corpus_sha256 = "24341e1568a97859b1e2e966de91f147f8254fe8b312e56aa5a6769bf7f83c56"
+    corpus_version = 2
+
+        [runs.validation.decomposition.concentration_quantization_channel]
+        max = 0.5811211412492815
+        mean = 0.0054273217727907885
+        p99 = 0.1261913557113682
+        samples = 460
+
+        [runs.validation.decomposition.forward_interpolation_channel]
+        max = 0.40714884566994214
+        mean = 0.0027469348397204125
+        p99 = 0.06679477926081012
+        samples = 460
+
+        [runs.validation.decomposition.forward_quantization_channel]
+        max = 0.005417242853135105
+        mean = 0.0010089760400533087
+        p99 = 0.0018317477159465155
+        samples = 460
+
+        [runs.validation.decomposition.inverse_objective_excess]
+        max = 0.0002209230287771581
+        mean = 8.636927904018542e-7
+        p99 = 2.212003308025754e-8
+        samples = 256
+
+        [runs.validation.decomposition.inverse_quantization_concentration]
+        max = 0.0022921897026334515
+        mean = 0.0010637245901449974
+        p99 = 0.002229513042721196
+        samples = 256
+
+        [runs.validation.decomposition.surrogate_bias_oklab]
+        max = 0.05406514619619592
+        mean = 0.009918925860943902
+        p99 = 0.036251779592248186
+        samples = 460
+
+    [runs.validation.padding]
+    grid_n = 256
+    padding_rule = "project-to-simplex"
+    samples_per_depth = 7564
+
+        [runs.validation.padding.by_depth."0.0"]
+        max = 0.0038888811867313633
+        mean = 0.0011242768127532091
+        p99 = 0.0025204250414783275
+
+        [runs.validation.padding.by_depth."0.001"]
+        max = 0.3244665102551151
+        mean = 0.010402533977208289
+        p99 = 0.1451433545266072
+
+        [runs.validation.padding.by_depth."0.005"]
+        max = 0.34704472886407794
+        mean = 0.017653792943383064
+        p99 = 0.18607122300833268
+
+        [runs.validation.padding.by_depth."0.02"]
+        max = 0.009414172427339634
+        mean = 0.0020510675633002413
+        p99 = 0.008386548219801393
+
+        [runs.validation.padding.worst]
+        c = [0.0012437810945273634, 0.0012437810945273634, 0.996268656716418, 0.0012437810945273634]
+        depth = 0.005
+        error = 0.34704472886407794
+
+    [runs.validation.quality]
+    corpus_colors = 512
+    corpus_sha256 = "40f3ffa15dcff27d1a923fbd2f5230299a6b80435885ef3f3440a85f2a621b75"
+    corpus_version = 2
+    pairs = 20000
+
+        [runs.validation.quality.channel_error]
+        max = 0.32459116342959426
+        mean = 0.024834318755316297
+        p99 = 0.1642916267823452
+
+        [runs.validation.quality.encoded_channel_error]
+        max = 0.5721732975992666
+        mean = 0.021155916046114907
+        p99 = 0.19701668162747205
+
+        [runs.validation.quality.oklab_error]
+        max = 0.6466624873198495
+        mean = 0.008124314683066831
+        p99 = 0.06036467227913475
+
+        [runs.validation.quality.worst_channel_sample]
+        a = [0.5751052011993515, 0.9297858871227365, 0.10346619671633595]
+        b = [0.0, 0.0, 0.0]
+        error = 0.32459116342959426
+        t = 0.0372564959564502
+
+    [runs.validation.quantization]
+    invalid_vertices = 0
+    note = "sum == 255 means the fourth concentration is zero; a sum below 255 carries positive white pigment"
+    rule = "simplex-largest-remainder"
+    sum_255_fraction = 0.0
+    vertices = 16777216
+
+    [runs.validation.roundtrip]
+    corpus_sha256 = "9e56b9cc3686cef0a6288c7dbb9ec2a6f8320c1bb387c7676929fcc625ec5b4b"
+    corpus_version = 2
+    samples = 2000
+
+        [runs.validation.roundtrip.float32]
+        max = 1.4901161193847656e-8
+        mean = 5.062029231339693e-10
+
+        [runs.validation.roundtrip.float64]
+        max = 8.673617379884035e-19
+        mean = 4.336808689942018e-22
+[[runs]]
+first_push_target_seconds = -1.0
+fit_job_id = "5c8c18cee2f2f78d81d5496196308b086a8ddd90301ab821874ee60f350146ed"
+fit_seconds = 137.76873302459717
+function_evaluations = 2010
+generation_seconds = 714.387622833252
+gradient_evaluations = 2010
+model_id = "950ffc56d201f3798d83feded68750aa"
+payload_sha256 = "53cdba56cf70bf6e196f2bfc7b54cd61a35280a974f397914e31d7b5b18abe79"
+push_target_reached = false
+table_job_id = "b35ca9c420ce28308a82ed59d1656a108ad0e0b11b79c6f0624f86921e83473a"
+termination = "Success"
+variant = "softplus-lbfgsb"
+
+    [runs.acceptance_gates]
+    blue_yellow_is_green = true
+    lut_vs_spectral_channel_max = false
+    lut_vs_spectral_channel_p99 = false
+    lut_vs_spectral_oklab_p99 = false
+    magenta_yellow_is_orange = true
+    padding_on_simplex = true
+    quantization_simplex = true
+    roundtrip_float32 = true
+    roundtrip_float64 = true
+    white_tint_monotone = true
+
+    [runs.diagnostics]
+    Epull_dense = 0.00023013750111004815
+    Epull_fit = 0.0002417617850732203
+    Epush_dense = 9.528900610884859e-8
+    Epush_fit = 1.0528176502058054e-7
+    algorithm = "OptimizationLBFGSB.LBFGSB(10, 0.5, 10.0, -1.0e20, 1.0e20, 0.0, 1.0e20, 1.0e-8)"
+    dense_divisions = 40
+    derivative = "forwarddiff"
+    max_cube_violation = 0.0030667874613555138
+    max_cube_violation_squared = 9.405185333127397e-6
+    max_oklab_deviation = 0.04261646015047653
+    parameterization = "softplus"
+    termination = "Success"
+
+        [runs.diagnostics.oklab_deviation]
+        max = 0.04261646015047653
+        mean = 0.010072488705978534
+        p99 = 0.03744820696605562
+        samples = 4737
+
+        [runs.diagnostics.quadrature]
+        note = "equations (16)-(17) integrate over the RGB gamut boundary; the fit uses equally spaced concentrations, as the paper describes, and these ratios bound the resulting weighting deviation"
+        samples = 924
+        weighting = "concentration-simplex-area"
+
+            [runs.diagnostics.quadrature.normalized_ratio]
+            max = 1.4601639391373427e9
+            mean = 1.2459634756131101e7
+            min = 0.0016168412571756633
+
+            [runs.diagnostics.quadrature.rgb_surface_jacobian]
+            max = 6.645042320720675e7
+            mean = 107439.78579819498
+            min = 7.358063222796057e-5
+            total = 9.927436207753216e7
+
+    [runs.environment]
+    forwarddiff_version = "1.4.6"
+    julia_version = "1.13.3"
+    optim_version = "1.13.3"
+    optimization_lbfgsb_version = "1.3.0"
+    optimization_version = "5.4.0"
+    paintmix_version = "0.1.0"
+    paintmixprecompute_version = "0.1.0"
+    threads = 4
+
+    [runs.table_settings]
+    coarse_n = 64
+    evaluator = "spectral"
+    fine_max_iterations = 15
+    n = 256
+    strategy = "coarse"
+    threads = 4
+
+    [runs.validation.behavior]
+    blue_yellow_channel_error = 0.14277740948932896
+    blue_yellow_is_green = true
+    magenta_yellow_channel_error = 0.09216974077482787
+    magenta_yellow_is_orange = true
+    note = "qualitative flags are evaluated on the spectral reference; the runtime values and their channel difference show the approximation"
+    reversal_symmetry_error = 5.551115123125783e-17
+    runtime_blue_yellow_50_50 = [-0.13239215686274505, 0.11111632107843153, 0.08470588235294117]
+    runtime_magenta_yellow_50_50 = [0.4763161764705883, 0.06413063725490217, 0.06231740196078433]
+    same_color_max_error = 0.0
+    spectral_blue_yellow_50_50 = [0.010385252626583895, 0.13480999772626834, 0.07129449610444864]
+    spectral_magenta_yellow_50_50 = [0.5684859172454162, 0.0886478786406486, 0.0521845007698736]
+    white_tint_lightness = [0.098944, 0.15339470294117644, 0.2213493803921568, 0.3228265254901961, 1.0]
+    white_tint_monotone = true
+
+    [runs.validation.continuity]
+    corpus_sha256 = "c27a9e791f3aeaa01a3d7694bfcf37f130fc20144b3bf8d795f31054ed241c38"
+    corpus_version = 2
+    lines = 256
+    note = "runtime-table encode along random RGB segments; a concentration jump much larger than 1/255 with a small color step is a basin change"
+    points_per_line = 65
+    worst_jump_at = [0.5965467095375061, 0.4380224943161011, 0.1924135684967041]
+
+        [runs.validation.continuity.concentration_jump]
+        max = 0.8172714114189148
+        mean = 0.004913402140054424
+        p99 = 0.037107378244400024
+
+        [runs.validation.continuity.decode_error]
+        max = 1.4901161193847656e-8
+        p99 = 7.450580596923828e-9
+
+    [runs.validation.decomposition]
+    corpus_sha256 = "24341e1568a97859b1e2e966de91f147f8254fe8b312e56aa5a6769bf7f83c56"
+    corpus_version = 2
+
+        [runs.validation.decomposition.concentration_quantization_channel]
+        max = 0.5825445767153923
+        mean = 0.005404073407546915
+        p99 = 0.10110402157929255
+        samples = 460
+
+        [runs.validation.decomposition.forward_interpolation_channel]
+        max = 0.40243845477908674
+        mean = 0.002715455432723189
+        p99 = 0.061208387956932175
+        samples = 460
+
+        [runs.validation.decomposition.forward_quantization_channel]
+        max = 0.0025351970668918418
+        mean = 0.0010511576609233105
+        p99 = 0.0018795088198441225
+        samples = 460
+
+        [runs.validation.decomposition.inverse_objective_excess]
+        max = 0.000158497671603772
+        mean = 6.195139057400011e-7
+        p99 = 8.151024827318665e-9
+        samples = 256
+
+        [runs.validation.decomposition.inverse_quantization_concentration]
+        max = 0.002325029185088385
+        mean = 0.001012463321358869
+        p99 = 0.0021653167156537277
+        samples = 256
+
+        [runs.validation.decomposition.surrogate_bias_oklab]
+        max = 0.05473711338633249
+        mean = 0.009907598153290224
+        p99 = 0.037752909192280894
+        samples = 460
+
+    [runs.validation.padding]
+    grid_n = 256
+    padding_rule = "project-to-simplex"
+    samples_per_depth = 7564
+
+        [runs.validation.padding.by_depth."0.0"]
+        max = 0.00472242603698525
+        mean = 0.0011407961312739285
+        p99 = 0.0023285068080889995
+
+        [runs.validation.padding.by_depth."0.001"]
+        max = 0.3152231709404165
+        mean = 0.011024623602753256
+        p99 = 0.15978017714011084
+
+        [runs.validation.padding.by_depth."0.005"]
+        max = 0.3445519384556974
+        mean = 0.018263133080295302
+        p99 = 0.19553189217031697
+
+        [runs.validation.padding.by_depth."0.02"]
+        max = 0.00946182226580261
+        mean = 0.0020667640878447753
+        p99 = 0.008162975181990162
+
+        [runs.validation.padding.worst]
+        c = [0.0012437810945273634, 0.0012437810945273634, 0.996268656716418, 0.0012437810945273634]
+        depth = 0.005
+        error = 0.3445519384556974
+
+    [runs.validation.quality]
+    corpus_colors = 512
+    corpus_sha256 = "40f3ffa15dcff27d1a923fbd2f5230299a6b80435885ef3f3440a85f2a621b75"
+    corpus_version = 2
+    pairs = 20000
+
+        [runs.validation.quality.channel_error]
+        max = 0.32926529652580017
+        mean = 0.026136705074086275
+        p99 = 0.16963643973125675
+
+        [runs.validation.quality.encoded_channel_error]
+        max = 0.5613777222831787
+        mean = 0.022438310010297148
+        p99 = 0.20983346397867889
+
+        [runs.validation.quality.oklab_error]
+        max = 0.7068711726291569
+        mean = 0.008368728988379178
+        p99 = 0.06147403623196634
+
+        [runs.validation.quality.worst_channel_sample]
+        a = [0.5751052011993515, 0.9297858871227365, 0.10346619671633595]
+        b = [0.0, 0.0, 0.0]
+        error = 0.32926529652580017
+        t = 0.0372564959564502
+
+    [runs.validation.quantization]
+    invalid_vertices = 0
+    note = "sum == 255 means the fourth concentration is zero; a sum below 255 carries positive white pigment"
+    rule = "simplex-largest-remainder"
+    sum_255_fraction = 0.0
+    vertices = 16777216
+
+    [runs.validation.roundtrip]
+    corpus_sha256 = "9e56b9cc3686cef0a6288c7dbb9ec2a6f8320c1bb387c7676929fcc625ec5b4b"
+    corpus_version = 2
+    samples = 2000
+
+        [runs.validation.roundtrip.float32]
+        max = 1.4901161193847656e-8
+        mean = 5.141191650182008e-10
+
+        [runs.validation.roundtrip.float64]
+        max = 8.673617379884035e-19
+        mean = 4.336808689942018e-22

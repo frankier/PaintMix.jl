@@ -152,7 +152,7 @@ Evaluate `mix(c)` at one forward-table vertex, padding with Euclidean
 simplex projection when `(c1, c2, c3)` lies outside the simplex.
 """
 @inline function forward_vertex!(
-        dest::AbstractVector{T}, model::SpectralModel, n::Int, i::Int, j::Int, k::Int
+        dest::AbstractVector{T}, model, n::Int, i::Int, j::Int, k::Int
     ) where {T}
     d = n - 1
     c1 = T(i) / d
@@ -163,7 +163,7 @@ simplex projection when `(c1, c2, c3)` lies outside the simplex.
     if c4 < zero(T)
         c = project_to_simplex(c)
     end
-    rgb = mix_rgb(model, c)
+    rgb = _mix(model, c)
     o = _table_offset(n, i, j, k)
     @inbounds begin
         dest[o + 1] = rgb[1]
@@ -179,19 +179,6 @@ end
 # per-worker scratch context live here once, so the generators only supply a
 # setup and a body.
 
-const _SLAB_CTX_KEY = gensym(:paintmix_slab_ctx)
-
-# One context per worker task, reused across the slabs that task handles.
-@inline function _slab_context(setup)
-    tls = task_local_storage()
-    haskey(tls, _SLAB_CTX_KEY) && return tls[_SLAB_CTX_KEY]
-    ctx = setup()
-    tls[_SLAB_CTX_KEY] = ctx
-    return ctx
-end
-
-# Function barrier: a context read from task-local storage is typed `Any`, so
-# re-dispatch before touching its fields and keep `body` a static call.
 @inline function _slab_body!(body, ctx, k)
     body(ctx, k)
     return nothing
@@ -205,15 +192,21 @@ scratch context: once for single-threaded runs, once per worker task
 otherwise.
 """
 function _run_slabs!(setup, body, n::Int, threads::Integer)
-    krange = 0:(n - 1)
-    if threads <= 1 || n < 8
+    workers = min(Int(threads), Threads.nthreads(), n)
+    workers >= 1 || throw(ArgumentError("threads must be >= 1"))
+    if workers == 1
         ctx = setup()
-        for k in krange
+        for k in 0:(n - 1)
             _slab_body!(body, ctx, k)
         end
     else
-        Threads.@threads for k in krange
-            _slab_body!(body, _slab_context(setup), k)
+        @sync for worker in 1:workers
+            Threads.@spawn begin
+                local worker_ctx = setup()
+                for k in (worker - 1):workers:(n - 1)
+                    _slab_body!(body, worker_ctx, k)
+                end
+            end
         end
     end
     return nothing
@@ -237,8 +230,9 @@ end
 Fill the forward table. Independent slabs are parallelized across `k`.
 """
 function generate_forward(
-        model::SpectralModel{T}, n::Integer; threads::Integer = Threads.nthreads()
-    ) where {T}
+        model, n::Integer; threads::Integer = Threads.nthreads()
+    )
+    T = _scalar_type(model)
     n = Int(n)
     n >= 2 || throw(ArgumentError("table size must be >= 2, got $n"))
     out = Vector{T}(undef, 3 * n^3)
@@ -258,8 +252,8 @@ tuples. Keeping the traversal inside a slab makes the result independent of
 how slabs are distributed across threads.
 """
 function inverse_slab!(
-        dest::AbstractVector{T}, model::SpectralModel{T}, n::Int, k::Int,
-        scratch::SolverScratch, settings::UnmixSettings{T},
+        dest::AbstractVector{T}, model, n::Int, k::Int,
+        scratch, settings::UnmixSettings{T},
         seedrow::Vector{SVector{4, T}}, prevrow::Vector{SVector{4, T}},
     ) where {T}
     d = n - 1
@@ -302,12 +296,12 @@ Fill slab `k` of the inverse table with the independent active-face
 enumeration, one solve per vertex and no dependence on neighbouring cells.
 
 This is the accuracy path. It costs roughly 15 times a single Newton solve
-per vertex, but it is deterministic, parallel across slabs, and immune to the
-local minima a continuation seed can fall into.
+per vertex, but it is deterministic, parallel across slabs, and explores more starting faces than neighbor continuation. Each face
+solve remains local; enumeration does not certify a global optimum.
 """
 function reference_slab!(
         dest::AbstractVector{T}, model, n::Int, k::Int,
-        scratch::SolverScratch, settings::UnmixSettings{T},
+        scratch, settings::UnmixSettings{T},
     ) where {T}
     d = n - 1
     z = T(k) / d
@@ -333,18 +327,6 @@ _check_solver(::Val{:bulk}) = nothing
 _check_solver(::Val{S}) where {S} =
     throw(ArgumentError("solver must be :reference or :bulk, got $(repr(S))"))
 
-function _solver_setup(::Val{:reference}, out, model, n, st)
-    scratch = SolverScratch()
-    return (fill = k -> reference_slab!(out, model, n, k, scratch, st),)
-end
-
-function _solver_setup(::Val{:bulk}, out, model, n, st)
-    scratch = SolverScratch()
-    seedrow = Vector{SVector{4, eltype(out)}}(undef, n)
-    prevrow = Vector{SVector{4, eltype(out)}}(undef, n)
-    return (fill = k -> inverse_slab!(out, model, n, k, scratch, st, seedrow, prevrow),)
-end
-
 """
     generate_inverse(model, n; threads, settings, on_slab, resume) -> Vector{T}
 
@@ -363,36 +345,15 @@ function generate_inverse(
         resume = nothing, on_slab = nothing,
     )
     T = _scalar_type(model)
-    st = settings === nothing ? UnmixSettings{T}(100, T(1.0e-10), T(1.0e-6), 4) : settings
+    st_settings = settings === nothing ? UnmixSettings{T}(100, T(1.0e-10), T(1.0e-6), 4) : settings
     n = Int(n)
     n >= 2 || throw(ArgumentError("table size must be >= 2, got $n"))
     solver_val = Val(solver)
     _check_solver(solver_val)
-    out = Vector{T}(undef, 3 * n^3)
-    setup = () -> _solver_setup(solver_val, out, model, n, st)
-    body = (ctx, k) -> _slab_or_generate!(out, n, k, ctx.fill, resume, on_slab)
-    _run_slabs!(setup, body, n, threads)
-    return out
+    st = TableSettings(n, solver, :spectral, 2, 15, Int(threads))
+    return generate_tables_inverse(model, st; settings = st_settings, resume, on_slab)
 end
 
-function _slab_or_generate!(
-        out, n, k, fill_slab!, resume, on_slab,
-    )
-    if resume !== nothing
-        loaded = resume(k)
-        if loaded !== nothing
-            o = 3 * k * n * n
-            copyto!(out, o + 1, loaded, 1, 3 * n * n)
-            return nothing
-        end
-    end
-    fill_slab!(k)
-    if on_slab !== nothing
-        o = 3 * k * n * n
-        on_slab(k, view(out, (o + 1):(o + 3 * n * n)))
-    end
-    return nothing
-end
 
 # --- slab checkpointing ----------------------------------------------------
 
@@ -400,7 +361,7 @@ end
     CheckpointStore
 
 Deterministic slab checkpoints with atomic completion markers. A store is
-tied to one job hash: resuming a directory whose `job.json` records a
+tied to one job hash: resuming a directory whose `job.toml` records a
 different configuration, input set, grid size, or surrogate parameters is an
 error rather than a silent mix.
 """
@@ -422,41 +383,27 @@ struct CheckpointStore
 end
 
 function _job_manifest_path(store::CheckpointStore)
-    return joinpath(store.dir, "job.json")
+    return joinpath(store.dir, "job.toml")
 end
 
 function _write_job_manifest(store::CheckpointStore)
     path = _job_manifest_path(store)
+    expected = Dict(
+        "job_hash" => store.job_hash, "grid_n" => store.n,
+        "kind" => store.kind, "schema_version" => 2, "scalar" => "Float64",
+        "byte_order" => ENDIAN_BOM == 0x04030201 ? "little" : "big"
+    )
     if isfile(path)
-        existing = _read_manifest(path)
-        get(existing, "job_hash", "") == store.job_hash || throw(
-            InputError(
-                "checkpoint directory $(store.dir) belongs to job " *
-                    "$(get(existing, "job_hash", "?")) but this run has " *
-                    "$(store.job_hash); " *
-                    "remove it or choose another --out"
-            )
-        )
-        return nothing
-    end
-    open(path, "w") do io
-        println(io, "job_hash = ", repr(store.job_hash))
-        println(io, "grid_n = ", store.n)
-        println(io, "kind = ", repr(store.kind))
-        println(io, "schema_version = 1")
+        TOML.parsefile(path) == expected || throw(InputError("checkpoint metadata mismatch at $(store.dir)"))
+    else
+        # Version 1 directories are deliberately not reused without integrity records.
+        isfile(joinpath(store.dir, "job.json")) && throw(InputError("legacy checkpoint directory; choose a new output directory"))
+        open(path * ".tmp", "w") do io
+            TOML.print(io, expected; sorted = true)
+        end
+        mv(path * ".tmp", path; force = true)
     end
     return nothing
-end
-
-function _read_manifest(path)
-    d = Dict{String, Any}()
-    for line in eachline(path)
-        isempty(strip(line)) && continue
-        parts = split(line, "="; limit = 2)
-        length(parts) == 2 || continue
-        d[strip(parts[1])] = strip(strip(parts[2]), ['"'])
-    end
-    return d
 end
 
 _slab_path(store::CheckpointStore, k::Int) =
@@ -470,9 +417,18 @@ Whether slab `k` has an atomic completion marker and a payload of the right
 size.
 """
 function slab_complete(store::CheckpointStore, k::Integer)
+    0 <= k < store.n || throw(ArgumentError("slab index outside grid"))
     path = _slab_path(store, Int(k))
-    isfile(_slab_marker(store, Int(k))) || return false
-    return isfile(path) && filesize(path) == 24 * store.n * store.n
+    marker = _slab_marker(store, Int(k))
+    isfile(marker) && isfile(path) || return false
+    filesize(path) == 24 * store.n * store.n || return false
+    record = try
+        TOML.parsefile(marker)
+    catch
+        return false
+    end
+    return get(record, "job_hash", "") == store.job_hash &&
+        get(record, "sha256", "") == bytes2hex(sha256(read(path)))
 end
 
 """
@@ -482,17 +438,25 @@ Write slab `k` to a temporary file, then move it into place and create the
 completion marker. A crash leaves either a completed slab or no marker.
 """
 function write_slab(store::CheckpointStore, k::Integer, values)
+    0 <= k < store.n || throw(ArgumentError("slab index outside grid"))
+    length(values) == 3 * store.n^2 || throw(ArgumentError("wrong slab length"))
+    all(isfinite, values) || throw(ArgumentError("nonfinite slab"))
     path = _slab_path(store, Int(k))
-    tmp = path * ".tmp"
-    open(tmp, "w") do io
-        for v in values
-            write(io, Float64(v))
-        end
+    marker = _slab_marker(store, Int(k))
+    rm(marker; force = true)
+    open(path * ".tmp", "w") do io
+        write(io, Float64.(values))
     end
-    mv(tmp, path; force = true)
-    open(_slab_marker(store, Int(k)), "w") do io
-        print(io, store.job_hash)
+    mv(path * ".tmp", path; force = true)
+    open(marker * ".tmp", "w") do io
+        TOML.print(
+            io, Dict(
+                "job_hash" => store.job_hash,
+                "sha256" => bytes2hex(sha256(read(path)))
+            ); sorted = true
+        )
     end
+    mv(marker * ".tmp", marker; force = true)
     return nothing
 end
 
@@ -645,7 +609,7 @@ Fill fine slab `k` from a coarse concentration field plus a short bulk solve
 per vertex.
 """
 function coarse_to_fine_slab!(
-        dest::AbstractVector{T}, model, n::Int, k::Int, scratch::SolverScratch,
+        dest::AbstractVector{T}, model, n::Int, k::Int, scratch,
         settings::UnmixSettings{T}, coarse::AbstractVector{T}, cn::Int,
     ) where {T}
     d = n - 1
@@ -700,16 +664,6 @@ function generate_inverse_coarse_to_fine(
         UnmixSettings{T}(15, T(1.0e-10), T(1.0e-6), 1) : settings
     cs = coarse_settings === nothing ?
         UnmixSettings{T}(50, T(1.0e-10), T(1.0e-6), 4) : coarse_settings
-    coarse = generate_inverse(
-        model, coarse_n; threads = threads, settings = cs, solver = :reference
-    )
-    out = Vector{T}(undef, 3 * n^3)
-    setup = () -> SolverScratch()
-    body = (ctx, k) -> _slab_or_generate!(
-        out, n, k,
-        kk -> coarse_to_fine_slab!(out, model, n, kk, ctx, fine_settings, coarse, coarse_n),
-        resume, on_slab,
-    )
-    _run_slabs!(setup, body, n, threads)
-    return out
+    st = TableSettings(n, :coarse, :spectral, coarse_n, fine_settings.max_iterations, Int(threads))
+    return generate_tables_inverse(model, st; settings = cs, fine_settings, resume, on_slab)
 end

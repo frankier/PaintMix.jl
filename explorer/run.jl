@@ -11,18 +11,19 @@ using PaintMix
 using Printf: @printf
 
 const USAGE = """
-Usage: run.jl [--host HOST] [--port PORT] [--payload PATH] [--no-sidecar]
+Usage: run.jl [--host HOST] [--port PORT] [--payload PATH] [--comparison PATH] [--no-sidecar]
 
   --host HOST     bind address (default 127.0.0.1)
   --port PORT     TCP port (default 8080)
   --payload PATH  pin a specific .pmx payload instead of searching
+  --comparison PATH  show candidate comparison on /fit
   --no-sidecar    skip the provenance sidecar (exercises the degraded path)
   -h, --help      show this message
 """
 
 function parse_args(args)
     opts = Dict{String, Any}(
-        "host" => "127.0.0.1", "port" => 8080, "payload" => nothing, "sidecar" => true,
+        "host" => "127.0.0.1", "port" => 8080, "payload" => nothing, "sidecar" => true, "comparison" => nothing,
     )
     i = 1
     while i <= length(args)
@@ -36,6 +37,9 @@ function parse_args(args)
         elseif arg == "--payload"
             i += 1
             opts["payload"] = args[i]
+        elseif arg == "--comparison"
+            i += 1
+            opts["comparison"] = args[i]
         elseif arg == "--no-sidecar"
             opts["sidecar"] = false
         elseif arg in ("-h", "--help")
@@ -52,7 +56,8 @@ end
 function main(args = ARGS)
     opts = parse_args(args)
     data = load_explorer_data(;
-        with_sidecar = opts["sidecar"], payload_path = opts["payload"]
+        with_sidecar = opts["sidecar"], payload_path = opts["payload"],
+        comparison_path = opts["comparison"]
     )
     for note in data.notes
         @warn note

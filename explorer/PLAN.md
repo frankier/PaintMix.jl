@@ -128,8 +128,8 @@ Playwright = "d777c63b-3b21-49c6-865f-99d0e068a423"
 test = ["Test", "Playwright"]
 ```
 
-Add `/explorer/Manifest.toml` to the root `.gitignore` (it is a generated
-dev environment, like `/test/Manifest.toml`). Do **not** add `explorer` to
+Ignore `explorer/Manifest.toml` in the root `.gitignore` (it is a generated
+dev environment, like `test/Manifest.toml`). Do **not** add `explorer` to
 the root `[workspace] projects`.
 
 Request flow:
@@ -484,8 +484,9 @@ separate, opt-in lane, structured like Bonnie's suite.
 * `test/test_e2e.jl`, skipped unless `EXPLORER_E2E=1`. Playwright.jl is
   unregistered, so it is a `[sources]` URL pin and a test-only dependency;
   only `Pkg.test()` can load it.
-* One-time install (driver + browsers):
-  `git clone https://github.com/frankier/playwright-julia /tmp/playwright-julia && julia /tmp/playwright-julia/bin/install.jl`.
+* Set `TMPDIR` to disk-backed scratch storage for the one-time install
+  (driver + browsers):
+  `git clone https://github.com/frankier/playwright-julia "$TMPDIR/playwright-julia" && julia "$TMPDIR/playwright-julia/bin/install.jl"`.
   `bin/install.jl` takes an engine name to install only one.
 * Coverage:
   * every route returns 200 and writes a screenshot;

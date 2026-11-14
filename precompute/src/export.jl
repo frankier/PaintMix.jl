@@ -1,8 +1,7 @@
 # Plan step 5: payload and provenance export.
 #
 # The `.pmx` payload layout lives in `PaintMix` (`src/tables.jl`); this file
-# only converts float candidates to bytes, derives a model id from the
-# provenance, writes the payload, and writes the human- and machine-readable
+# only converts float candidates to bytes, derives a content model id, writes the payload, and writes the human- and machine-readable
 # sidecar. `promote` copies a validated candidate into `data/default/`.
 
 """
@@ -18,8 +17,8 @@ end
 """
     provenance_text(cfg, cfg_hash, inputs) -> String
 
-The canonical string the model id hashes. Every convention that changes the
-bytes must appear here, so two payloads with the same id are the same model.
+Legacy canonical provenance text, retained for schema-1 compatibility.
+New payload model IDs derive from quantized contents and decoding conventions.
 """
 function provenance_text(
         cfg::AbstractDict, cfg_hash::AbstractString, inputs::Dict{String, String};
@@ -65,8 +64,8 @@ function build_provenance(
     end
     K, S = fit.K, fit.S
     return Dict{String, Any}(
-        "schema_version" => 1,
-        "generated_utc" => string(Dates.now()),
+        "schema_version" => 2,
+        "generated_utc" => string(Dates.now(Dates.UTC)),
         "config_path" => abspath(cfg_path),
         "config_hash" => config_hash(cfg_path),
         "inputs" => inputs,
@@ -94,10 +93,11 @@ function build_provenance(
             "alpha_initial" => cfg["surrogate"]["alpha_initial"],
             "alpha_final" => cfg["surrogate"]["alpha_final"],
             "alpha_halvings" => cfg["surrogate"]["alpha_halvings"],
-            "solver" => "Optim.LBFGS on softplus-transformed parameters",
+            "solver" => string(FitSettings(cfg).optimizer),
+            "parameterization" => string(FitSettings(cfg).parameterization),
+            "settings" => settings_dict(FitSettings(cfg)),
             "note" =>
-                "the paper uses L-BFGS-B; " *
-                "transformed L-BFGS is an intentional substitution",
+                "physical coefficients are authoritative; optimization coordinates depend on parameterization",
             "surface_divisions" => cfg["surrogate"]["surface_divisions"],
             "history" => fit.history,
             "diagnostics" => fit.diagnostics,
@@ -119,6 +119,8 @@ function build_provenance(
             "paintmix_version" => _pkg_version(PaintMix),
             "paintmixprecompute_version" => _pkg_version(@__MODULE__),
             "optim_version" => _pkg_version(Optim),
+            "optimization_version" => _pkg_version(Optimization),
+            "optimization_lbfgsb_version" => _pkg_version(OptimizationLBFGSB),
             "forwarddiff_version" => _pkg_version(ForwardDiff),
         ),
         "validation" => validation,
@@ -181,21 +183,26 @@ end
 """
     build_model(ft::FloatTables, cfg, provenance) -> PigmentModel
 
-Quantize the candidates, derive the model id from the provenance, and set
+Quantize the candidates, derive the model id from contents and conventions, and set
 the generation flags. Does not touch the filesystem.
 """
 function build_model(ft::FloatTables, cfg::AbstractDict, provenance::AbstractDict)
-    inputs = Dict{String, String}(
-        String(k) => String(v) for (k, v) in provenance["inputs"]
-    )
-    text = provenance_text(
-        cfg, provenance["config_hash"], inputs;
-        grid_n = Int(
-            get(get(provenance, "grid", Dict{String, Any}()), "n", cfg["grid"]["release_n"])
-        ),
-    )
-    id = _model_id_from(text)
     inverse, forward = quantize_tables(ft, cfg)
+    # Content identity is independent of paths, elapsed time, and solver provenance.
+    digest = sha256(
+        vcat(
+            codeunits("paintmix-u8-v1\n"), inverse.data, forward.data,
+            codeunits(
+                canonical_text(
+                    Dict(
+                        "n" => ft.n, "color" => cfg["color"],
+                        "pigments" => collect(pigment_codes(cfg)), "quantization" => cfg["quantization"]
+                    )
+                )
+            )
+        )
+    )
+    id = ntuple(i -> digest[i], Val(16))
     flags =
         PaintMix.FLAG_FORWARD_SIMPLEX_PROJECTED |
         PaintMix.FLAG_INVERSE_LARGEST_REMAINDER
@@ -220,6 +227,8 @@ function export_model(
     PaintMix.write_model(payload_path, model)
     id = PaintMix.model_id(model)
     sidecar = joinpath(out_dir, "$(id).toml")
+    provenance = deepcopy(provenance)
+    provenance["payload_sha256"] = bytes2hex(sha256(read(payload_path)))
     write_sidecar(sidecar, provenance, model, ft)
     return Dict{String, Any}(
         "model" => model,
@@ -237,6 +246,11 @@ acceptance gates can be audited after the fact.
 """
 function write_sidecar(path::AbstractString, provenance::AbstractDict, model, ft)
     doc = deepcopy(provenance)
+    doc["schema_version"] = 2
+    payload = joinpath(dirname(path), "default.pmx")
+    if isfile(payload) && PaintMix.model_id(PaintMix.read_model(payload)) == PaintMix.model_id(model)
+        doc["payload_sha256"] = bytes2hex(sha256(read(payload)))
+    end
     doc["model"] = Dict{String, Any}(
         "id" => PaintMix.model_id(model),
         "format_version" => Int(PaintMix.FORMAT_VERSION),

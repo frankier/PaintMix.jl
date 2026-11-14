@@ -1,0 +1,25 @@
+cpu_name = "skylake-avx512"
+julia_version = "1.13.3"
+schema_version = 1
+slurm_job_id = "3090042"
+
+[[measurements]]
+fine_seconds = 22.414497924
+forward_seconds = 0.552768479
+inverse_seconds = 4.71349112
+workers = 1
+[[measurements]]
+fine_seconds = 11.795754521
+forward_seconds = 0.292548846
+inverse_seconds = 2.508041659
+workers = 2
+[[measurements]]
+fine_seconds = 5.910801975
+forward_seconds = 0.153210888
+inverse_seconds = 1.302008749
+workers = 4
+[[measurements]]
+fine_seconds = 4.65673658
+forward_seconds = 0.119939092
+inverse_seconds = 1.113591347
+workers = 8

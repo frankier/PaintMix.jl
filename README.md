@@ -57,10 +57,11 @@ produce. Clipping happens only in `srgb8_from_linear`.
 | `precompute/` | `PaintMixPrecompute`: spectra, surrogate fit, inverse solver, export |
 | `build/` | the C ABI, `juliac` compilation, and the generated C/Python/R bindings |
 | `benchmarks/` | runtime benchmarks |
+| `explorer/` | standalone interactive viewer and experiment comparisons |
 | `test/` | fast runtime tests on synthetic tables |
 | `PLAN.md` | the implementation plan this repository follows |
 
-The root project is a Julia workspace; `precompute`, `test`, `build`, and
+The root project is a Julia workspace; `precompute`, `precompute/test`, `test`, `build`, and
 `benchmarks` are members with their own dependencies. The dependency direction
 is one-way: `precompute -> PaintMix` and `build -> PaintMix`.
 
@@ -132,11 +133,11 @@ mean 0.0014, p99 0.0034. Removing the tail needs finer concentration storage
 (a new `.pmx` variant) or a simplex-aware interpolation, both of which change
 the runtime format.
 
-The mean Oklab distance of 0.0084 is at the just-noticeable-difference scale
-that the paper reports for its surrogate fit, so the typical mixture is about
-as close to the spectral reference as the published model claims to be; the
-plan's p99 target of 0.01 is stricter than the paper's own distribution,
-which has a tail past 1 JND.
+The LUT-versus-spectral Oklab error and the paper's surrogate-fitting bias
+measure different approximation layers and should not be equated. New
+comparison runs report surrogate bias, inverse quality, interpolation,
+quantization, and complete mixing separately; see
+[`precompute/EXPERIMENTS.md`](precompute/EXPERIMENTS.md).
 
 Evidence collected so far:
 
@@ -171,3 +172,15 @@ julia --project=precompute precompute/scripts/import_inputs.jl --force
 julia -t auto --project=precompute precompute/scripts/generate.jl --profile dev --no-promote
 julia -t auto --project=precompute precompute/scripts/generate.jl --profile release --force
 ```
+
+## Numerical experiments and cleanup
+
+The offline pipeline separates coefficient coordinates, objectives,
+derivatives, Optimization.jl algorithms, continuation, and table traversal.
+Defaults and the promoted payload remain unchanged. Candidate comparisons
+cover softplus/L-BFGS, softplus/L-BFGS-B, and direct-coefficient/L-BFGS-B.
+New physical fits, checkpoints, and sidecars have versioned identities and
+content digests; old release payloads remain readable. See
+[the experiment guide](precompute/EXPERIMENTS.md) for APIs and commands, error
+layers, and resource-sized SLURM jobs. Explorer accepts `--comparison PATH`
+to show candidate metrics side by side on `/fit`.

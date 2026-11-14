@@ -2,7 +2,8 @@
 
 This directory holds the validated table pair that ships with `PaintMix`.
 `default.pmx` is the file `PaintMix.default_model()` loads; it is produced by
-`PaintMixPrecompute` and promoted here only after the acceptance gates pass.
+`PaintMixPrecompute` and promoted after validation, with any acceptance-gate
+overrides recorded in its provenance sidecar.
 
 It is a build artifact rather than source: it is not committed, and a
 checkout without it fails loudly and tells you the path it expected rather
@@ -14,9 +15,10 @@ julia -t auto --project=precompute precompute/scripts/generate.jl --profile rele
 
 which fits the surrogates, generates both `256^3` tables, writes
 `precompute/output/release/<model-id>.toml` with the full provenance and
-validation record, and copies the payload here when every gate passes. The
-model id in the header is derived from that provenance, so a payload can
-always be traced back to the configuration and inputs that produced it.
+validation record, and copies the payload here when every gate passes. New model IDs hash table contents and decoding conventions; the sidecar
+separately records experiment identity, physical coefficients, settings, and
+the complete payload SHA-256. Older promoted payloads retain their original
+provenance-derived IDs and remain readable.
 
 ## The shipped model
 

@@ -31,6 +31,9 @@ using Dates: Dates
 using DuckDB
 using ForwardDiff: ForwardDiff
 using Optim: Optim
+import Optimization
+import OptimizationOptimJL
+import OptimizationLBFGSB
 using Printf: @sprintf
 using Random: AbstractRNG, Xoshiro
 using SHA: sha256
@@ -40,13 +43,22 @@ using TOML: TOML
 include("inputdb.jl")
 include("spectra.jl")
 include("kubelka_munk.jl")
+include("experiments.jl")
 include("surrogates.jl")
 include("unmix.jl")
 include("tables.jl")
+include("solvers.jl")
 include("validate.jl")
 include("export.jl")
+include("pipeline.jl")
 
-export ConfigError,
+export SoftplusParameters, DirectParameters, SurrogateProblem, initial_parameters,
+    parameter_matrices, objective_terms, optimization_problem, solve_fit_step,
+    FitSettings, TableSettings, ValidationSettings, settings_dict, canonical_text, experiment_id,
+    profile_config, fit_job_id, table_job_id,
+    ActiveFaceLM, OptimizationInverse, solver_scratch, generate_tables_inverse, SlabSummary,
+    run_pipeline, pipeline_inputs, save_surrogate, load_surrogate, error_decomposition,
+    ConfigError,
     InputError,
     InputDatabase,
     SourceFile,
@@ -131,13 +143,25 @@ export ConfigError,
     promote_validated,
     spectral_encode,
     spectral_mix,
-    quality_report,
+    ValidationCorpus, validation_corpus, quality_report,
     padding_report,
     roundtrip_report,
     quantization_report,
     continuity_report,
     behavior_report,
     acceptance_gates
+
+@doc """
+    parameter_matrices(parameters, x, wavelengths) -> (K, S)
+
+Decode optimization coordinates into physical pigment-major `4 x W` arrays.
+""" parameter_matrices
+
+@doc """
+    solver_scratch(point_solver)
+
+Allocate private buffers for one worker. Reuse them across point solves.
+""" solver_scratch
 
 """
     DEFAULT_CONFIG_PATH
@@ -248,6 +272,12 @@ function validate_config(cfg::AbstractDict)
     grid["byte_scale"] == "b/255" ||
         throw(ConfigError("grid.byte_scale must be \"b/255\" for the v1 format"))
 
+    grid["interpolation"] == "trilinear" || throw(ConfigError("v1 tables require trilinear interpolation"))
+    grid["index_order"] == "channel-fast" || throw(ConfigError("v1 tables require channel-fast indexing"))
+    quantization = _section(cfg, "quantization")
+    quantization["rule"] == "simplex-largest-remainder" || throw(ConfigError("unsupported quantization rule"))
+    quantization["padding"] == "project-to-simplex" || throw(ConfigError("unsupported simplex padding rule"))
+
     surrogate = _section(cfg, "surrogate")
     epsilon = get(surrogate, "epsilon", nothing)
     epsilon isa Real && epsilon > 0 ||
@@ -281,6 +311,9 @@ function validate_config(cfg::AbstractDict)
     face isa Real && face >= 0 ||
         throw(ConfigError("unmix.face_threshold must be non-negative"))
 
+    FitSettings(cfg)
+    ValidationSettings(cfg)
+    UnmixSettings(cfg)
     return cfg
 end
 

@@ -175,9 +175,9 @@ end
 Open a DuckDB database, or a scratch in-memory one for reading a spreadsheet
 or CSV file.
 """
-function _connect(path::AbstractString = ":memory:")
+function _connect(path::AbstractString = ":memory:"; readonly::Bool = false)
     return try
-        DuckDB.DB(path)
+        DuckDB.DB(path; readonly)
     catch err
         throw(InputError("cannot open DuckDB database $(path): $(sprint(showerror, err))"))
     end
@@ -343,7 +343,7 @@ function open_database(path::AbstractString)
             "no input database at $path; run precompute/scripts/import_inputs.jl first"
         )
     )
-    con = _connect(path)
+    con = _connect(path; readonly = true)
     try
         present = Set(
             String.(

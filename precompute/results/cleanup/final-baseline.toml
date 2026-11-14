@@ -1,0 +1,9 @@
+grid_n = 8
+julia_version = "1.13.3"
+schema_version = 1
+synthetic_samples = 6
+
+[table_sha256]
+bulk = "df146dc1cd91e1c54b12c2e3b29c42e47a350015175dbf948740b0d41381253f"
+forward = "c83186cf640a6966da3ed16d1378f09d2f22bfe4f89c0ceea5a8ca765884ed26"
+reference = "4ac0af2c2e6b4dc188ef44ab7adab235e6348195f84355bb89eb0c1d8c29d36c"

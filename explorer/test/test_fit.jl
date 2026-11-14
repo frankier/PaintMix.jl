@@ -122,3 +122,42 @@ end
         end
     end
 end
+
+@testset "physical coefficients and candidate comparisons" begin
+    malformed = Dict{String, Any}("surrogate" => Dict("history" => ["invalid", Dict("Epush" => 0.2)]))
+    history = Explorer.fit_history(malformed)
+    @test history.steps == [1, 2]
+    @test isnan(history.epush[1])
+    @test history.iterations[1] == 0
+    @test !history.converged[1]
+    report = Dict{String, Any}(
+        "schema_version" => 2, "corpus_sha256" => "corpus", "runs" => [
+            Dict(
+                "variant" => "direct-lbfgsb", "model_id" => "test", "fit_seconds" => 1.0,
+                "generation_seconds" => 2.0, "termination" => "Success",
+                "diagnostics" => Dict("max_cube_violation" => 0.01),
+                "validation" => Dict(
+                    "quality" => Dict(
+                        "corpus_sha256" => "corpus",
+                        "oklab_error" => Dict("p99" => 0.02), "encoded_channel_error" => Dict("p99" => 0.03)
+                    )
+                )
+            ),
+        ]
+    )
+    mktempdir() do dir
+        path = joinpath(dir, "comparison.toml")
+        open(path, "w") do io
+            TOML.print(io, report)
+        end
+        rows = Explorer.load_comparison(path)
+        d = Explorer.ExplorerData(; model = Explorer.synthetic_model(), comparisons = rows)
+        @test occursin("Candidate comparison", Explorer.fit_caption(d))
+        @test occursin("direct-lbfgsb", Explorer.fit_caption(d))
+        report["corpus_sha256"] = "different"
+        open(path, "w") do io
+            TOML.print(io, report)
+        end
+        @test_throws ErrorException Explorer.load_comparison(path)
+    end
+end

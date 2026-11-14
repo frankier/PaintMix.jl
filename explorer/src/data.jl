@@ -39,6 +39,7 @@ struct ExplorerData
     sidecar::Union{Nothing, Dict{String, Any}}
     derived::DerivedCurves
     notes::Vector{String}
+    comparisons::Vector{Dict{String, Any}}
 end
 
 function ExplorerData(;
@@ -53,10 +54,11 @@ function ExplorerData(;
         sidecar::Union{Nothing, Dict{String, Any}} = nothing,
         derived::DerivedCurves = DerivedCurves(),
         notes::Vector{String} = String[],
+        comparisons::Vector{Dict{String, Any}} = Dict{String, Any}[],
     )
     return ExplorerData(
         cfg, db, spectra, quad, spectral, fitted, model, String(source),
-        sidecar, derived, notes
+        sidecar, derived, notes, comparisons
     )
 end
 
@@ -142,13 +144,22 @@ function find_sidecar(model::PigmentModel, payload_path::Union{Nothing, Abstract
 end
 
 function build_fitted(sidecar::Dict{String, Any}, spectral::SpectralModel)
+    parameters = Base.get(sidecar, "parameters", nothing)
+    W = length(spectral.quad.wavelength)
+    if parameters isa AbstractDict
+        K = permutedims(hcat((Float64.(row) for row in parameters["absorption"])...))
+        S = permutedims(hcat((Float64.(row) for row in parameters["scattering"])...))
+        size(K) == size(S) == (4, W) || error("fitted coefficient dimensions do not match spectra")
+        all(x -> isfinite(x) && x > 0, K) && all(x -> isfinite(x) && x > 0, S) || error("invalid physical coefficients")
+        return SpectralModel(spectral; K, S)
+    end
+    Base.get(sidecar, "schema_version", 1) == 1 || error("versioned sidecar is missing physical coefficients")
     surrogate = Base.get(sidecar, "surrogate", nothing)
     theta = surrogate isa AbstractDict ? Base.get(surrogate, "theta", nothing) : nothing
     theta === nothing && return nothing
     epsilon = Base.get(surrogate, "epsilon", 1.0e-6)
-    W = length(spectral.quad.wavelength)
     K, S = theta_parameters(Float64.(theta), W, epsilon)
-    return SpectralModel(spectral; K = K, S = S)
+    return SpectralModel(spectral; K, S)
 end
 
 """
@@ -159,7 +170,8 @@ Assemble the viewer's data from the repository, degrading at every step. Pass
 `payload_path` to pin a specific `.pmx`.
 """
 function load_explorer_data(;
-        with_sidecar::Bool = true, payload_path::Union{Nothing, AbstractString} = nothing
+        with_sidecar::Bool = true, payload_path::Union{Nothing, AbstractString} = nothing,
+        comparison_path::Union{Nothing, AbstractString} = nothing
     )
     notes = String[]
 
@@ -225,9 +237,25 @@ function load_explorer_data(;
         DerivedCurves()
     end
 
+    comparisons = if comparison_path === nothing
+        Dict{String, Any}[]
+    else
+        load_comparison(comparison_path)
+    end
     return ExplorerData(;
         cfg = cfg, db = db, spectra = spectra, quad = quad, spectral = spectral,
         fitted = fitted, model = model, source = source, sidecar = sidecar,
-        derived = derived, notes = notes,
+        derived = derived, notes = notes, comparisons = comparisons,
     )
+end
+
+"""Load a versioned comparison with a common validation corpus for all candidates."""
+function load_comparison(path::AbstractString)
+    doc = TOML.parsefile(path)
+    Base.get(doc, "schema_version", 0) == 2 || error("unsupported comparison schema")
+    rows = Dict{String, Any}[Dict{String, Any}(r) for r in doc["runs"]]
+    for r in rows
+        r["validation"]["quality"]["corpus_sha256"] == doc["corpus_sha256"] || error("comparison corpus mismatch")
+    end
+    return rows
 end

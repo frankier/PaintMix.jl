@@ -14,11 +14,14 @@ input data.
         inputdb.jl             spreadsheet -> DuckDB -> validated inputs
         spectra.jl             wavelength grid, D65/observer quadrature
         kubelka_munk.jl        equations (1)-(7) in generic arithmetic
-        surrogates.jl          equations (15)-(17), the K/S fit
+        experiments.jl         resolved settings and canonical experiment identities
+        surrogates.jl          equations (15)-(17), parameterizations and K/S fitting
+        solvers.jl             Optimization.jl point adapters and traversal strategies
         unmix.jl               equation (9), the simplex-constrained inverse
         tables.jl              float table generation, quantization, padding
         validate.jl            quality, padding, continuity, round-trip reports
         export.jl              `.pmx` writing plus the provenance sidecar
+        pipeline.jl            reusable stages, verified cache loading, orchestration
       scripts/
         generate.jl         CLI for the whole pipeline
         import_inputs.jl    spreadsheet -> DuckDB
@@ -30,7 +33,8 @@ package never depends on anything here.
 
 The forward table and the coarse concentration field interpolate through
 `PaintMix.LUTKernels`, the runtime package's documented shared-kernel
-interface. This is the only runtime code this project calls.
+interface. These kernels are the shared numerical interface; payload export also calls
+the runtime model validation and file-format APIs.
 
 ## Naming
 
@@ -51,10 +55,12 @@ julia -t auto --project=precompute precompute/scripts/generate.jl --profile rele
 ```
 
 `--stage inputs|fit|tables|validate|promote|all` stops after a stage;
-`--solver reference|bulk` selects the inverse solver. Expensive artifacts are
-cached under `precompute/output/<profile>/` and reused only when the
-configuration hash, input checksums, grid size, and surrogate settings all
-match, so changing the configuration invalidates every cache.
+`--solver reference|bulk|coarse` selects the inverse generation strategy
+(default `coarse`); `--evaluator spectral|float_lut` independently selects its
+forward evaluator. Artifacts live under `precompute/output/<profile>/`, with
+physical fits keyed separately from table checkpoints. Reuse verifies resolved
+settings and content digests. See [EXPERIMENTS.md](EXPERIMENTS.md) for the
+Optimization.jl interface, controlled comparisons, and SLURM execution.
 
 The import step reads the workbook and the observer CSV through DuckDB.jl
 and DataFrames.jl, so no external client is needed. DuckDB's `excel`
@@ -73,8 +79,9 @@ evaluates equations (1)-(7) in generic arithmetic, and `mix_rgb_jacobian!` is
 the analytic `dRGB/dc` used by the inverse solver; a test checks the analytic
 Jacobian against finite differences.
 
-**Step 4 — surrogates and inverse (`surrogates.jl`, `unmix.jl`).**
-`fit_surrogates` solves equation (15) with `Optim.LBFGS` over
+**Step 4 — surrogates and inverse (`surrogates.jl`, `unmix.jl`, `solvers.jl`).**
+`fit_surrogates` defaults to equation (15) with `Optim.LBFGS` through
+Optimization.jl over
 `K = epsilon + softplus(thetaK)`, warm-started as `alpha` halves from
 `alpha_initial` until the gamut fits inside the RGB cube (`Epush <=
 push_tolerance`). `unmix_reference` is the accuracy reference: it enumerates
@@ -101,7 +108,7 @@ padding off-simplex vertices by Euclidean projection onto the simplex.
 traversal, per-slab checkpoints, and atomic completion markers.
 `quantize_simplex` rounds all four concentrations jointly to integers summing
 to 255 and stores the first three. `export_model` writes the payload through
-`PaintMix.write_model` and a TOML sidecar recording the configuration hash,
+`PaintMix.write_model` and a TOML sidecar recording the resolved configuration hash,
 input checksums, surrogate parameters and convergence history, environment
 versions, seeds, precision, and quantization and padding rules.
 
@@ -163,15 +170,25 @@ sidecar.
     between the two weightings, so the deviation is measured rather than
     assumed. Using the area element as a weight would make the integral a
     moving-boundary one and would have to be differentiated through.
-  * **Solver substitution.** The paper uses L-BFGS-B; the fit uses
-    unconstrained L-BFGS on softplus-transformed parameters. This is
-    intentional and recorded in the sidecar and in the fit history.
+  * **Solver and coordinates.** The default retains L-BFGS on softplus
+    coordinates. Direct positive coefficients and true L-BFGS-B are separate
+    comparison candidates; any compatible Optimization.jl algorithm can be
+    supplied to the fitting and inverse interfaces.
   * **Inverse objective.** The spectral model and the float forward table
     are both available as evaluators (`SpectralModel` and
-    `ForwardFloatLUT`); the production profile solves against the spectral
-    model with `reference_slab!`.
+    `ForwardFloatLUT`); the default profile solves against the spectral
+    model using reference coarse vertices and active-face fine polishing.
   * **Observer tables.** The source workbook carries no observer data, so the
     CIE 1931 2-degree functions and D65 are an explicit input file with its
     own checksum. See `inputs/README.md`.
   * **PY74, not PY73.** The selected source provides PY74; see
     `inputs/README.md`.
+
+## Verification
+
+Tests are split into configuration, input, spectral, surrogate, inverse,
+table, validation, and experiment suites. Run `julia --project=precompute/test
+precompute/test/runtests.jl`; synthetic tests need no measurement files.
+`baseline.jl` records tiny forward/reference/bulk table digests and can run
+unchanged against two source snapshots. The runtime consumer check continues
+to enforce StaticArrays as the only non-stdlib runtime dependency.

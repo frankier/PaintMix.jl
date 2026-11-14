@@ -1,0 +1,3256 @@
+profile = "release"
+resolved_config_sha256 = "d5076755fb0ed9121e1961989af7c6269a0e96c019a83f5ad18ab0f6ea09cef2"
+config_hash = "ae0b07f1350f5ce496276cbe471a7cf1501a5094653338ae7f0b5b77d4694fc6"
+generation_seconds = 736.4188771247864
+config_path = "precompute/config/default.toml"
+table_job_id = "e9c4b4e61bdd06bef684275ce442403da5a6eea392620ff47758ca7ec4b89811"
+payload_sha256 = "9b06aad29d40a1de1a4d1379fce6c3cff717d83b5020d86d5e89e099af1885c4"
+schema_version = 2
+generated_utc = "2026-11-14T14:41:25.570"
+fit_job_id = "7ed3fa02be6ca5b6157cdd9bdab6e4439a4a3025c7537f61698b63555d25a8fe"
+
+[slab_summaries.195]
+points = 65536
+iterations = 1781069
+function_evaluations = 4229472
+resumed = false
+seconds = 9.497633934020996
+unconverged = 8920
+gradient_evaluations = 1781069
+max_sse = 0.3336834745990791
+
+[slab_summaries.38]
+points = 65536
+iterations = 1674463
+function_evaluations = 3589922
+resumed = false
+seconds = 9.293001890182495
+unconverged = 14090
+gradient_evaluations = 1674463
+max_sse = 0.3471981109375737
+
+[slab_summaries.37]
+points = 65536
+iterations = 1660321
+function_evaluations = 3611599
+resumed = false
+seconds = 9.264859914779663
+unconverged = 12989
+gradient_evaluations = 1660321
+max_sse = 0.34795537794258946
+
+[slab_summaries.147]
+points = 65536
+iterations = 1578080
+function_evaluations = 3578362
+resumed = false
+seconds = 8.366780042648315
+unconverged = 5384
+gradient_evaluations = 1578080
+max_sse = 0.32207497867123025
+
+[slab_summaries.203]
+points = 65536
+iterations = 1800450
+function_evaluations = 4448320
+resumed = false
+seconds = 9.75911808013916
+unconverged = 10161
+gradient_evaluations = 1800450
+max_sse = 0.33647842034533715
+
+[slab_summaries.136]
+points = 65536
+iterations = 1530887
+function_evaluations = 3531449
+resumed = false
+seconds = 8.308701038360596
+unconverged = 5073
+gradient_evaluations = 1530887
+max_sse = 0.32076901679464875
+
+[slab_summaries.219]
+points = 65536
+iterations = 1879497
+function_evaluations = 4610066
+resumed = false
+seconds = 10.111566066741943
+unconverged = 13045
+gradient_evaluations = 1879497
+max_sse = 0.34714807693925726
+
+[slab_summaries.213]
+points = 65536
+iterations = 1856126
+function_evaluations = 4563716
+resumed = false
+seconds = 9.982042074203491
+unconverged = 11839
+gradient_evaluations = 1856126
+max_sse = 0.34223701676041646
+
+[slab_summaries.102]
+points = 65536
+iterations = 1410457
+function_evaluations = 3453602
+resumed = false
+seconds = 8.221666097640991
+unconverged = 5398
+gradient_evaluations = 1410457
+max_sse = 0.3211294608308935
+
+[slab_summaries.144]
+points = 65536
+iterations = 1567017
+function_evaluations = 3566691
+resumed = false
+seconds = 8.331440210342407
+unconverged = 5264
+gradient_evaluations = 1567017
+max_sse = 0.32165892231289245
+
+[slab_summaries.190]
+points = 65536
+iterations = 1718376
+function_evaluations = 4082178
+resumed = false
+seconds = 9.194708108901978
+unconverged = 8206
+gradient_evaluations = 1718376
+max_sse = 0.3321063145457146
+
+[slab_summaries.107]
+points = 65536
+iterations = 1426621
+function_evaluations = 3470754
+resumed = false
+seconds = 8.28441596031189
+unconverged = 5313
+gradient_evaluations = 1426621
+max_sse = 0.32060497299491353
+
+[slab_summaries.28]
+points = 65536
+iterations = 1743026
+function_evaluations = 3600078
+resumed = false
+seconds = 9.387468099594116
+unconverged = 16083
+gradient_evaluations = 1743026
+max_sse = 0.3553680291707457
+
+[slab_summaries.216]
+points = 65536
+iterations = 1871586
+function_evaluations = 4590534
+resumed = false
+seconds = 10.062696933746338
+unconverged = 12725
+gradient_evaluations = 1871586
+max_sse = 0.3445560255629252
+
+[slab_summaries.234]
+points = 65536
+iterations = 1965314
+function_evaluations = 4722964
+resumed = false
+seconds = 10.4241201877594
+unconverged = 16603
+gradient_evaluations = 1965314
+max_sse = 0.36420537705422606
+
+[slab_summaries.101]
+points = 65536
+iterations = 1406916
+function_evaluations = 3453933
+resumed = false
+seconds = 8.22745394706726
+unconverged = 5429
+gradient_evaluations = 1406916
+max_sse = 0.32125598838284203
+
+[slab_summaries.10]
+points = 65536
+iterations = 2039413
+function_evaluations = 3732112
+resumed = false
+seconds = 10.23917293548584
+unconverged = 27458
+gradient_evaluations = 2039413
+max_sse = 0.37368735897852406
+
+[slab_summaries.60]
+points = 65536
+iterations = 1485150
+function_evaluations = 3536818
+resumed = false
+seconds = 8.85339903831482
+unconverged = 8114
+gradient_evaluations = 1485150
+max_sse = 0.3335989731405821
+
+[slab_summaries.121]
+points = 65536
+iterations = 1466428
+function_evaluations = 3492820
+resumed = false
+seconds = 8.215466976165771
+unconverged = 5040
+gradient_evaluations = 1466428
+max_sse = 0.32004033904536267
+
+[slab_summaries.113]
+points = 65536
+iterations = 1434997
+function_evaluations = 3472539
+resumed = false
+seconds = 8.210702180862427
+unconverged = 5147
+gradient_evaluations = 1434997
+max_sse = 0.32020521680196273
+
+[slab_summaries.160]
+points = 65536
+iterations = 1620969
+function_evaluations = 3653629
+resumed = false
+seconds = 8.480024099349976
+unconverged = 5782
+gradient_evaluations = 1620969
+max_sse = 0.32435458052795535
+
+[slab_summaries.7]
+points = 65536
+iterations = 2117411
+function_evaluations = 3795219
+resumed = false
+seconds = 10.466302156448364
+unconverged = 30848
+gradient_evaluations = 2117411
+max_sse = 0.37723203057059096
+
+[slab_summaries.183]
+points = 65536
+iterations = 1686120
+function_evaluations = 3910192
+resumed = false
+seconds = 8.932421922683716
+unconverged = 7501
+gradient_evaluations = 1686120
+max_sse = 0.3300272916766132
+
+[slab_summaries.155]
+points = 65536
+iterations = 1605626
+function_evaluations = 3619454
+resumed = false
+seconds = 8.463343858718872
+unconverged = 5735
+gradient_evaluations = 1605626
+max_sse = 0.32338979867948897
+
+[slab_summaries.114]
+points = 65536
+iterations = 1436228
+function_evaluations = 3462572
+resumed = false
+seconds = 8.1896071434021
+unconverged = 5137
+gradient_evaluations = 1436228
+max_sse = 0.32016208513026034
+
+[slab_summaries.105]
+points = 65536
+iterations = 1416520
+function_evaluations = 3465553
+resumed = false
+seconds = 8.227015018463135
+unconverged = 5461
+gradient_evaluations = 1416520
+max_sse = 0.3207933933628793
+
+[slab_summaries.226]
+points = 65536
+iterations = 1923058
+function_evaluations = 4669507
+resumed = false
+seconds = 10.277652978897095
+unconverged = 14822
+gradient_evaluations = 1923058
+max_sse = 0.35425825728827776
+
+[slab_summaries.174]
+points = 65536
+iterations = 1645558
+function_evaluations = 3768760
+resumed = false
+seconds = 8.652838945388794
+unconverged = 6854
+gradient_evaluations = 1645558
+max_sse = 0.32758370707544654
+
+[slab_summaries.229]
+points = 65536
+iterations = 1946076
+function_evaluations = 4699624
+resumed = false
+seconds = 10.361001014709473
+unconverged = 15657
+gradient_evaluations = 1946076
+max_sse = 0.35776074160144405
+
+[slab_summaries.218]
+points = 65536
+iterations = 1876941
+function_evaluations = 4603932
+resumed = false
+seconds = 10.096457958221436
+unconverged = 12977
+gradient_evaluations = 1876941
+max_sse = 0.34625371921018655
+
+[slab_summaries.169]
+points = 65536
+iterations = 1645564
+function_evaluations = 3730903
+resumed = false
+seconds = 8.615827083587646
+unconverged = 6531
+gradient_evaluations = 1645564
+max_sse = 0.3263460377417532
+
+[slab_summaries.50]
+points = 65536
+iterations = 1573060
+function_evaluations = 3583410
+resumed = false
+seconds = 9.117141008377075
+unconverged = 10422
+gradient_evaluations = 1573060
+max_sse = 0.3390820387899153
+
+[slab_summaries.246]
+points = 65536
+iterations = 2028245
+function_evaluations = 4766295
+resumed = false
+seconds = 10.603431940078735
+unconverged = 19900
+gradient_evaluations = 2028245
+max_sse = 0.38276995766742855
+
+[slab_summaries.189]
+points = 65536
+iterations = 1724856
+function_evaluations = 4075042
+resumed = false
+seconds = 9.172784090042114
+unconverged = 8067
+gradient_evaluations = 1724856
+max_sse = 0.33180009733675475
+
+[slab_summaries.191]
+points = 65536
+iterations = 1732884
+function_evaluations = 4090416
+resumed = false
+seconds = 9.201192140579224
+unconverged = 8198
+gradient_evaluations = 1732884
+max_sse = 0.3324155849071266
+
+[slab_summaries.154]
+points = 65536
+iterations = 1593956
+function_evaluations = 3598948
+resumed = false
+seconds = 8.405714988708496
+unconverged = 5761
+gradient_evaluations = 1593956
+max_sse = 0.3232096984365194
+
+[slab_summaries.193]
+points = 65536
+iterations = 1771064
+function_evaluations = 4194384
+resumed = false
+seconds = 9.44564414024353
+unconverged = 8462
+gradient_evaluations = 1771064
+max_sse = 0.3330433219324282
+
+[slab_summaries.51]
+points = 65536
+iterations = 1566849
+function_evaluations = 3582127
+resumed = false
+seconds = 9.089484930038452
+unconverged = 10383
+gradient_evaluations = 1566849
+max_sse = 0.33848336198930973
+
+[slab_summaries.134]
+points = 65536
+iterations = 1510658
+function_evaluations = 3506971
+resumed = false
+seconds = 8.228846073150635
+unconverged = 5160
+gradient_evaluations = 1510658
+max_sse = 0.3205987047518804
+
+[slab_summaries.23]
+points = 65536
+iterations = 1830632
+function_evaluations = 3607158
+resumed = false
+seconds = 9.619980812072754
+unconverged = 19175
+gradient_evaluations = 1830632
+max_sse = 0.3599711278399249
+
+[slab_summaries.181]
+points = 65536
+iterations = 1684753
+function_evaluations = 3893677
+resumed = false
+seconds = 8.956939935684204
+unconverged = 7370
+gradient_evaluations = 1684753
+max_sse = 0.32946136067766985
+
+[slab_summaries.199]
+points = 65536
+iterations = 1813192
+function_evaluations = 4380776
+resumed = false
+seconds = 9.73998212814331
+unconverged = 9336
+gradient_evaluations = 1813192
+max_sse = 0.3350027082511525
+
+[slab_summaries.126]
+points = 65536
+iterations = 1481691
+function_evaluations = 3488192
+resumed = false
+seconds = 8.211925029754639
+unconverged = 5051
+gradient_evaluations = 1481691
+max_sse = 0.3201389040429396
+
+[slab_summaries.83]
+points = 65536
+iterations = 1413173
+function_evaluations = 3472473
+resumed = false
+seconds = 8.536162853240967
+unconverged = 6188
+gradient_evaluations = 1413173
+max_sse = 0.3248576217389332
+
+[slab_summaries.119]
+points = 65536
+iterations = 1464518
+function_evaluations = 3489790
+resumed = false
+seconds = 8.24078106880188
+unconverged = 5040
+gradient_evaluations = 1464518
+max_sse = 0.3200435336762902
+
+[slab_summaries.207]
+points = 65536
+iterations = 1814129
+function_evaluations = 4482923
+resumed = false
+seconds = 9.823064088821411
+unconverged = 10928
+gradient_evaluations = 1814129
+max_sse = 0.33841795936306457
+
+[slab_summaries.245]
+points = 65536
+iterations = 2026316
+function_evaluations = 4756989
+resumed = false
+seconds = 10.58752703666687
+unconverged = 19772
+gradient_evaluations = 2026316
+max_sse = 0.38105585057743435
+
+[slab_summaries.139]
+points = 65536
+iterations = 1541480
+function_evaluations = 3538310
+resumed = false
+seconds = 8.30457878112793
+unconverged = 5079
+gradient_evaluations = 1541480
+max_sse = 0.3210642652528282
+
+[slab_summaries.92]
+points = 65536
+iterations = 1397300
+function_evaluations = 3458142
+resumed = false
+seconds = 8.345732927322388
+unconverged = 5734
+gradient_evaluations = 1397300
+max_sse = 0.3227339112855569
+
+[slab_summaries.1]
+points = 65536
+iterations = 2259433
+function_evaluations = 4023779
+resumed = false
+seconds = 11.109546899795532
+unconverged = 34763
+gradient_evaluations = 2259433
+max_sse = 0.3847729901191068
+
+[slab_summaries.239]
+points = 65536
+iterations = 1982863
+function_evaluations = 4747384
+resumed = false
+seconds = 10.500509023666382
+unconverged = 17668
+gradient_evaluations = 1982863
+max_sse = 0.37140911444225855
+
+[slab_summaries.14]
+points = 65536
+iterations = 1970024
+function_evaluations = 3692564
+resumed = false
+seconds = 9.993571996688843
+unconverged = 23663
+gradient_evaluations = 1970024
+max_sse = 0.3691876805526836
+
+[slab_summaries.176]
+points = 65536
+iterations = 1665291
+function_evaluations = 3811834
+resumed = false
+seconds = 8.745197057723999
+unconverged = 6934
+gradient_evaluations = 1665291
+max_sse = 0.32810339492842544
+
+[slab_summaries.8]
+points = 65536
+iterations = 2076867
+function_evaluations = 3773321
+resumed = false
+seconds = 10.345532894134521
+unconverged = 29041
+gradient_evaluations = 2076867
+max_sse = 0.3760340401962615
+
+[slab_summaries.31]
+points = 65536
+iterations = 1737108
+function_evaluations = 3585411
+resumed = false
+seconds = 9.484239101409912
+unconverged = 16066
+gradient_evaluations = 1737108
+max_sse = 0.35277527065554914
+
+[slab_summaries.89]
+points = 65536
+iterations = 1394930
+function_evaluations = 3456581
+resumed = false
+seconds = 8.41257095336914
+unconverged = 6011
+gradient_evaluations = 1394930
+max_sse = 0.32336751619511545
+
+[slab_summaries.90]
+points = 65536
+iterations = 1392361
+function_evaluations = 3451811
+resumed = false
+seconds = 8.380112171173096
+unconverged = 5753
+gradient_evaluations = 1392361
+max_sse = 0.3231482280327029
+
+[slab_summaries.117]
+points = 65536
+iterations = 1449070
+function_evaluations = 3482792
+resumed = false
+seconds = 8.199086904525757
+unconverged = 5070
+gradient_evaluations = 1449070
+max_sse = 0.3200717679845804
+
+[slab_summaries.253]
+points = 65536
+iterations = 2068163
+function_evaluations = 4780564
+resumed = false
+seconds = 10.524556159973145
+unconverged = 21352
+gradient_evaluations = 2068163
+max_sse = 0.395619415774777
+
+[slab_summaries.32]
+points = 65536
+iterations = 1700235
+function_evaluations = 3596555
+resumed = false
+seconds = 9.31412410736084
+unconverged = 14498
+gradient_evaluations = 1700235
+max_sse = 0.35193848937739564
+
+[slab_summaries.152]
+points = 65536
+iterations = 1602320
+function_evaluations = 3614148
+resumed = false
+seconds = 8.44681692123413
+unconverged = 5595
+gradient_evaluations = 1602320
+max_sse = 0.32286274696316997
+
+[slab_summaries.196]
+points = 65536
+iterations = 1808594
+function_evaluations = 4304189
+resumed = false
+seconds = 9.63961386680603
+unconverged = 8930
+gradient_evaluations = 1808594
+max_sse = 0.3340083082612044
+
+[slab_summaries.243]
+points = 65536
+iterations = 2001491
+function_evaluations = 4753380
+resumed = false
+seconds = 10.538571834564209
+unconverged = 18463
+gradient_evaluations = 2001491
+max_sse = 0.377718771058974
+
+[slab_summaries.11]
+points = 65536
+iterations = 2017778
+function_evaluations = 3725959
+resumed = false
+seconds = 10.199247121810913
+unconverged = 26154
+gradient_evaluations = 2017778
+max_sse = 0.37253841693808537
+
+[slab_summaries.118]
+points = 65536
+iterations = 1449953
+function_evaluations = 3470531
+resumed = false
+seconds = 8.191715002059937
+unconverged = 4999
+gradient_evaluations = 1449953
+max_sse = 0.3200544920053482
+
+[slab_summaries.223]
+points = 65536
+iterations = 1900843
+function_evaluations = 4640701
+resumed = false
+seconds = 10.205296993255615
+unconverged = 13808
+gradient_evaluations = 1900843
+max_sse = 0.3510289488913892
+
+[slab_summaries.233]
+points = 65536
+iterations = 1965101
+function_evaluations = 4717578
+resumed = false
+seconds = 10.417288064956665
+unconverged = 16673
+gradient_evaluations = 1965101
+max_sse = 0.36285572728622667
+
+[slab_summaries.111]
+points = 65536
+iterations = 1436328
+function_evaluations = 3471445
+resumed = false
+seconds = 8.223878860473633
+unconverged = 5160
+gradient_evaluations = 1436328
+max_sse = 0.3203113761787894
+
+[slab_summaries.84]
+points = 65536
+iterations = 1402529
+function_evaluations = 3458801
+resumed = false
+seconds = 8.46357798576355
+unconverged = 6136
+gradient_evaluations = 1402529
+max_sse = 0.3245881433074573
+
+[slab_summaries.54]
+points = 65536
+iterations = 1541324
+function_evaluations = 3574749
+resumed = false
+seconds = 9.013617992401123
+unconverged = 9697
+gradient_evaluations = 1541324
+max_sse = 0.33675568652853793
+
+[slab_summaries.25]
+points = 65536
+iterations = 1796527
+function_evaluations = 3612356
+resumed = false
+seconds = 9.621810913085938
+unconverged = 17882
+gradient_evaluations = 1796527
+max_sse = 0.35808689538327737
+
+[slab_summaries.156]
+points = 65536
+iterations = 1611353
+function_evaluations = 3632401
+resumed = false
+seconds = 8.457751035690308
+unconverged = 5717
+gradient_evaluations = 1611353
+max_sse = 0.32357424947747954
+
+[slab_summaries.135]
+points = 65536
+iterations = 1524126
+function_evaluations = 3524147
+resumed = false
+seconds = 8.302729845046997
+unconverged = 5033
+gradient_evaluations = 1524126
+max_sse = 0.32068117337866725
+
+[slab_summaries.36]
+points = 65536
+iterations = 1662061
+function_evaluations = 3597868
+resumed = false
+seconds = 9.235805034637451
+unconverged = 13171
+gradient_evaluations = 1662061
+max_sse = 0.3487256114482391
+
+[slab_summaries.240]
+points = 65536
+iterations = 1999345
+function_evaluations = 4750784
+resumed = false
+seconds = 10.565346002578735
+unconverged = 18420
+gradient_evaluations = 1999345
+max_sse = 0.3729409690571254
+
+[slab_summaries.81]
+points = 65536
+iterations = 1409534
+function_evaluations = 3465028
+resumed = false
+seconds = 8.531385898590088
+unconverged = 6252
+gradient_evaluations = 1409534
+max_sse = 0.3254225331900188
+
+[slab_summaries.248]
+points = 65536
+iterations = 2039603
+function_evaluations = 4769976
+resumed = false
+seconds = 10.649495840072632
+unconverged = 20248
+gradient_evaluations = 2039603
+max_sse = 0.38628931289276736
+
+[slab_summaries.235]
+points = 65536
+iterations = 1962277
+function_evaluations = 4728331
+resumed = false
+seconds = 10.43300986289978
+unconverged = 16626
+gradient_evaluations = 1962277
+max_sse = 0.36558539091616993
+
+[slab_summaries.247]
+points = 65536
+iterations = 2022920
+function_evaluations = 4772392
+resumed = false
+seconds = 10.624876976013184
+unconverged = 19206
+gradient_evaluations = 2022920
+max_sse = 0.3845144446827716
+
+[slab_summaries.0]
+points = 65536
+iterations = 2205593
+function_evaluations = 3977008
+resumed = false
+seconds = 10.924338102340698
+unconverged = 34311
+gradient_evaluations = 2205593
+max_sse = 0.38608982602263875
+
+[slab_summaries.20]
+points = 65536
+iterations = 1857142
+function_evaluations = 3652325
+resumed = false
+seconds = 9.701902151107788
+unconverged = 19309
+gradient_evaluations = 1857142
+max_sse = 0.36290738387751503
+
+[slab_summaries.116]
+points = 65536
+iterations = 1451683
+function_evaluations = 3487131
+resumed = false
+seconds = 8.228517055511475
+unconverged = 5137
+gradient_evaluations = 1451683
+max_sse = 0.3200954197689017
+
+[slab_summaries.209]
+points = 65536
+iterations = 1833373
+function_evaluations = 4514537
+resumed = false
+seconds = 9.899599075317383
+unconverged = 11198
+gradient_evaluations = 1833373
+max_sse = 0.339569665767997
+
+[slab_summaries.39]
+points = 65536
+iterations = 1664877
+function_evaluations = 3587164
+resumed = false
+seconds = 9.289261102676392
+unconverged = 13581
+gradient_evaluations = 1664877
+max_sse = 0.34645369774275514
+
+[slab_summaries.70]
+points = 65536
+iterations = 1446365
+function_evaluations = 3504770
+resumed = false
+seconds = 8.724109172821045
+unconverged = 7152
+gradient_evaluations = 1446365
+max_sse = 0.32917435305212045
+
+[slab_summaries.171]
+points = 65536
+iterations = 1645900
+function_evaluations = 3736747
+resumed = false
+seconds = 8.635715961456299
+unconverged = 6580
+gradient_evaluations = 1645900
+max_sse = 0.3268303424376412
+
+[slab_summaries.91]
+points = 65536
+iterations = 1400845
+function_evaluations = 3464700
+resumed = false
+seconds = 8.385265111923218
+unconverged = 5867
+gradient_evaluations = 1400845
+max_sse = 0.3229370500954099
+
+[slab_summaries.212]
+points = 65536
+iterations = 1850409
+function_evaluations = 4550675
+resumed = false
+seconds = 9.979928970336914
+unconverged = 11704
+gradient_evaluations = 1850409
+max_sse = 0.34152468277371917
+
+[slab_summaries.93]
+points = 65536
+iterations = 1395696
+function_evaluations = 3453946
+resumed = false
+seconds = 8.315591096878052
+unconverged = 5765
+gradient_evaluations = 1395696
+max_sse = 0.32253874112218195
+
+[slab_summaries.198]
+points = 65536
+iterations = 1821309
+function_evaluations = 4418163
+resumed = false
+seconds = 9.863332986831665
+unconverged = 9099
+gradient_evaluations = 1821309
+max_sse = 0.33466782735073625
+
+[slab_summaries.157]
+points = 65536
+iterations = 1610971
+function_evaluations = 3635588
+resumed = false
+seconds = 8.471825122833252
+unconverged = 5679
+gradient_evaluations = 1610971
+max_sse = 0.32376300177037276
+
+[slab_summaries.143]
+points = 65536
+iterations = 1559799
+function_evaluations = 3559082
+resumed = false
+seconds = 8.33426284790039
+unconverged = 5235
+gradient_evaluations = 1559799
+max_sse = 0.3215299764166468
+
+[slab_summaries.63]
+points = 65536
+iterations = 1487900
+function_evaluations = 3541514
+resumed = false
+seconds = 8.881242036819458
+unconverged = 8014
+gradient_evaluations = 1487900
+max_sse = 0.33216470899649003
+
+[slab_summaries.177]
+points = 65536
+iterations = 1667460
+function_evaluations = 3827985
+resumed = false
+seconds = 8.777626991271973
+unconverged = 7004
+gradient_evaluations = 1667460
+max_sse = 0.3283683502565589
+
+[slab_summaries.153]
+points = 65536
+iterations = 1601525
+function_evaluations = 3620264
+resumed = false
+seconds = 8.457605838775635
+unconverged = 5659
+gradient_evaluations = 1601525
+max_sse = 0.3230339980313988
+
+[slab_summaries.82]
+points = 65536
+iterations = 1408624
+function_evaluations = 3465688
+resumed = false
+seconds = 8.516577959060669
+unconverged = 6219
+gradient_evaluations = 1408624
+max_sse = 0.3251357262307884
+
+[slab_summaries.232]
+points = 65536
+iterations = 1956743
+function_evaluations = 4711474
+resumed = false
+seconds = 10.373525857925415
+unconverged = 16485
+gradient_evaluations = 1956743
+max_sse = 0.36153644024083803
+
+[slab_summaries.95]
+points = 65536
+iterations = 1405003
+function_evaluations = 3461742
+resumed = false
+seconds = 8.32619595527649
+unconverged = 5669
+gradient_evaluations = 1405003
+max_sse = 0.32217202783037346
+
+[slab_summaries.88]
+points = 65536
+iterations = 1394880
+function_evaluations = 3454660
+resumed = false
+seconds = 8.42041015625
+unconverged = 5966
+gradient_evaluations = 1394880
+max_sse = 0.32359498630768746
+
+[slab_summaries.66]
+points = 65536
+iterations = 1466119
+function_evaluations = 3522298
+resumed = false
+seconds = 8.79529595375061
+unconverged = 7508
+gradient_evaluations = 1466119
+max_sse = 0.3308231373050472
+
+[slab_summaries.64]
+points = 65536
+iterations = 1465477
+function_evaluations = 3521042
+resumed = false
+seconds = 8.772338151931763
+unconverged = 7426
+gradient_evaluations = 1465477
+max_sse = 0.3317073412361646
+
+[slab_summaries.104]
+points = 65536
+iterations = 1419715
+function_evaluations = 3466426
+resumed = false
+seconds = 8.2502121925354
+unconverged = 5446
+gradient_evaluations = 1419715
+max_sse = 0.32089822748493635
+
+[slab_summaries.18]
+points = 65536
+iterations = 1906120
+function_evaluations = 3649959
+resumed = false
+seconds = 9.85978102684021
+unconverged = 21331
+gradient_evaluations = 1906120
+max_sse = 0.36493957790325005
+
+[slab_summaries.3]
+points = 65536
+iterations = 2204833
+function_evaluations = 3918493
+resumed = false
+seconds = 10.914211988449097
+unconverged = 34305
+gradient_evaluations = 2204833
+max_sse = 0.3821912573467267
+
+[slab_summaries.47]
+points = 65536
+iterations = 1597151
+function_evaluations = 3585528
+resumed = false
+seconds = 9.141573905944824
+unconverged = 11425
+gradient_evaluations = 1597151
+max_sse = 0.34094785643790015
+
+[slab_summaries.110]
+points = 65536
+iterations = 1424130
+function_evaluations = 3457544
+resumed = false
+seconds = 8.190648078918457
+unconverged = 5297
+gradient_evaluations = 1424130
+max_sse = 0.320374524269966
+
+[slab_summaries.254]
+points = 65536
+iterations = 2070690
+function_evaluations = 4791316
+resumed = false
+seconds = 10.76828384399414
+unconverged = 21609
+gradient_evaluations = 2070690
+max_sse = 0.39757659739890827
+
+[slab_summaries.159]
+points = 65536
+iterations = 1614247
+function_evaluations = 3641304
+resumed = false
+seconds = 8.499896049499512
+unconverged = 5958
+gradient_evaluations = 1614247
+max_sse = 0.32415321576118417
+
+[slab_summaries.45]
+points = 65536
+iterations = 1583035
+function_evaluations = 3590258
+resumed = false
+seconds = 9.103799819946289
+unconverged = 10735
+gradient_evaluations = 1583035
+max_sse = 0.34225093283096375
+
+[slab_summaries.69]
+points = 65536
+iterations = 1435068
+function_evaluations = 3485935
+resumed = false
+seconds = 8.675178050994873
+unconverged = 7178
+gradient_evaluations = 1435068
+max_sse = 0.3295718165197143
+
+[slab_summaries.55]
+points = 65536
+iterations = 1536059
+function_evaluations = 3568485
+resumed = false
+seconds = 8.99177598953247
+unconverged = 9386
+gradient_evaluations = 1536059
+max_sse = 0.33620224430024165
+
+[slab_summaries.150]
+points = 65536
+iterations = 1583109
+function_evaluations = 3580910
+resumed = false
+seconds = 8.377163887023926
+unconverged = 5494
+gradient_evaluations = 1583109
+max_sse = 0.32253379188304016
+
+[slab_summaries.43]
+points = 65536
+iterations = 1630604
+function_evaluations = 3590622
+resumed = false
+seconds = 9.20741605758667
+unconverged = 12460
+gradient_evaluations = 1630604
+max_sse = 0.3436023554744814
+
+[slab_summaries.35]
+points = 65536
+iterations = 1700430
+function_evaluations = 3585755
+resumed = false
+seconds = 9.334439992904663
+unconverged = 14845
+gradient_evaluations = 1700430
+max_sse = 0.349508924872076
+
+[slab_summaries.180]
+points = 65536
+iterations = 1680195
+function_evaluations = 3868988
+resumed = false
+seconds = 8.82672381401062
+unconverged = 7165
+gradient_evaluations = 1680195
+max_sse = 0.32918320180994
+
+[slab_summaries.149]
+points = 65536
+iterations = 1587361
+function_evaluations = 3597496
+resumed = false
+seconds = 8.40357780456543
+unconverged = 5361
+gradient_evaluations = 1587361
+max_sse = 0.3223761879061915
+
+[slab_summaries.73]
+points = 65536
+iterations = 1424319
+function_evaluations = 3479976
+resumed = false
+seconds = 8.649858951568604
+unconverged = 6842
+gradient_evaluations = 1424319
+max_sse = 0.3280396847736825
+
+[slab_summaries.252]
+points = 65536
+iterations = 2060783
+function_evaluations = 4783391
+resumed = false
+seconds = 10.755019903182983
+unconverged = 20914
+gradient_evaluations = 2060783
+max_sse = 0.39369262280822337
+
+[slab_summaries.242]
+points = 65536
+iterations = 2007232
+function_evaluations = 4754057
+resumed = false
+seconds = 10.540296077728271
+unconverged = 18868
+gradient_evaluations = 2007232
+max_sse = 0.3760957960544069
+
+[slab_summaries.62]
+points = 65536
+iterations = 1488670
+function_evaluations = 3541295
+resumed = false
+seconds = 8.876803874969482
+unconverged = 8010
+gradient_evaluations = 1488670
+max_sse = 0.332632375356686
+
+[slab_summaries.170]
+points = 65536
+iterations = 1629293
+function_evaluations = 3707300
+resumed = false
+seconds = 8.54761004447937
+unconverged = 6580
+gradient_evaluations = 1629293
+max_sse = 0.32658636733593766
+
+[slab_summaries.120]
+points = 65536
+iterations = 1468035
+function_evaluations = 3498198
+resumed = false
+seconds = 8.236299991607666
+unconverged = 5067
+gradient_evaluations = 1468035
+max_sse = 0.32003883518347814
+
+[slab_summaries.94]
+points = 65536
+iterations = 1394503
+function_evaluations = 3448282
+resumed = false
+seconds = 8.331123113632202
+unconverged = 5684
+gradient_evaluations = 1394503
+max_sse = 0.3223514697303428
+
+[slab_summaries.98]
+points = 65536
+iterations = 1399482
+function_evaluations = 3448319
+resumed = false
+seconds = 8.24060606956482
+unconverged = 5510
+gradient_evaluations = 1399482
+max_sse = 0.32167999498758937
+
+[slab_summaries.78]
+points = 65536
+iterations = 1418914
+function_evaluations = 3475234
+resumed = false
+seconds = 8.567201137542725
+unconverged = 6539
+gradient_evaluations = 1418914
+max_sse = 0.3263359436321739
+
+[slab_summaries.30]
+points = 65536
+iterations = 1748253
+function_evaluations = 3583254
+resumed = false
+seconds = 9.402044773101807
+unconverged = 16582
+gradient_evaluations = 1748253
+max_sse = 0.35362570931043863
+
+[slab_summaries.237]
+points = 65536
+iterations = 1986637
+function_evaluations = 4742268
+resumed = false
+seconds = 10.49481201171875
+unconverged = 17681
+gradient_evaluations = 1986637
+max_sse = 0.36843651636596814
+
+[slab_summaries.29]
+points = 65536
+iterations = 1744971
+function_evaluations = 3605169
+resumed = false
+seconds = 9.419016122817993
+unconverged = 16297
+gradient_evaluations = 1744971
+max_sse = 0.3544899227823166
+
+[slab_summaries.184]
+points = 65536
+iterations = 1701051
+function_evaluations = 3951194
+resumed = false
+seconds = 9.009469985961914
+unconverged = 7581
+gradient_evaluations = 1701051
+max_sse = 0.33031500433660643
+
+[slab_summaries.231]
+points = 65536
+iterations = 1942131
+function_evaluations = 4698885
+resumed = false
+seconds = 10.361397981643677
+unconverged = 15566
+gradient_evaluations = 1942131
+max_sse = 0.3602475145383865
+
+[slab_summaries.175]
+points = 65536
+iterations = 1654658
+function_evaluations = 3780885
+resumed = false
+seconds = 8.70618987083435
+unconverged = 6773
+gradient_evaluations = 1654658
+max_sse = 0.3278418339511544
+
+[slab_summaries.52]
+points = 65536
+iterations = 1535031
+function_evaluations = 3574794
+resumed = false
+seconds = 8.988236904144287
+unconverged = 9393
+gradient_evaluations = 1535031
+max_sse = 0.33789614518085825
+
+[slab_summaries.79]
+points = 65536
+iterations = 1423627
+function_evaluations = 3481750
+resumed = false
+seconds = 8.652553081512451
+unconverged = 6400
+gradient_evaluations = 1423627
+max_sse = 0.32602256369253013
+
+[slab_summaries.12]
+points = 65536
+iterations = 1985988
+function_evaluations = 3724280
+resumed = false
+seconds = 10.052453994750977
+unconverged = 24427
+gradient_evaluations = 1985988
+max_sse = 0.3714055733334821
+
+[slab_summaries.162]
+points = 65536
+iterations = 1608706
+function_evaluations = 3640210
+resumed = false
+seconds = 8.451005935668945
+unconverged = 6219
+gradient_evaluations = 1608706
+max_sse = 0.3247695852228904
+
+[slab_summaries.13]
+points = 65536
+iterations = 1982225
+function_evaluations = 3713907
+resumed = false
+seconds = 10.054479122161865
+unconverged = 24148
+gradient_evaluations = 1982225
+max_sse = 0.3702887029106944
+
+[slab_summaries.122]
+points = 65536
+iterations = 1466535
+function_evaluations = 3482246
+resumed = false
+seconds = 8.208607912063599
+unconverged = 4960
+gradient_evaluations = 1466535
+max_sse = 0.3200479881043512
+
+[slab_summaries.16]
+points = 65536
+iterations = 1917018
+function_evaluations = 3685433
+resumed = false
+seconds = 9.907278060913086
+unconverged = 21320
+gradient_evaluations = 1917018
+max_sse = 0.3670326807492543
+
+[slab_summaries.250]
+points = 65536
+iterations = 2051304
+function_evaluations = 4782192
+resumed = false
+seconds = 10.722847938537598
+unconverged = 20760
+gradient_evaluations = 2051304
+max_sse = 0.38993019793707456
+
+[slab_summaries.53]
+points = 65536
+iterations = 1517814
+function_evaluations = 3556237
+resumed = false
+seconds = 8.938695907592773
+unconverged = 9095
+gradient_evaluations = 1517814
+max_sse = 0.3373202868996896
+
+[slab_summaries.17]
+points = 65536
+iterations = 1916134
+function_evaluations = 3672405
+resumed = false
+seconds = 9.89457392692566
+unconverged = 21527
+gradient_evaluations = 1916134
+max_sse = 0.3659784543082286
+
+[slab_summaries.137]
+points = 65536
+iterations = 1528352
+function_evaluations = 3527129
+resumed = false
+seconds = 8.25069284439087
+unconverged = 5275
+gradient_evaluations = 1528352
+max_sse = 0.3208621818377305
+
+[slab_summaries.238]
+points = 65536
+iterations = 1986991
+function_evaluations = 4748561
+resumed = false
+seconds = 10.484975099563599
+unconverged = 17759
+gradient_evaluations = 1986991
+max_sse = 0.3699076306554455
+
+[slab_summaries.5]
+points = 65536
+iterations = 2193163
+function_evaluations = 3885884
+resumed = false
+seconds = 10.764060974121094
+unconverged = 33033
+gradient_evaluations = 2193163
+max_sse = 0.3796779393921934
+
+[slab_summaries.179]
+points = 65536
+iterations = 1668497
+function_evaluations = 3837492
+resumed = false
+seconds = 8.825431823730469
+unconverged = 7091
+gradient_evaluations = 1668497
+max_sse = 0.32890829048169967
+
+[slab_summaries.26]
+points = 65536
+iterations = 1793300
+function_evaluations = 3587777
+resumed = false
+seconds = 9.569446086883545
+unconverged = 18049
+gradient_evaluations = 1793300
+max_sse = 0.3571663960213034
+
+[slab_summaries.128]
+points = 65536
+iterations = 1498583
+function_evaluations = 3511631
+resumed = false
+seconds = 8.240710973739624
+unconverged = 5053
+gradient_evaluations = 1498583
+max_sse = 0.3202197695602215
+
+[slab_summaries.138]
+points = 65536
+iterations = 1529923
+function_evaluations = 3522822
+resumed = false
+seconds = 8.233916997909546
+unconverged = 5189
+gradient_evaluations = 1529923
+max_sse = 0.32096061556585426
+
+[slab_summaries.206]
+points = 65536
+iterations = 1810548
+function_evaluations = 4483657
+resumed = false
+seconds = 9.799219131469727
+unconverged = 10637
+gradient_evaluations = 1810548
+max_sse = 0.3378875928269314
+
+[slab_summaries.168]
+points = 65536
+iterations = 1644981
+function_evaluations = 3720421
+resumed = false
+seconds = 8.592466831207275
+unconverged = 6308
+gradient_evaluations = 1644981
+max_sse = 0.32610939792990395
+
+[slab_summaries.99]
+points = 65536
+iterations = 1410271
+function_evaluations = 3462761
+resumed = false
+seconds = 8.261013984680176
+unconverged = 5581
+gradient_evaluations = 1410271
+max_sse = 0.3215311897861966
+
+[slab_summaries.251]
+points = 65536
+iterations = 2043715
+function_evaluations = 4790370
+resumed = false
+seconds = 10.735645055770874
+unconverged = 20014
+gradient_evaluations = 2043715
+max_sse = 0.3917962172733232
+
+[slab_summaries.19]
+points = 65536
+iterations = 1888906
+function_evaluations = 3644156
+resumed = false
+seconds = 9.808197021484375
+unconverged = 20724
+gradient_evaluations = 1888906
+max_sse = 0.36391592857902066
+
+[slab_summaries.129]
+points = 65536
+iterations = 1494063
+function_evaluations = 3503117
+resumed = false
+seconds = 8.25563097000122
+unconverged = 5064
+gradient_evaluations = 1494063
+max_sse = 0.3202688601224519
+
+[slab_summaries.15]
+points = 65536
+iterations = 1948493
+function_evaluations = 3683161
+resumed = false
+seconds = 9.979743957519531
+unconverged = 22712
+gradient_evaluations = 1948493
+max_sse = 0.3681023813878617
+
+[slab_summaries.178]
+points = 65536
+iterations = 1657292
+function_evaluations = 3827074
+resumed = false
+seconds = 8.767360925674438
+unconverged = 7198
+gradient_evaluations = 1657292
+max_sse = 0.3286366612624456
+
+[slab_summaries.85]
+points = 65536
+iterations = 1396886
+function_evaluations = 3454078
+resumed = false
+seconds = 8.450759172439575
+unconverged = 6202
+gradient_evaluations = 1396886
+max_sse = 0.3243272152285292
+
+[slab_summaries.123]
+points = 65536
+iterations = 1481082
+function_evaluations = 3496625
+resumed = false
+seconds = 8.253350019454956
+unconverged = 4951
+gradient_evaluations = 1481082
+max_sse = 0.3200617255185854
+
+[slab_summaries.141]
+points = 65536
+iterations = 1547927
+function_evaluations = 3549266
+resumed = false
+seconds = 8.284141063690186
+unconverged = 5181
+gradient_evaluations = 1547927
+max_sse = 0.32128700265531657
+
+[slab_summaries.227]
+points = 65536
+iterations = 1922818
+function_evaluations = 4672862
+resumed = false
+seconds = 10.292797088623047
+unconverged = 14708
+gradient_evaluations = 1922818
+max_sse = 0.35539539726834335
+
+[slab_summaries.68]
+points = 65536
+iterations = 1447038
+function_evaluations = 3507876
+resumed = false
+seconds = 8.71835708618164
+unconverged = 7348
+gradient_evaluations = 1447038
+max_sse = 0.32997904350471624
+
+[slab_summaries.158]
+points = 65536
+iterations = 1602870
+function_evaluations = 3619103
+resumed = false
+seconds = 8.421204090118408
+unconverged = 5979
+gradient_evaluations = 1602870
+max_sse = 0.3239560067284175
+
+[slab_summaries.46]
+points = 65536
+iterations = 1604587
+function_evaluations = 3588177
+resumed = false
+seconds = 9.153488159179688
+unconverged = 11625
+gradient_evaluations = 1604587
+max_sse = 0.3415934046853563
+
+[slab_summaries.236]
+points = 65536
+iterations = 1978957
+function_evaluations = 4737719
+resumed = false
+seconds = 10.45023488998413
+unconverged = 17554
+gradient_evaluations = 1978957
+max_sse = 0.36699577023512675
+
+[slab_summaries.33]
+points = 65536
+iterations = 1703071
+function_evaluations = 3611919
+resumed = false
+seconds = 9.351794958114624
+unconverged = 14558
+gradient_evaluations = 1703071
+max_sse = 0.35111524866706706
+
+[slab_summaries.65]
+points = 65536
+iterations = 1449869
+function_evaluations = 3501004
+resumed = false
+seconds = 8.733713865280151
+unconverged = 7474
+gradient_evaluations = 1449869
+max_sse = 0.3312601808135172
+
+[slab_summaries.142]
+points = 65536
+iterations = 1546455
+function_evaluations = 3539330
+resumed = false
+seconds = 8.29579210281372
+unconverged = 5310
+gradient_evaluations = 1546455
+max_sse = 0.3214059859651486
+
+[slab_summaries.241]
+points = 65536
+iterations = 2006681
+function_evaluations = 4753361
+resumed = false
+seconds = 10.563846111297607
+unconverged = 18967
+gradient_evaluations = 2006681
+max_sse = 0.3745031958228534
+
+[slab_summaries.2]
+points = 65536
+iterations = 2234051
+function_evaluations = 3964672
+resumed = false
+seconds = 10.99641489982605
+unconverged = 34700
+gradient_evaluations = 2234051
+max_sse = 0.38347350906322497
+
+[slab_summaries.166]
+points = 65536
+iterations = 1620331
+function_evaluations = 3675138
+resumed = false
+seconds = 8.496077060699463
+unconverged = 6267
+gradient_evaluations = 1620331
+max_sse = 0.3256473673478332
+
+[slab_summaries.75]
+points = 65536
+iterations = 1435325
+function_evaluations = 3498024
+resumed = false
+seconds = 8.67812705039978
+unconverged = 6781
+gradient_evaluations = 1435325
+max_sse = 0.32733049605643766
+
+[slab_summaries.220]
+points = 65536
+iterations = 1895378
+function_evaluations = 4629971
+resumed = false
+seconds = 10.153898000717163
+unconverged = 13369
+gradient_evaluations = 1895378
+max_sse = 0.34807277728138164
+
+[slab_summaries.215]
+points = 65536
+iterations = 1856563
+function_evaluations = 4569492
+resumed = false
+seconds = 10.034096956253052
+unconverged = 12351
+gradient_evaluations = 1856563
+max_sse = 0.343752686606611
+
+[slab_summaries.125]
+points = 65536
+iterations = 1483048
+function_evaluations = 3500298
+resumed = false
+seconds = 8.224921941757202
+unconverged = 5035
+gradient_evaluations = 1483048
+max_sse = 0.3201072395760292
+
+[slab_summaries.130]
+points = 65536
+iterations = 1494748
+function_evaluations = 3497936
+resumed = false
+seconds = 8.227319955825806
+unconverged = 5067
+gradient_evaluations = 1494748
+max_sse = 0.32032364933954854
+
+[slab_summaries.230]
+points = 65536
+iterations = 1945953
+function_evaluations = 4702325
+resumed = false
+seconds = 10.35995602607727
+unconverged = 15748
+gradient_evaluations = 1945953
+max_sse = 0.3589889487907817
+
+[slab_summaries.167]
+points = 65536
+iterations = 1636204
+function_evaluations = 3701073
+resumed = false
+seconds = 8.578375101089478
+unconverged = 6238
+gradient_evaluations = 1636204
+max_sse = 0.32587649270318314
+
+[slab_summaries.97]
+points = 65536
+iterations = 1400553
+function_evaluations = 3457254
+resumed = false
+seconds = 8.261554956436157
+unconverged = 5650
+gradient_evaluations = 1400553
+max_sse = 0.3218363582990405
+
+[slab_summaries.112]
+points = 65536
+iterations = 1437565
+function_evaluations = 3476509
+resumed = false
+seconds = 8.21780800819397
+unconverged = 5105
+gradient_evaluations = 1437565
+max_sse = 0.3202549604864888
+
+[slab_summaries.222]
+points = 65536
+iterations = 1900290
+function_evaluations = 4642257
+resumed = false
+seconds = 10.194508075714111
+unconverged = 13707
+gradient_evaluations = 1900290
+max_sse = 0.3500132117762639
+
+[slab_summaries.214]
+points = 65536
+iterations = 1854422
+function_evaluations = 4566502
+resumed = false
+seconds = 10.023833990097046
+unconverged = 11965
+gradient_evaluations = 1854422
+max_sse = 0.34297968418692426
+
+[slab_summaries.185]
+points = 65536
+iterations = 1705316
+function_evaluations = 3979025
+resumed = false
+seconds = 9.033530950546265
+unconverged = 7719
+gradient_evaluations = 1705316
+max_sse = 0.3306058461876317
+
+[slab_summaries.74]
+points = 65536
+iterations = 1432111
+function_evaluations = 3490943
+resumed = false
+seconds = 8.664149045944214
+unconverged = 6815
+gradient_evaluations = 1432111
+max_sse = 0.3276804204058443
+
+[slab_summaries.132]
+points = 65536
+iterations = 1512424
+function_evaluations = 3520188
+resumed = false
+seconds = 8.285707950592041
+unconverged = 5009
+gradient_evaluations = 1512424
+max_sse = 0.32045010564165377
+
+[slab_summaries.22]
+points = 65536
+iterations = 1849742
+function_evaluations = 3617422
+resumed = false
+seconds = 9.634562015533447
+unconverged = 19546
+gradient_evaluations = 1849742
+max_sse = 0.36093510314857996
+
+[slab_summaries.6]
+points = 65536
+iterations = 2156882
+function_evaluations = 3838103
+resumed = false
+seconds = 10.586338996887207
+unconverged = 32309
+gradient_evaluations = 2156882
+max_sse = 0.37844662171834964
+
+[slab_summaries.201]
+points = 65536
+iterations = 1835978
+function_evaluations = 4510819
+resumed = false
+seconds = 9.938261985778809
+unconverged = 9612
+gradient_evaluations = 1835978
+max_sse = 0.3356905614653911
+
+[slab_summaries.217]
+points = 65536
+iterations = 1877909
+function_evaluations = 4599334
+resumed = false
+seconds = 10.081765174865723
+unconverged = 12901
+gradient_evaluations = 1877909
+max_sse = 0.3453897025894891
+
+[slab_summaries.24]
+points = 65536
+iterations = 1796566
+function_evaluations = 3618722
+resumed = false
+seconds = 9.631854057312012
+unconverged = 17430
+gradient_evaluations = 1796566
+max_sse = 0.35902176569306693
+
+[slab_summaries.182]
+points = 65536
+iterations = 1672724
+function_evaluations = 3899260
+resumed = false
+seconds = 8.869684934616089
+unconverged = 7561
+gradient_evaluations = 1672724
+max_sse = 0.3297427342529217
+
+[slab_summaries.72]
+points = 65536
+iterations = 1432594
+function_evaluations = 3490777
+resumed = false
+seconds = 8.665457010269165
+unconverged = 6886
+gradient_evaluations = 1432594
+max_sse = 0.3284083722723642
+
+[slab_summaries.44]
+points = 65536
+iterations = 1593406
+function_evaluations = 3591878
+resumed = false
+seconds = 9.100494861602783
+unconverged = 10916
+gradient_evaluations = 1593406
+max_sse = 0.342920547336341
+
+[slab_summaries.49]
+points = 65536
+iterations = 1549172
+function_evaluations = 3576707
+resumed = false
+seconds = 9.036638975143433
+unconverged = 10016
+gradient_evaluations = 1549172
+max_sse = 0.33969227789206374
+
+[slab_summaries.127]
+points = 65536
+iterations = 1494438
+function_evaluations = 3504939
+resumed = false
+seconds = 8.260240077972412
+unconverged = 4948
+gradient_evaluations = 1494438
+max_sse = 0.32017643249748695
+
+[slab_summaries.145]
+points = 65536
+iterations = 1567474
+function_evaluations = 3568809
+resumed = false
+seconds = 8.364642858505249
+unconverged = 5309
+gradient_evaluations = 1567474
+max_sse = 0.3217927721555249
+
+[slab_summaries.202]
+points = 65536
+iterations = 1824623
+function_evaluations = 4540956
+resumed = false
+seconds = 9.916182041168213
+unconverged = 9791
+gradient_evaluations = 1824623
+max_sse = 0.3360693330702248
+
+[slab_summaries.208]
+points = 65536
+iterations = 1828363
+function_evaluations = 4504582
+resumed = false
+seconds = 9.852041959762573
+unconverged = 11098
+gradient_evaluations = 1828363
+max_sse = 0.33897864980511755
+
+[slab_summaries.197]
+points = 65536
+iterations = 1822475
+function_evaluations = 4370917
+resumed = false
+seconds = 9.751907110214233
+unconverged = 9146
+gradient_evaluations = 1822475
+max_sse = 0.33433639712192165
+
+[slab_summaries.71]
+points = 65536
+iterations = 1448133
+function_evaluations = 3508464
+resumed = false
+seconds = 8.743829011917114
+unconverged = 7094
+gradient_evaluations = 1448133
+max_sse = 0.32878656680089013
+
+[slab_summaries.77]
+points = 65536
+iterations = 1414563
+function_evaluations = 3467473
+resumed = false
+seconds = 8.56822419166565
+unconverged = 6580
+gradient_evaluations = 1414563
+max_sse = 0.3266583388504118
+
+[slab_summaries.59]
+points = 65536
+iterations = 1510078
+function_evaluations = 3556529
+resumed = false
+seconds = 8.947795152664185
+unconverged = 8646
+gradient_evaluations = 1510078
+max_sse = 0.3340980913129035
+
+[slab_summaries.109]
+points = 65536
+iterations = 1424839
+function_evaluations = 3465605
+resumed = false
+seconds = 8.211971044540405
+unconverged = 5150
+gradient_evaluations = 1424839
+max_sse = 0.32044446555697986
+
+[slab_summaries.146]
+points = 65536
+iterations = 1565598
+function_evaluations = 3560843
+resumed = false
+seconds = 8.341166973114014
+unconverged = 5373
+gradient_evaluations = 1565598
+max_sse = 0.3219314746433171
+
+[slab_summaries.87]
+points = 65536
+iterations = 1402063
+function_evaluations = 3462064
+resumed = false
+seconds = 8.464914083480835
+unconverged = 5969
+gradient_evaluations = 1402063
+max_sse = 0.32383071073338726
+
+[slab_summaries.34]
+points = 65536
+iterations = 1710488
+function_evaluations = 3588495
+resumed = false
+seconds = 9.33439588546753
+unconverged = 15180
+gradient_evaluations = 1710488
+max_sse = 0.3503054323376467
+
+[slab_summaries.249]
+points = 65536
+iterations = 2048680
+function_evaluations = 4774801
+resumed = false
+seconds = 10.697463989257812
+unconverged = 20549
+gradient_evaluations = 2048680
+max_sse = 0.3880945635593353
+
+[slab_summaries.163]
+points = 65536
+iterations = 1623832
+function_evaluations = 3667828
+resumed = false
+seconds = 8.501600980758667
+unconverged = 5905
+gradient_evaluations = 1623832
+max_sse = 0.3249831298351736
+
+[slab_summaries.186]
+points = 65536
+iterations = 1691743
+function_evaluations = 3982306
+resumed = false
+seconds = 9.04309892654419
+unconverged = 7730
+gradient_evaluations = 1691743
+max_sse = 0.3308997941257888
+
+[slab_summaries.225]
+points = 65536
+iterations = 1923840
+function_evaluations = 4665429
+resumed = false
+seconds = 10.271202087402344
+unconverged = 14709
+gradient_evaluations = 1923840
+max_sse = 0.3531514701937197
+
+[slab_summaries.4]
+points = 65536
+iterations = 2172488
+function_evaluations = 3871753
+resumed = false
+seconds = 10.651669979095459
+unconverged = 33527
+gradient_evaluations = 2172488
+max_sse = 0.38092610935419646
+
+[slab_summaries.67]
+points = 65536
+iterations = 1466352
+function_evaluations = 3523005
+resumed = false
+seconds = 8.801978826522827
+unconverged = 7578
+gradient_evaluations = 1466352
+max_sse = 0.33039612112178823
+
+[slab_summaries.188]
+points = 65536
+iterations = 1716999
+function_evaluations = 4036196
+resumed = false
+seconds = 9.105967998504639
+unconverged = 7871
+gradient_evaluations = 1716999
+max_sse = 0.33149693327015956
+
+[slab_summaries.56]
+points = 65536
+iterations = 1508705
+function_evaluations = 3555289
+resumed = false
+seconds = 8.917460918426514
+unconverged = 8745
+gradient_evaluations = 1508705
+max_sse = 0.3356598612996207
+
+[slab_summaries.76]
+points = 65536
+iterations = 1423927
+function_evaluations = 3482372
+resumed = false
+seconds = 8.602912902832031
+unconverged = 6530
+gradient_evaluations = 1423927
+max_sse = 0.32698982939205556
+
+[slab_summaries.9]
+points = 65536
+iterations = 2063472
+function_evaluations = 3759256
+resumed = false
+seconds = 10.295593976974487
+unconverged = 28415
+gradient_evaluations = 2063472
+max_sse = 0.3748525248811597
+
+[slab_summaries.172]
+points = 65536
+iterations = 1654598
+function_evaluations = 3757284
+resumed = false
+seconds = 8.669114112854004
+unconverged = 6519
+gradient_evaluations = 1654598
+max_sse = 0.3270779193507439
+
+[slab_summaries.80]
+points = 65536
+iterations = 1412949
+function_evaluations = 3470396
+resumed = false
+seconds = 8.560014009475708
+unconverged = 6365
+gradient_evaluations = 1412949
+max_sse = 0.32571811973250037
+
+[slab_summaries.255]
+points = 65536
+iterations = 2063406
+function_evaluations = 4804599
+resumed = false
+seconds = 10.454207181930542
+unconverged = 20937
+gradient_evaluations = 2063406
+max_sse = 0.39956416889952434
+
+[slab_summaries.221]
+points = 65536
+iterations = 1901258
+function_evaluations = 4637019
+resumed = false
+seconds = 10.191065073013306
+unconverged = 13846
+gradient_evaluations = 1901258
+max_sse = 0.34902782173177355
+
+[slab_summaries.41]
+points = 65536
+iterations = 1620091
+function_evaluations = 3603675
+resumed = false
+seconds = 9.209788084030151
+unconverged = 11846
+gradient_evaluations = 1620091
+max_sse = 0.3450029857478885
+
+[slab_summaries.61]
+points = 65536
+iterations = 1469056
+function_evaluations = 3519607
+resumed = false
+seconds = 8.81499695777893
+unconverged = 7970
+gradient_evaluations = 1469056
+max_sse = 0.3331104324213294
+
+[slab_summaries.108]
+points = 65536
+iterations = 1428057
+function_evaluations = 3472743
+resumed = false
+seconds = 8.234314918518066
+unconverged = 5253
+gradient_evaluations = 1428057
+max_sse = 0.32052126125250846
+
+[slab_summaries.205]
+points = 65536
+iterations = 1816056
+function_evaluations = 4485277
+resumed = false
+seconds = 9.801739931106567
+unconverged = 10625
+gradient_evaluations = 1816056
+max_sse = 0.3373875485712103
+
+[slab_summaries.58]
+points = 65536
+iterations = 1512671
+function_evaluations = 3558102
+resumed = false
+seconds = 8.93256402015686
+unconverged = 8749
+gradient_evaluations = 1512671
+max_sse = 0.33460788158723803
+
+[slab_summaries.40]
+points = 65536
+iterations = 1628108
+function_evaluations = 3601054
+resumed = false
+seconds = 9.192587852478027
+unconverged = 11966
+gradient_evaluations = 1628108
+max_sse = 0.3457220264110038
+
+[slab_summaries.200]
+points = 65536
+iterations = 1831119
+function_evaluations = 4456616
+resumed = false
+seconds = 9.848655939102173
+unconverged = 9392
+gradient_evaluations = 1831119
+max_sse = 0.3353411768226091
+
+[slab_summaries.133]
+points = 65536
+iterations = 1509211
+function_evaluations = 3516151
+resumed = false
+seconds = 8.241801023483276
+unconverged = 5103
+gradient_evaluations = 1509211
+max_sse = 0.32052166430089923
+
+[slab_summaries.187]
+points = 65536
+iterations = 1702253
+function_evaluations = 3993740
+resumed = false
+seconds = 9.043176174163818
+unconverged = 7846
+gradient_evaluations = 1702253
+max_sse = 0.331196828428134
+
+[slab_summaries.100]
+points = 65536
+iterations = 1409890
+function_evaluations = 3458799
+resumed = false
+seconds = 8.247544050216675
+unconverged = 5450
+gradient_evaluations = 1409890
+max_sse = 0.3213898762295616
+
+[slab_summaries.27]
+points = 65536
+iterations = 1778823
+function_evaluations = 3583563
+resumed = false
+seconds = 9.496056079864502
+unconverged = 17638
+gradient_evaluations = 1778823
+max_sse = 0.3562601471909949
+
+[slab_summaries.173]
+points = 65536
+iterations = 1653843
+function_evaluations = 3769199
+resumed = false
+seconds = 8.68436884880066
+unconverged = 6775
+gradient_evaluations = 1653843
+max_sse = 0.3273290550156749
+
+[slab_summaries.210]
+points = 65536
+iterations = 1831612
+function_evaluations = 4522406
+resumed = false
+seconds = 9.895612001419067
+unconverged = 11332
+gradient_evaluations = 1831612
+max_sse = 0.34019100885610537
+
+[slab_summaries.244]
+points = 65536
+iterations = 2018870
+function_evaluations = 4757852
+resumed = false
+seconds = 10.523092985153198
+unconverged = 19421
+gradient_evaluations = 2018870
+max_sse = 0.37937212213603744
+
+[slab_summaries.86]
+points = 65536
+iterations = 1395482
+function_evaluations = 3454535
+resumed = false
+seconds = 8.457774877548218
+unconverged = 6051
+gradient_evaluations = 1395482
+max_sse = 0.32407476248360323
+
+[slab_summaries.131]
+points = 65536
+iterations = 1507407
+function_evaluations = 3513122
+resumed = false
+seconds = 8.265017032623291
+unconverged = 4993
+gradient_evaluations = 1507407
+max_sse = 0.3203840826244881
+
+[slab_summaries.211]
+points = 65536
+iterations = 1835843
+function_evaluations = 4530200
+resumed = false
+seconds = 9.938197135925293
+unconverged = 11299
+gradient_evaluations = 1835843
+max_sse = 0.34084268066344686
+
+[slab_summaries.151]
+points = 65536
+iterations = 1595215
+function_evaluations = 3601510
+resumed = false
+seconds = 8.435276985168457
+unconverged = 5469
+gradient_evaluations = 1595215
+max_sse = 0.32269599494166556
+
+[slab_summaries.194]
+points = 65536
+iterations = 1770059
+function_evaluations = 4223081
+resumed = false
+seconds = 9.504889965057373
+unconverged = 8522
+gradient_evaluations = 1770059
+max_sse = 0.3333618293354259
+
+[slab_summaries.103]
+points = 65536
+iterations = 1421135
+function_evaluations = 3468770
+resumed = false
+seconds = 8.270867109298706
+unconverged = 5378
+gradient_evaluations = 1421135
+max_sse = 0.32101022866754714
+
+[slab_summaries.165]
+points = 65536
+iterations = 1632966
+function_evaluations = 3694169
+resumed = false
+seconds = 8.557908058166504
+unconverged = 6113
+gradient_evaluations = 1632966
+max_sse = 0.3254220675944236
+
+[slab_summaries.57]
+points = 65536
+iterations = 1490059
+function_evaluations = 3536255
+resumed = false
+seconds = 8.864429950714111
+unconverged = 8392
+gradient_evaluations = 1490059
+max_sse = 0.335128439464685
+
+[slab_summaries.192]
+points = 65536
+iterations = 1757112
+function_evaluations = 4149004
+resumed = false
+seconds = 9.391194820404053
+unconverged = 8372
+gradient_evaluations = 1757112
+max_sse = 0.33272791554729464
+
+[slab_summaries.106]
+points = 65536
+iterations = 1416200
+function_evaluations = 3454466
+resumed = false
+seconds = 8.180907964706421
+unconverged = 5287
+gradient_evaluations = 1416200
+max_sse = 0.3206956628583335
+
+[slab_summaries.148]
+points = 65536
+iterations = 1587141
+function_evaluations = 3593757
+resumed = false
+seconds = 8.400574922561646
+unconverged = 5496
+gradient_evaluations = 1587141
+max_sse = 0.3222232333299872
+
+[slab_summaries.164]
+points = 65536
+iterations = 1631148
+function_evaluations = 3685137
+resumed = false
+seconds = 8.525851011276245
+unconverged = 6046
+gradient_evaluations = 1631148
+max_sse = 0.3252006395834643
+
+[slab_summaries.115]
+points = 65536
+iterations = 1449191
+function_evaluations = 3482158
+resumed = false
+seconds = 8.234318017959595
+unconverged = 5210
+gradient_evaluations = 1449191
+max_sse = 0.3201255058629919
+
+[slab_summaries.228]
+points = 65536
+iterations = 1939573
+function_evaluations = 4688969
+resumed = false
+seconds = 10.32698106765747
+unconverged = 15236
+gradient_evaluations = 1939573
+max_sse = 0.35656289156522775
+
+[slab_summaries.204]
+points = 65536
+iterations = 1812255
+function_evaluations = 4474351
+resumed = false
+seconds = 9.788810014724731
+unconverged = 10388
+gradient_evaluations = 1812255
+max_sse = 0.33691782495968636
+
+[slab_summaries.21]
+points = 65536
+iterations = 1856236
+function_evaluations = 3639213
+resumed = false
+seconds = 9.694739818572998
+unconverged = 19606
+gradient_evaluations = 1856236
+max_sse = 0.3619138142369279
+
+[slab_summaries.124]
+points = 65536
+iterations = 1485848
+function_evaluations = 3502751
+resumed = false
+seconds = 8.247696876525879
+unconverged = 5094
+gradient_evaluations = 1485848
+max_sse = 0.3200814947539049
+
+[slab_summaries.96]
+points = 65536
+iterations = 1403026
+function_evaluations = 3458460
+resumed = false
+seconds = 8.299141883850098
+unconverged = 5550
+gradient_evaluations = 1403026
+max_sse = 0.32200034672709976
+
+[slab_summaries.42]
+points = 65536
+iterations = 1639328
+function_evaluations = 3587930
+resumed = false
+seconds = 9.2289879322052
+unconverged = 12719
+gradient_evaluations = 1639328
+max_sse = 0.34429646532138647
+
+[slab_summaries.140]
+points = 65536
+iterations = 1548573
+function_evaluations = 3546502
+resumed = false
+seconds = 8.29742693901062
+unconverged = 5141
+gradient_evaluations = 1548573
+max_sse = 0.3211730783845065
+
+[slab_summaries.224]
+points = 65536
+iterations = 1916531
+function_evaluations = 4656640
+resumed = false
+seconds = 10.250523090362549
+unconverged = 14352
+gradient_evaluations = 1916531
+max_sse = 0.3520750345444753
+
+[slab_summaries.161]
+points = 65536
+iterations = 1620336
+function_evaluations = 3663036
+resumed = false
+seconds = 8.495982885360718
+unconverged = 5929
+gradient_evaluations = 1620336
+max_sse = 0.3245600529497088
+
+[slab_summaries.48]
+points = 65536
+iterations = 1563001
+function_evaluations = 3586397
+resumed = false
+seconds = 9.056022882461548
+unconverged = 10150
+gradient_evaluations = 1563001
+max_sse = 0.34031418244592654
+
+[environment]
+forwarddiff_version = "1.4.6"
+paintmix_version = "0.1.0"
+paintmixprecompute_version = "0.1.0"
+optimization_version = "5.4.0"
+threads = 4
+optim_version = "1.13.3"
+optimization_lbfgsb_version = "1.3.0"
+julia_version = "1.13.3"
+
+[[pigments]]
+slot = 1
+name = "Phthalo Blue (Green Shade)"
+ci = "PB 15:4"
+code = "PB15:4"
+[[pigments]]
+slot = 2
+name = "Quinacridone Magenta"
+ci = "PR 122"
+code = "PR122"
+[[pigments]]
+slot = 3
+name = "Arylide (Hansa) Yellow Opaque"
+ci = "PY 74"
+code = "PY74"
+[[pigments]]
+slot = 4
+name = "Titanium White"
+ci = "PW 6"
+code = "PW6"
+
+[resolved_config]
+schema_version = 1
+
+    [[resolved_config.pigments]]
+    name = "Phthalo Blue (Green Shade)"
+    ci = "PB 15:4"
+    code = "PB15:4"
+    column = "Q"
+    [[resolved_config.pigments]]
+    name = "Quinacridone Magenta"
+    ci = "PR 122"
+    code = "PR122"
+    column = "K"
+    [[resolved_config.pigments]]
+    note = "plan text names PY73; the selected source provides PY74. See inputs/README.md."
+    name = "Arylide (Hansa) Yellow Opaque"
+    ci = "PY 74"
+    code = "PY74"
+    column = "D"
+    [[resolved_config.pigments]]
+    name = "Titanium White"
+    ci = "PW 6"
+    code = "PW6"
+    column = "Z"
+
+    [resolved_config.spectra]
+    wavelength_min_nm = 380
+    wavelength_step_nm = 10
+    integration = "trapezoidal"
+    wavelength_max_nm = 750
+
+    [resolved_config.surrogate]
+    alpha_initial = 100000.0
+    gradient_tolerance = 1.0e-8
+    max_iterations = 200
+    epsilon = 1.0e-6
+    surface_divisions = 20
+    time_limit_seconds = 7200
+    alpha_halvings = 40
+    optimizer = "lbfgsb"
+    parameterization = "direct"
+    push_tolerance = 1.0e-8
+    alpha_final = 0.01
+    derivative = "forwarddiff"
+
+    [resolved_config.unmix]
+    strategy = "active-face-softmax"
+    face_threshold = 1.0e-6
+    objective = "rgb-least-squares"
+    max_iterations = 50
+    restarts = 4
+    tolerance = 1.0e-10
+
+    [resolved_config.grid]
+    dev_n = 32
+    storage = "u8"
+    index_order = "channel-fast"
+    interpolation = "trilinear"
+    byte_scale = "b/255"
+    release_n = 256
+
+    [resolved_config.generation]
+    dev_max_iterations = 40
+    fine_max_iterations = 15
+    dev_surface_divisions = 8
+    dev_alpha_halvings = 12
+    coarse_n = 64
+
+    [resolved_config.quantization]
+    rule = "simplex-largest-remainder"
+    padding = "project-to-simplex"
+
+    [resolved_config.inputs]
+    database = "precompute/output/paintmix.duckdb"
+    primary = "data/Final_artist_database.xlsx"
+    absorption_rows = "B6:B43"
+    primary_sheet = "k and s data"
+    observer_file = "precompute/inputs/cie_1931_2deg_d65_10nm.csv"
+    reflectance_cross_check = "data/Reflectance Data for Golden HB 10 mil Drawdowns over White.xlsx"
+    checksums = "precompute/inputs/checksums.sha256"
+    scattering_rows = "B45:B82"
+
+    [resolved_config.validation]
+    lut_channel_max = 0.03137254901960784
+    lut_channel_p99 = 0.00784313725490196
+    lut_oklab_p99 = 0.01
+    roundtrip_f64 = 1.0e-12
+    roundtrip_f32 = 2.0e-6
+
+    [resolved_config.saunderson]
+    k1 = 0.03
+    k2 = 0.65
+
+    [resolved_config.color]
+    storage_transfer = "linear"
+    color_space = "linear-srgb-d65"
+    observer = "CIE 1931 2-degree"
+    xyz_to_rgb = [[3.2406, -1.5372, -0.4986], [-0.9689, 1.8758, 0.0415], [0.0557, -0.204, 1.057]]
+    illuminant = "D65"
+
+[surrogate]
+alpha_initial = 100000.0
+note = "physical coefficients are authoritative; optimization coordinates depend on parameterization"
+theta = [0.16379900007318252, 0.24166110844106678, 0.3048170185647629, 0.1896692430390824, 0.14347699020256388, 0.08029031748884431, 0.052987727717762084, 0.011475061547771451, 0.04355622606360538, 0.09554598608046722, 0.11206061182401202, 0.14310970499578488, 0.2105788974515426, 0.31004291840218035, 0.3963941788666252, 0.4724971027938628, 0.6306607062074407, 0.9933078816434183, 1.623303543183649, 2.44127196897511, 3.2179729584667394, 3.8318331034815274, 4.495919587872123, 5.104359450044696, 5.369717431373721, 5.4970167300583155, 5.524791437074454, 5.314529884162396, 4.973349581809262, 4.9348807915208415, 5.189829243128319, 5.639565895326788, 6.275969635810934, 6.883235224728249, 6.621903694567269, 5.539682872772901, 3.637062360508441, 1.8803575317688834, 0.2818387575896323, 0.1311144860330357, 0.0869920970966534, 0.0717206838488699, 0.07009096570739023, 0.08131226233929822, 0.10644009366685513, 0.131530168272546, 0.16333911075848526, 0.20700937406896777, 0.2747819288679527, 0.3647041245006993, 0.4515091222724716, 0.5687911219622146, 0.8010586369864937, 1.0581403349813288, 1.1179641271120657, 1.081590769901557, 1.1378627989368393, 1.0123431625211903, 0.5974627206370424, 0.2692315378093044, 0.09905869933902695, 0.005082587769557372, 0.022827407570520302, 0.01971837135394611, 0.005977107974410808, 0.05421211644173253, 0.01207771198569374, 0.00039329167605280064, 0.0001961752445105781, 0.0016931133401580545, 0.0017892338849696933, 0.0014215781633747078, 0.0004321929210194565, 0.00026159931927759655, 0.0005411841388577161, 0.0007369530274243238, 0.5120813073589958, 0.811868115164111, 0.9964690743870211, 1.0341319301189686, 1.1400773432981777, 1.261073260689722, 1.379090817267927, 1.4739001474644848, 1.5625370396495597, 1.6470406551236596, 1.612825203021916, 1.2448412269988491, 0.5826796132242418, 0.20017903169489676, 0.11271424959730952, 0.009391272078376997, 0.015966195160581415, 0.01628145200542935, 0.025374846353467897, 0.013802732495135688, 0.010832930136031479, 0.011027264136100888, 0.0014756755621613891, 9.657080579747858e-6, 0.0012214895315503299, 0.00043366909492865687, 0.00811334409327813, 0.015122220750140337, 0.01494057624647183, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 0.5299897006440433, 0.22734975789346906, 0.04925092122333889, 0.0020568221973669334, 1.0e-6, 1.0e-6, 1.0e-6, 0.012329949965455911, 0.0013587437957286723, 1.0e-6, 0.07086128221543449, 0.0779113541332257, 0.0941626217287585, 0.1075149986437478, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 0.02847014833996761, 0.012829505266575994, 0.01043980813830829, 0.0012648614735983634, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 0.049562133259758244, 0.07325329059231162, 0.09455298905342817, 0.06765784179521805, 0.052638104034982605, 0.03634443173751046, 0.010033380049478872, 0.014096005155958536, 0.008449345151419353, 0.010400374373406882, 0.01468339475343389, 0.01436163341483196, 0.008334980122539823, 0.004675912106574307, 0.005627860918690055, 0.008374659798304691, 0.04107284878071499, 0.08003742860983587, 0.11867925974059038, 0.16549045967210502, 0.21740488264190055, 0.26023940620418423, 0.32196414950642793, 0.3901376071870978, 0.44061485815043105, 0.47308369262167344, 0.5027095703791341, 0.4954410973300081, 0.461322053721552, 0.4397185410102578, 0.4511501333665443, 0.4986406176997553, 0.600724504660114, 0.767539243560303, 0.8808126434125214, 0.8589156644360502, 0.6981274844641755, 0.5164550434343458, 0.1368762538410091, 0.06298181504412337, 0.04294262083089389, 0.032124019295937126, 0.027250221963187375, 0.02571923799470629, 0.026083283097403036, 0.028168371236914954, 0.03046597537695, 0.033486783715218474, 0.03844621735402857, 0.04469173769577471, 0.05175140845336482, 0.06225917347806842, 0.07871224209661647, 0.10174102496530898, 0.1105065122155402, 0.10788062646208436, 0.1167264621221152, 0.1194757810398715, 0.08757311412877343, 0.05203865253927483, 0.030694618667696755, 0.02514808261759807, 0.03051515798438439, 0.04073431502203648, 0.05208143029595652, 0.06244408148657972, 0.07028705324425862, 0.07693263973338046, 0.08225713097866441, 0.08749918999274392, 0.09164789761264422, 0.09821507031035553, 0.10215529670391314, 0.10653722761608449, 0.10916732188037521, 0.11090999640682156, 0.10403556115013324, 0.15762770617001123, 0.19019960298198751, 0.19587681783751948, 0.2178407431299128, 0.24623720768599622, 0.2658450278019719, 0.2677134630094788, 0.27650028194771853, 0.29654806468620115, 0.3168809740124266, 0.3728177877465398, 0.4656521595541126, 0.3598674188939431, 0.2937401640790375, 0.234195034479916, 0.19360536564190076, 0.18044233640412422, 0.17989295748093148, 0.17917898289519116, 0.17885301535001918, 0.17604347152160166, 0.17414152877101463, 0.16898163017684156, 0.16006952255119575, 0.1443378453441213, 0.13335361130189435, 0.1320287784323022, 0.11470113143257597, 0.11146049496288629, 0.11776495743391964, 0.12030717892914936, 0.12279884777925737, 0.120815620852849, 0.11347850449879127, 0.10179611708979616, 0.0902035330988628, 0.06629998756157583, 1.0000117837870415, 1.0000732500852165, 1.0003575137992942, 1.0012816679855683, 1.0039050371207459, 1.0070378971223992, 1.008405302817568, 1.0055190612443545, 0.9994973455520203, 0.9924010748331867, 0.9864023517413284, 0.9820225476663982, 0.9744999063399631, 0.9657238394725273, 0.9648319031082272, 0.9746908244958774, 0.993422487936673, 1.0110564807517946, 1.022610803408243, 1.028570408473072, 1.0326824124498926, 1.0323834199111148, 1.0314381364512064, 1.0271569230263586, 1.0217209895564077, 1.015854939555315, 1.010899609782178, 1.0068411805313753, 1.0041541222012014, 1.0022750713212734, 1.0011087948850534, 1.0004418588527415, 1.0002054828792086, 1.0000987598085622, 1.0000415116357098, 1.0000268062555495, 1.000019063653937, 1.000006116330486]
+epsilon = 1.0e-6
+surface_divisions = 20
+alpha_halvings = 40
+parameterization = "direct"
+alpha_final = 0.01
+solver = "lbfgsb"
+
+    [[surrogate.history]]
+    Epush = 0.0004637697291386116
+    gradient_evaluations = 6
+    termination = "Success"
+    objective = 0.00046383054232545016
+    Epull = 6.081318683856744e-13
+    seconds = 3.967679977416992
+    step = 1
+    alpha = 100000.0
+    converged = true
+    function_evaluations = 6
+    iterations = 3
+    [[surrogate.history]]
+    Epush = 0.0004636471481063605
+    gradient_evaluations = 5
+    termination = "Success"
+    objective = 0.0004637682630049151
+    Epull = 2.422297971091696e-12
+    seconds = 5.118224859237671
+    step = 2
+    alpha = 50000.0
+    converged = true
+    function_evaluations = 5
+    iterations = 2
+    [[surrogate.history]]
+    Epush = 0.0004633608098799587
+    gradient_evaluations = 9
+    termination = "Success"
+    objective = 0.00046362763278586904
+    Epull = 1.0672916236414648e-11
+    seconds = 7.16518497467041
+    step = 3
+    alpha = 25000.0
+    converged = true
+    function_evaluations = 9
+    iterations = 6
+    [[surrogate.history]]
+    Epush = 0.0004628230707279792
+    gradient_evaluations = 9
+    termination = "Success"
+    objective = 0.0004633598329262646
+    Epull = 4.294097586283162e-11
+    seconds = 9.20996904373169
+    step = 4
+    alpha = 12500.0
+    converged = true
+    function_evaluations = 9
+    iterations = 6
+    [[surrogate.history]]
+    Epush = 0.0004617482145944846
+    gradient_evaluations = 11
+    termination = "Success"
+    objective = 0.0004628208517991136
+    Epull = 1.7162195274063957e-10
+    seconds = 11.710397958755493
+    step = 5
+    alpha = 6250.0
+    converged = true
+    function_evaluations = 11
+    iterations = 8
+    [[surrogate.history]]
+    Epush = 0.00045956947483743836
+    gradient_evaluations = 19
+    termination = "Success"
+    objective = 0.00046170260747562523
+    Epull = 6.826024442197997e-10
+    seconds = 16.018077850341797
+    step = 6
+    alpha = 3125.0
+    converged = true
+    function_evaluations = 19
+    iterations = 15
+    [[surrogate.history]]
+    Epush = 0.00045396743070861396
+    gradient_evaluations = 71
+    termination = "Success"
+    objective = 0.0004588931170049813
+    Epull = 3.152439229675128e-9
+    seconds = 32.074646949768066
+    step = 7
+    alpha = 1562.5
+    converged = true
+    function_evaluations = 71
+    iterations = 63
+    [[surrogate.history]]
+    Epush = 0.00044452422655404756
+    gradient_evaluations = 52
+    termination = "Success"
+    objective = 0.00045393691327652423
+    Epull = 1.2048239004770165e-8
+    seconds = 44.19142389297485
+    step = 8
+    alpha = 781.25
+    converged = true
+    function_evaluations = 52
+    iterations = 46
+    [[surrogate.history]]
+    Epush = 0.00042820013042028427
+    gradient_evaluations = 23
+    termination = "Success"
+    objective = 0.0004450302648342175
+    Epull = 4.308514409966901e-8
+    seconds = 49.7887499332428
+    step = 9
+    alpha = 390.625
+    converged = true
+    function_evaluations = 23
+    iterations = 19
+    [[surrogate.history]]
+    Epush = 0.00040233604379727504
+    gradient_evaluations = 36
+    termination = "Success"
+    objective = 0.0004298227729114786
+    Epull = 1.4073205306472216e-7
+    seconds = 58.509891986846924
+    step = 10
+    alpha = 195.3125
+    converged = true
+    function_evaluations = 36
+    iterations = 30
+    [[surrogate.history]]
+    Epush = 0.00036695925980271236
+    gradient_evaluations = 38
+    termination = "Success"
+    objective = 0.0004063370158145329
+    Epull = 4.032282215610422e-7
+    seconds = 67.7362539768219
+    step = 11
+    alpha = 97.65625
+    converged = true
+    function_evaluations = 38
+    iterations = 31
+    [[surrogate.history]]
+    Epush = 0.00032329421179133665
+    gradient_evaluations = 55
+    termination = "Success"
+    objective = 0.00037510341212633426
+    Epull = 1.0610524228607516e-6
+    seconds = 81.11775994300842
+    step = 12
+    alpha = 48.828125
+    converged = true
+    function_evaluations = 55
+    iterations = 49
+    [[surrogate.history]]
+    Epush = 0.000291389608433875
+    gradient_evaluations = 55
+    termination = "Success"
+    objective = 0.00033940424103323663
+    Epull = 1.9666793512698544e-6
+    seconds = 94.47995591163635
+    step = 13
+    alpha = 24.4140625
+    converged = true
+    function_evaluations = 55
+    iterations = 45
+    [[surrogate.history]]
+    Epush = 0.0002630615468719408
+    gradient_evaluations = 99
+    termination = "Success"
+    objective = 0.0003052590496751352
+    Epull = 3.456819429637685e-6
+    seconds = 118.61307787895203
+    step = 14
+    alpha = 12.20703125
+    converged = true
+    function_evaluations = 99
+    iterations = 77
+    [[surrogate.history]]
+    Epush = 0.00025569209905298805
+    gradient_evaluations = 17
+    termination = "Success"
+    objective = 0.0002820163603303041
+    Epull = 4.3129669676754615e-6
+    seconds = 122.76822590827942
+    step = 15
+    alpha = 6.103515625
+    converged = true
+    function_evaluations = 17
+    iterations = 8
+    [[surrogate.history]]
+    Epush = 0.00021448255024063306
+    gradient_evaluations = 124
+    termination = "Success"
+    objective = 0.00025181545303673477
+    Epull = 1.2233245588226604e-5
+    seconds = 153.0622570514679
+    step = 16
+    alpha = 3.0517578125
+    converged = true
+    function_evaluations = 124
+    iterations = 88
+    [[surrogate.history]]
+    Epush = 0.0002021668215880693
+    gradient_evaluations = 42
+    termination = "Success"
+    objective = 0.00022797551067286781
+    Epull = 1.691398247861355e-5
+    seconds = 163.32065296173096
+    step = 17
+    alpha = 1.52587890625
+    converged = true
+    function_evaluations = 42
+    iterations = 28
+    [[surrogate.history]]
+    Epush = 0.00015311502749647325
+    gradient_evaluations = 45
+    termination = "Success"
+    objective = 0.00019511294653530592
+    Epull = 5.504751244257876e-5
+    seconds = 174.2996220588684
+    step = 18
+    alpha = 0.762939453125
+    converged = true
+    function_evaluations = 45
+    iterations = 25
+    [[surrogate.history]]
+    Epush = 0.0001454974175579145
+    gradient_evaluations = 19
+    termination = "Success"
+    objective = 0.00017249448233047496
+    Epull = 7.077118547738092e-5
+    seconds = 178.93523788452148
+    step = 19
+    alpha = 0.3814697265625
+    converged = true
+    function_evaluations = 19
+    iterations = 13
+    [[surrogate.history]]
+    Epush = 4.9783065483311035e-5
+    gradient_evaluations = 137
+    termination = "Success"
+    objective = 0.00010474981943633287
+    Epull = 0.0002881840949652191
+    seconds = 210.7769649028778
+    step = 20
+    alpha = 0.19073486328125
+    converged = true
+    function_evaluations = 137
+    iterations = 88
+    [[surrogate.history]]
+    Epush = 4.585593784746419e-5
+    gradient_evaluations = 29
+    termination = "Success"
+    objective = 7.630800414041982e-5
+    Epull = 0.0003193130586520224
+    seconds = 217.33862590789795
+    step = 21
+    alpha = 0.095367431640625
+    converged = true
+    function_evaluations = 29
+    iterations = 12
+    [[surrogate.history]]
+    Epush = 1.954374971530256e-5
+    gradient_evaluations = 29
+    termination = "Success"
+    objective = 4.838782353560425e-5
+    Epull = 0.0006049040710039332
+    seconds = 223.9056589603424
+    step = 22
+    alpha = 0.0476837158203125
+    converged = true
+    function_evaluations = 29
+    iterations = 16
+    [[surrogate.history]]
+    Epush = 7.219267368048475e-6
+    gradient_evaluations = 55
+    termination = "Success"
+    objective = 2.8285369998790044e-5
+    Epull = 0.000883576385285299
+    seconds = 236.4573998451233
+    step = 23
+    alpha = 0.02384185791015625
+    converged = true
+    function_evaluations = 55
+    iterations = 30
+    [[surrogate.history]]
+    Epush = 3.984895037733598e-6
+    gradient_evaluations = 15
+    termination = "Success"
+    objective = 1.6469016681436256e-5
+    Epull = 0.0010472440269333728
+    seconds = 239.84870505332947
+    step = 24
+    alpha = 0.011920928955078125
+    converged = true
+    function_evaluations = 15
+    iterations = 9
+
+    [surrogate.settings]
+    alpha_initial = 100000.0
+    gradient_tolerance = 1.0e-8
+    max_iterations = 200
+    epsilon = 1.0e-6
+    surface_divisions = 20
+    time_limit_seconds = 7200.0
+    alpha_halvings = 40
+    optimizer = "lbfgsb"
+    parameterization = "direct"
+    push_tolerance = 1.0e-8
+    alpha_final = 0.01
+    derivative = "forwarddiff"
+
+    [surrogate.diagnostics]
+    Epush_dense = 3.047834748704887e-6
+    max_oklab_deviation = 0.14050578097597344
+    max_cube_violation_squared = 0.00026788513240250084
+    termination = "Success"
+    Epull_dense = 0.0008572946940390145
+    dense_divisions = 40
+    max_cube_violation = 0.0163671968400976
+    Epull_fit = 0.0010472440269333728
+    parameterization = "direct"
+    algorithm = "OptimizationLBFGSB.LBFGSB(10, 0.5, 10.0, -1.0e20, 1.0e20, 0.0, 1.0e20, 1.0e-8)"
+    Epush_fit = 3.984895037733598e-6
+    derivative = "forwarddiff"
+
+        [surrogate.diagnostics.quadrature]
+        weighting = "concentration-simplex-area"
+        samples = 924
+        note = "equations (16)-(17) integrate over the RGB gamut boundary; the fit uses equally spaced concentrations, as the paper describes, and these ratios bound the resulting weighting deviation"
+
+            [surrogate.diagnostics.quadrature.rgb_surface_jacobian]
+            mean = 31851.335901416478
+            min = 0.0003410787476458042
+            max = 1.434076582369013e7
+            total = 2.9430634372908827e7
+
+            [surrogate.diagnostics.quadrature.normalized_ratio]
+            mean = 4.971107492177115e6
+            min = 0.0022210345174732507
+            max = 9.33841117960617e7
+
+        [surrogate.diagnostics.oklab_deviation]
+        mean = 0.021444228654531754
+        samples = 4737
+        p99 = 0.07581483465187347
+        max = 0.14050578097597344
+
+[unmix]
+strategy = "active-face-softmax"
+objective = "rgb-least-squares"
+max_iterations = 50
+restarts = 4
+
+[table_settings]
+fine_max_iterations = 15
+strategy = "coarse"
+n = 256
+evaluator = "spectral"
+threads = 4
+coarse_n = 64
+
+[grid]
+storage = "u8"
+n = 256
+index_order = "channel-fast"
+interpolation = "trilinear"
+byte_scale = "b/255"
+
+[acceptance_gates]
+lut_vs_spectral_oklab_p99 = false
+roundtrip_float32 = true
+magenta_yellow_is_orange = true
+lut_vs_spectral_channel_p99 = false
+blue_yellow_is_green = true
+quantization_simplex = true
+white_tint_monotone = true
+lut_vs_spectral_channel_max = false
+roundtrip_float64 = true
+padding_on_simplex = true
+
+[quantization]
+rule = "simplex-largest-remainder"
+padding = "project-to-simplex"
+
+[inputs]
+config = "ae0b07f1350f5ce496276cbe471a7cf1501a5094653338ae7f0b5b77d4694fc6"
+observer = "8add4c8c68ee83491e0fd41e2c0a21debb456e17706a9217d9319868fb4abc61"
+spectral_k_s = "2ab4ef751c781a58b6ada5f424eac7f7e0ca191b7644c22ad53524ee64c7d847"
+reflectance_cross_check = "584a38368c4af637a1253b6465b9f71493e38c65340092a0cfe9f73b3ed227cf"
+
+[validation.behavior]
+reversal_symmetry_error = 5.551115123125783e-17
+note = "qualitative flags are evaluated on the spectral reference; the runtime values and their channel difference show the approximation"
+blue_yellow_is_green = true
+spectral_blue_yellow_50_50 = [0.025708058806825047, 0.20115039156232567, 0.1456048932334777]
+spectral_magenta_yellow_50_50 = [0.5924434986999115, 0.15289566812430835, 0.08803706096922262]
+white_tint_lightness = [0.098944, 0.16826307689470593, 0.25085001880843133, 0.36883671350333325, 1.0]
+blue_yellow_channel_error = 0.09222761468917799
+runtime_blue_yellow_50_50 = [-0.06651955588235295, 0.1923931892156863, 0.1474597]
+magenta_yellow_is_orange = true
+runtime_magenta_yellow_50_50 = [0.5479411764705882, 0.1435071078431372, 0.08946617647058824]
+white_tint_monotone = true
+magenta_yellow_channel_error = 0.04450232222932338
+same_color_max_error = 0.0
+
+[validation.decomposition]
+corpus_sha256 = "24341e1568a97859b1e2e966de91f147f8254fe8b312e56aa5a6769bf7f83c56"
+corpus_version = 2
+
+    [validation.decomposition.forward_interpolation_channel]
+    mean = 0.0014713020282788598
+    samples = 460
+    p99 = 0.037999059890643117
+    max = 0.1494627180561905
+
+    [validation.decomposition.inverse_objective_excess]
+    mean = 3.485156837013035e-9
+    samples = 256
+    p99 = 1.50615707683599e-8
+    max = 7.853243543584812e-7
+
+    [validation.decomposition.surrogate_bias_oklab]
+    mean = 0.022999569839403922
+    samples = 460
+    p99 = 0.14050158453383735
+    max = 0.14050578097597347
+
+    [validation.decomposition.concentration_quantization_channel]
+    mean = 0.0036942210070811847
+    samples = 460
+    p99 = 0.0772346502006761
+    max = 0.23723547717191196
+
+    [validation.decomposition.inverse_quantization_concentration]
+    mean = 0.0009619555062503892
+    samples = 256
+    p99 = 0.0021896973457013044
+    max = 0.002247937367820766
+
+    [validation.decomposition.forward_quantization_channel]
+    mean = 0.0015229647259835059
+    samples = 460
+    p99 = 0.016366851788994774
+    max = 0.0163671968400976
+
+[validation.roundtrip]
+corpus_sha256 = "9e56b9cc3686cef0a6288c7dbb9ec2a6f8320c1bb387c7676929fcc625ec5b4b"
+samples = 2000
+corpus_version = 2
+
+    [validation.roundtrip.float32]
+    mean = 6.769696483388543e-10
+    max = 1.4901161193847656e-8
+
+    [validation.roundtrip.float64]
+    mean = 4.336808689942018e-22
+    max = 8.673617379884035e-19
+
+[validation.padding]
+grid_n = 256
+padding_rule = "project-to-simplex"
+samples_per_depth = 7564
+
+    [validation.padding.by_depth."0.001"]
+    mean = 0.006687201511527548
+    p99 = 0.053860431278768495
+    max = 0.09320148960782104
+
+    [validation.padding.by_depth."0.02"]
+    mean = 0.002118359580826009
+    p99 = 0.006833115143229818
+    max = 0.007569721939836183
+
+    [validation.padding.by_depth."0.0"]
+    mean = 0.0015033211903181553
+    p99 = 0.007198580293249503
+    max = 0.0163671968400976
+
+    [validation.padding.by_depth."0.005"]
+    mean = 0.011761363249918937
+    p99 = 0.0845613929250556
+    max = 0.13517517621301833
+
+    [validation.padding.worst]
+    depth = 0.005
+    c = [0.0012437810945273634, 0.0012437810945273634, 0.996268656716418, 0.0012437810945273634]
+    error = 0.13517517621301833
+
+[validation.continuity]
+corpus_sha256 = "c27a9e791f3aeaa01a3d7694bfcf37f130fc20144b3bf8d795f31054ed241c38"
+note = "runtime-table encode along random RGB segments; a concentration jump much larger than 1/255 with a small color step is a basin change"
+lines = 256
+corpus_version = 2
+points_per_line = 65
+worst_jump_at = [0.6903985738754272, 0.39830151200294495, 0.08251028507947922]
+
+    [validation.continuity.decode_error]
+    p99 = 7.450580596923828e-9
+    max = 1.4901161193847656e-8
+
+    [validation.continuity.concentration_jump]
+    mean = 0.004121770155596033
+    p99 = 0.0310777947306633
+    max = 0.46495234966278076
+
+[validation.quantization]
+rule = "simplex-largest-remainder"
+note = "sum == 255 means the fourth concentration is zero; a sum below 255 carries positive white pigment"
+vertices = 16777216
+sum_255_fraction = 0.0
+invalid_vertices = 0
+
+[validation.quality]
+corpus_sha256 = "40f3ffa15dcff27d1a923fbd2f5230299a6b80435885ef3f3440a85f2a621b75"
+corpus_colors = 512
+corpus_version = 2
+pairs = 20000
+
+    [validation.quality.channel_error]
+    mean = 0.014401029100976837
+    p99 = 0.09725971031993208
+    max = 0.21415387601956604
+
+    [validation.quality.worst_channel_sample]
+    t = 0.8697218382593529
+    a = [0.0306883206551245, 0.21350455896112108, 0.4317585928743467]
+    b = [0.6902618843578886, 0.8269098043177392, 0.8527010495718986]
+    error = 0.21415387601956604
+
+    [validation.quality.encoded_channel_error]
+    mean = 0.011532362031121469
+    p99 = 0.09819350180911951
+    max = 0.45812847589788125
+
+    [validation.quality.oklab_error]
+    mean = 0.00467561409332504
+    p99 = 0.0356442315992515
+    max = 0.11399970830859092
+
+[model]
+grid_n = 256
+flags = 3
+format_version = 1
+id = "2e7b0348fa5708a29e930bcfe38ec56e"
+payload_bytes = 100663424
+table_bytes_each = 50331648
+float_grid_n = 256
+
+[parameters]
+scattering = [[0.049562133259758244, 0.07325329059231162, 0.09455298905342817, 0.06765784179521805, 0.052638104034982605, 0.03634443173751046, 0.010033380049478872, 0.014096005155958536, 0.008449345151419353, 0.010400374373406882, 0.01468339475343389, 0.01436163341483196, 0.008334980122539823, 0.004675912106574307, 0.005627860918690055, 0.008374659798304691, 0.04107284878071499, 0.08003742860983587, 0.11867925974059038, 0.16549045967210502, 0.21740488264190055, 0.26023940620418423, 0.32196414950642793, 0.3901376071870978, 0.44061485815043105, 0.47308369262167344, 0.5027095703791341, 0.4954410973300081, 0.461322053721552, 0.4397185410102578, 0.4511501333665443, 0.4986406176997553, 0.600724504660114, 0.767539243560303, 0.8808126434125214, 0.8589156644360502, 0.6981274844641755, 0.5164550434343458], [0.1368762538410091, 0.06298181504412337, 0.04294262083089389, 0.032124019295937126, 0.027250221963187375, 0.02571923799470629, 0.026083283097403036, 0.028168371236914954, 0.03046597537695, 0.033486783715218474, 0.03844621735402857, 0.04469173769577471, 0.05175140845336482, 0.06225917347806842, 0.07871224209661647, 0.10174102496530898, 0.1105065122155402, 0.10788062646208436, 0.1167264621221152, 0.1194757810398715, 0.08757311412877343, 0.05203865253927483, 0.030694618667696755, 0.02514808261759807, 0.03051515798438439, 0.04073431502203648, 0.05208143029595652, 0.06244408148657972, 0.07028705324425862, 0.07693263973338046, 0.08225713097866441, 0.08749918999274392, 0.09164789761264422, 0.09821507031035553, 0.10215529670391314, 0.10653722761608449, 0.10916732188037521, 0.11090999640682156], [0.10403556115013324, 0.15762770617001123, 0.19019960298198751, 0.19587681783751948, 0.2178407431299128, 0.24623720768599622, 0.2658450278019719, 0.2677134630094788, 0.27650028194771853, 0.29654806468620115, 0.3168809740124266, 0.3728177877465398, 0.4656521595541126, 0.3598674188939431, 0.2937401640790375, 0.234195034479916, 0.19360536564190076, 0.18044233640412422, 0.17989295748093148, 0.17917898289519116, 0.17885301535001918, 0.17604347152160166, 0.17414152877101463, 0.16898163017684156, 0.16006952255119575, 0.1443378453441213, 0.13335361130189435, 0.1320287784323022, 0.11470113143257597, 0.11146049496288629, 0.11776495743391964, 0.12030717892914936, 0.12279884777925737, 0.120815620852849, 0.11347850449879127, 0.10179611708979616, 0.0902035330988628, 0.06629998756157583], [1.0000117837870415, 1.0000732500852165, 1.0003575137992942, 1.0012816679855683, 1.0039050371207459, 1.0070378971223992, 1.008405302817568, 1.0055190612443545, 0.9994973455520203, 0.9924010748331867, 0.9864023517413284, 0.9820225476663982, 0.9744999063399631, 0.9657238394725273, 0.9648319031082272, 0.9746908244958774, 0.993422487936673, 1.0110564807517946, 1.022610803408243, 1.028570408473072, 1.0326824124498926, 1.0323834199111148, 1.0314381364512064, 1.0271569230263586, 1.0217209895564077, 1.015854939555315, 1.010899609782178, 1.0068411805313753, 1.0041541222012014, 1.0022750713212734, 1.0011087948850534, 1.0004418588527415, 1.0002054828792086, 1.0000987598085622, 1.0000415116357098, 1.0000268062555495, 1.000019063653937, 1.000006116330486]]
+absorption = [[0.16379900007318252, 0.24166110844106678, 0.3048170185647629, 0.1896692430390824, 0.14347699020256388, 0.08029031748884431, 0.052987727717762084, 0.011475061547771451, 0.04355622606360538, 0.09554598608046722, 0.11206061182401202, 0.14310970499578488, 0.2105788974515426, 0.31004291840218035, 0.3963941788666252, 0.4724971027938628, 0.6306607062074407, 0.9933078816434183, 1.623303543183649, 2.44127196897511, 3.2179729584667394, 3.8318331034815274, 4.495919587872123, 5.104359450044696, 5.369717431373721, 5.4970167300583155, 5.524791437074454, 5.314529884162396, 4.973349581809262, 4.9348807915208415, 5.189829243128319, 5.639565895326788, 6.275969635810934, 6.883235224728249, 6.621903694567269, 5.539682872772901, 3.637062360508441, 1.8803575317688834], [0.2818387575896323, 0.1311144860330357, 0.0869920970966534, 0.0717206838488699, 0.07009096570739023, 0.08131226233929822, 0.10644009366685513, 0.131530168272546, 0.16333911075848526, 0.20700937406896777, 0.2747819288679527, 0.3647041245006993, 0.4515091222724716, 0.5687911219622146, 0.8010586369864937, 1.0581403349813288, 1.1179641271120657, 1.081590769901557, 1.1378627989368393, 1.0123431625211903, 0.5974627206370424, 0.2692315378093044, 0.09905869933902695, 0.005082587769557372, 0.022827407570520302, 0.01971837135394611, 0.005977107974410808, 0.05421211644173253, 0.01207771198569374, 0.00039329167605280064, 0.0001961752445105781, 0.0016931133401580545, 0.0017892338849696933, 0.0014215781633747078, 0.0004321929210194565, 0.00026159931927759655, 0.0005411841388577161, 0.0007369530274243238], [0.5120813073589958, 0.811868115164111, 0.9964690743870211, 1.0341319301189686, 1.1400773432981777, 1.261073260689722, 1.379090817267927, 1.4739001474644848, 1.5625370396495597, 1.6470406551236596, 1.612825203021916, 1.2448412269988491, 0.5826796132242418, 0.20017903169489676, 0.11271424959730952, 0.009391272078376997, 0.015966195160581415, 0.01628145200542935, 0.025374846353467897, 0.013802732495135688, 0.010832930136031479, 0.011027264136100888, 0.0014756755621613891, 9.657080579747858e-6, 0.0012214895315503299, 0.00043366909492865687, 0.00811334409327813, 0.015122220750140337, 0.01494057624647183, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6], [0.5299897006440433, 0.22734975789346906, 0.04925092122333889, 0.0020568221973669334, 1.0e-6, 1.0e-6, 1.0e-6, 0.012329949965455911, 0.0013587437957286723, 1.0e-6, 0.07086128221543449, 0.0779113541332257, 0.0941626217287585, 0.1075149986437478, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 0.02847014833996761, 0.012829505266575994, 0.01043980813830829, 0.0012648614735983634, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6]]

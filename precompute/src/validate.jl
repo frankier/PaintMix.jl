@@ -8,12 +8,6 @@
 # Reports are plain dictionaries so they serialize into the provenance
 # sidecar and can be compared between runs.
 
-# Sampling uses `Random.Xoshiro` from the standard library. The stream is not
-# promised across Julia versions, but it is stable in practice, which is all
-# the validation reports need.
-
-@inline rand_rgb(rng::AbstractRNG) = SVector(rand(rng), rand(rng), rand(rng))
-
 # --- spectral reference implementation of encode/mix ----------------------
 
 """
@@ -50,28 +44,6 @@ end
 
 # --- reports ---------------------------------------------------------------
 
-"""
-    corpus(rng, count) -> Vector{RGB}
-
-A deterministic validation corpus: the eight RGB cube corners, the four
-pigment vertices and white, a spread of random colors, and some near-black
-and near-white samples where residuals dominate.
-"""
-function corpus(rng::AbstractRNG, count::Integer)
-    colors = SVector{3, Float64}[]
-    for r in (0.0, 1.0), g in (0.0, 1.0), b in (0.0, 1.0)
-        push!(colors, SVector(r, g, b))
-    end
-    push!(
-        colors, SVector(0.0, 0.0, 0.0), SVector(1.0, 1.0, 1.0),
-        SVector(0.02, 0.02, 0.02), SVector(0.98, 0.98, 0.98),
-    )
-    while length(colors) < count
-        push!(colors, rand_rgb(rng))
-    end
-    return colors
-end
-
 _pctl(v, p) = isempty(v) ? NaN : sort(v)[clamp(ceil(Int, p * length(v)), 1, length(v))]
 
 """
@@ -87,12 +59,13 @@ bias) stay separate.
 """
 function quality_report(
         model::PaintMix.PigmentModel, spectral::SpectralModel{T}, cfg::AbstractDict;
-        colors::Integer = 512, pairs::Integer = 20000, seed::Integer = 20210913,
+        colors::Integer = ValidationSettings(cfg).colors, pairs::Integer = ValidationSettings(cfg).pairs,
+        seed::Integer = ValidationSettings(cfg).seed,
+        samples = validation_corpus(; colors, pairs, seed),
     ) where {T}
     settings = UnmixSettings(cfg)
     scratch = SolverScratch()
-    rng = Xoshiro(seed)
-    points = corpus(rng, colors)
+    points = samples.colors
     latents = Vector{Tuple{SVector{4, T}, SVector{3, T}}}(undef, length(points))
     for (i, rgb) in enumerate(points)
         latents[i] = spectral_encode(spectral, rgb; settings = settings, scratch = scratch)
@@ -102,16 +75,13 @@ function quality_report(
     enc = Float64[]
     ok = Float64[]
     worst = (0.0, SVector(0.0, 0.0, 0.0), SVector(0.0, 0.0, 0.0), 0.0)
-    @inbounds for _ in 1:pairs
-        ia = 1 + floor(Int, rand(rng) * (length(points) - 1))
-        ib = 1 + floor(Int, rand(rng) * (length(points) - 1))
-        t = rand(rng)
+    @inbounds for (ia, ib, t) in samples.pairs
         a = points[ia]
         b = points[ib]
         ca, ra = latents[ia]
         cb, rb = latents[ib]
         ref = spectral_mix(spectral, ca, ra, cb, rb, T(t))
-        got = PaintMix.mix(model, a, b, Float32(t))
+        got = PaintMix.mix(model, a, b, T(t))
         e = abs.(Float64.(got) .- ref)
         m = maximum(e)
         push!(ch, m)
@@ -129,7 +99,9 @@ function quality_report(
         end
     end
     return Dict{String, Any}(
-        "pairs" => pairs,
+        "corpus_version" => samples.version,
+        "corpus_sha256" => samples.digest,
+        "pairs" => length(samples.pairs),
         "corpus_colors" => length(points),
         "channel_error" => Dict{String, Any}(
             "mean" => sum(ch) / length(ch),
@@ -227,20 +199,22 @@ function roundtrip_report(
         model::PaintMix.PigmentModel, cfg::AbstractDict; colors::Integer = 2000,
         seed::Integer = 7,
     )
-    rng = Xoshiro(seed)
-    points = corpus(rng, colors)
+    samples = validation_corpus(; colors, pairs = 1, seed)
+    points = samples.colors
     err32 = Float64[]
     err64 = Float64[]
     for rgb in points
         a32 = Float32.(rgb)
         z32 = PaintMix.encode(model, a32)
         back32 = PaintMix.decode(model, z32)
-        push!(err32, maximum(abs.(Float64.(back32) .- rgb)))
+        push!(err32, maximum(abs.(Float64.(back32) .- Float64.(a32))))
         z64 = PaintMix.encode(model, rgb)
         back64 = PaintMix.decode(model, z64)
         push!(err64, maximum(abs.(back64 .- rgb)))
     end
     return Dict{String, Any}(
+        "corpus_version" => samples.version,
+        "corpus_sha256" => samples.digest,
         "samples" => length(points),
         "float32" => Dict{String, Any}(
             "max" => maximum(err32), "mean" => sum(err32) / length(err32)
@@ -294,13 +268,10 @@ function acceptance_gates(cfg::AbstractDict, reports::AbstractDict)
     p = reports["padding"]
     rt = reports["roundtrip"]
     quant = reports["quantization"]
-    targets = get(cfg, "validation", Dict{String, Any}())
+    st = ValidationSettings(cfg)
     qe = get(q, "encoded_channel_error", q["channel_error"])
-    p99_target = get(targets, "lut_channel_p99", 2 / 255)
-    max_target = get(targets, "lut_channel_max", 8 / 255)
-    oklab_target = get(targets, "lut_oklab_p99", 0.01)
-    rt32 = get(targets, "roundtrip_f32", 2.0e-6)
-    rt64 = get(targets, "roundtrip_f64", 1.0e-12)
+    p99_target, max_target, oklab_target = st.channel_p99, st.channel_max, st.oklab_p99
+    rt32, rt64 = st.roundtrip_f32, st.roundtrip_f64
     return Dict{String, Bool}(
         "lut_vs_spectral_channel_p99" => qe["p99"] <= p99_target,
         "lut_vs_spectral_channel_max" => qe["max"] <= max_target,
@@ -328,13 +299,13 @@ function continuity_report(
         model::PaintMix.PigmentModel, cfg::AbstractDict;
         lines::Integer = 256, points::Integer = 65, seed::Integer = 424242,
     )
-    rng = Xoshiro(seed)
+    lines >= 1 && points >= 2 || throw(ArgumentError("continuity needs >=1 line and >=2 points"))
+    samples = validation_corpus(; colors = max(12, 2 * lines), pairs = lines, seed)
     jumps = Float64[]
     decode_err = Float64[]
     worst_jump = (0.0, SVector(0.0, 0.0, 0.0))
-    for _ in 1:lines
-        a = rand_rgb(rng)
-        b = rand_rgb(rng)
+    for (ia, ib, _) in samples.pairs
+        a, b = samples.colors[ia], samples.colors[ib]
         prev = nothing
         for i in 0:(points - 1)
             t = Float32(i / (points - 1))
@@ -355,6 +326,8 @@ function continuity_report(
         end
     end
     return Dict{String, Any}(
+        "corpus_version" => samples.version,
+        "corpus_sha256" => samples.digest,
         "lines" => lines,
         "points_per_line" => points,
         "concentration_jump" => Dict{String, Any}(
@@ -438,4 +411,112 @@ function behavior_report(
             "qualitative flags are evaluated on the spectral reference; the " *
             "runtime values and their channel difference show the approximation",
     )
+end
+
+"""Versioned validation inputs. The digest identifies actual samples, not just a seed."""
+struct ValidationCorpus
+    version::Int
+    colors::Vector{SVector{3, Float64}}
+    pairs::Vector{Tuple{Int, Int, Float64}}
+    concentrations::Vector{SVector{4, Float64}}
+    digest::String
+end
+
+# SplitMix64 specifies the stream across Julia versions; sampling uses no
+# implementation-dependent Random distribution methods.
+function _validation_uniform!(state)
+    state[] += 0x9e3779b97f4a7c15
+    z = state[]
+    z = (z ⊻ (z >> 30)) * 0xbf58476d1ce4e5b9
+    z = (z ⊻ (z >> 27)) * 0x94d049bb133111eb
+    return Float64((z ⊻ (z >> 31)) >> 11) * 0x1.0p-53
+end
+
+"""Build fixed RGB, pair, and boundary-rich concentration samples for comparisons."""
+function validation_corpus(; colors = 512, pairs = 20000, seed = 20210913)
+    colors >= 12 && pairs >= 1 || throw(ArgumentError("validation needs >=12 colors and >=1 pair"))
+    state = Ref(UInt64(seed))
+    u() = _validation_uniform!(state)
+    rgb = [SVector(r, g, b) for r in (0.0, 1.0) for g in (0.0, 1.0) for b in (0.0, 1.0)]
+    append!(rgb, [SVector(x, x, x) for x in (0.001, 0.02, 0.98, 0.999)])
+    while length(rgb) < colors
+        push!(rgb, SVector(u(), u(), u()))
+    end
+    pp = [(min(colors, 1 + floor(Int, u() * colors)), min(colors, 1 + floor(Int, u() * colors)), u()) for _ in 1:pairs]
+    cc = SVector{4, Float64}[]
+    for i in 1:4
+        push!(cc, SVector{4, Float64}(ntuple(j -> Float64(i == j), 4)))
+        for j in 1:4
+            i == j && continue
+            for t in (0.5, 0.1, 0.01, 0.001, 1.0e-5, 1.0e-7)
+                push!(cc, SVector{4, Float64}(ntuple(k -> k == i ? 1 - t : k == j ? t : 0.0, 4)))
+            end
+        end
+    end
+    for face in 1:4, _ in 1:32
+        v = SVector{4, Float64}(ntuple(j -> j == face ? 0.0 : -log(max(u(), eps())), 4))
+        push!(cc, v / sum(v))
+    end
+    for _ in 1:colors
+        v = SVector(-log(max(u(), eps())), -log(max(u(), eps())), -log(max(u(), eps())), -log(max(u(), eps())))
+        push!(cc, v / sum(v))
+    end
+    digest = experiment_id(
+        Dict(
+            "version" => 2, "colors" => [collect(c) for c in rgb],
+            "pairs" => [collect(p) for p in pp], "concentrations" => [collect(c) for c in cc]
+        )
+    )
+    return ValidationCorpus(2, rgb, pp, cc, digest)
+end
+
+_error_stats(values) = Dict{String, Any}(
+    "mean" => sum(values) / length(values),
+    "p99" => _pctl(values, 0.99), "max" => maximum(values), "samples" => length(values)
+)
+
+"""Report approximation layers separately; their distributions are not additive."""
+function error_decomposition(
+        model, spectral, ft::FloatTables, cfg; measured = nothing,
+        samples = validation_corpus(; colors = 256, pairs = 512)
+    )
+    forward = forward_float_lut(ft.n, ft.forward)
+    inverse = forward_float_lut(ft.n, ft.inverse)
+    interpolation, forward_bytes, concentration_bytes = Float64[], Float64[], Float64[]
+    surrogate_bias = Float64[]
+    for c in samples.concentrations
+        exact = mix_rgb(spectral, c)
+        floating = _mix(forward, c)
+        byte = PaintMix.forward_rgb(model, c[1], c[2], c[3])
+        b = quantize_simplex(c)
+        qc = SVector{4, Float64}(Int(b[1]), Int(b[2]), Int(b[3]), 255 - sum(Int, b)) / 255
+        push!(interpolation, maximum(abs, floating - exact))
+        push!(forward_bytes, maximum(abs, byte - floating))
+        push!(concentration_bytes, maximum(abs, mix_rgb(spectral, qc) - exact))
+        measured === nothing || push!(
+            surrogate_bias,
+            sqrt(oklab_distance_squared(linear_srgb_to_oklab(exact), linear_srgb_to_oklab(mix_rgb(measured, c))))
+        )
+    end
+    inverse_excess, inverse_bytes = Float64[], Float64[]
+    scratch = SolverScratch()
+    settings = UnmixSettings(cfg)
+    for rgb in samples.colors
+        ref = unmix_reference(spectral, rgb; scratch, settings)
+        xyz = _mix(inverse, SVector(rgb..., 0.0))
+        c = SVector(xyz..., 1 - sum(xyz))
+        push!(inverse_excess, max(0.0, _sse(rgb, mix_rgb(spectral, c)) - ref.sse))
+        bytes = PaintMix.concentrations(PaintMix.encode(model, rgb))
+        push!(inverse_bytes, maximum(abs, bytes - c))
+    end
+    report = Dict{String, Any}(
+        "corpus_version" => samples.version, "corpus_sha256" => samples.digest,
+        "forward_interpolation_channel" => _error_stats(interpolation),
+        "forward_quantization_channel" => _error_stats(forward_bytes),
+        "concentration_quantization_channel" => _error_stats(concentration_bytes),
+        "inverse_objective_excess" => _error_stats(inverse_excess),
+        "inverse_quantization_concentration" => _error_stats(inverse_bytes)
+    )
+    measured === nothing || (report["surrogate_bias_oklab"] = _error_stats(surrogate_bias))
+    return report
 end

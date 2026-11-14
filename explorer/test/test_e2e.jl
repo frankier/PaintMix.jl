@@ -1,10 +1,10 @@
 # Browser end-to-end lane. Opt-in: set EXPLORER_E2E=1.
 #
 # Playwright.jl is a test-only, unregistered dependency. Install the driver
-# and browsers once, out of band:
+# and browsers once, out of band. Set TMPDIR to disk-backed scratch storage:
 #
-#   git clone https://github.com/frankier/playwright-julia /tmp/playwright-julia
-#   julia /tmp/playwright-julia/bin/install.jl
+#   git clone https://github.com/frankier/playwright-julia "$TMPDIR/playwright-julia"
+#   julia "$TMPDIR/playwright-julia/bin/install.jl"
 #
 # WGLMakie figures boot through WebGL and the first websocket round trip, so
 # the default action timeout is generous. `EXPLORER_E2E_BROWSER` swaps the

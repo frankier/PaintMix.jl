@@ -24,9 +24,6 @@
 # precompute/scripts/generate.jl; see data/default/README.md.
 /data/default/*.pmx
 
-# The promoted release payload is a 96 MiB build artifact, reproduced by
-# precompute/scripts/generate.jl; see data/default/README.md.
-/data/default/*.pmx
 
 # Precompute artifacts
 /precompute/output/*

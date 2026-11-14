@@ -104,6 +104,10 @@ rule = "simplex-largest-remainder"
 padding = "project-to-simplex"
 
 [surrogate]
+parameterization = "softplus"
+optimizer = "lbfgs"
+derivative = "forwarddiff"
+gradient_tolerance = 1.0e-8
 # K = epsilon + softplus(thetaK), S = epsilon + softplus(thetaS).
 # Unconstrained L-BFGS on the transformed variables, warm-started as alpha
 # halves, per the paper's continuation schedule.

@@ -142,6 +142,7 @@ function fit_caption(d::ExplorerData)
     _fit_diagnostics_card(io, d)
     print(io, "</section>")
     _fit_chromaticity_card(io, d)
+    _fit_comparison_card(io, d)
     return String(take!(io))
 end
 
@@ -242,4 +243,31 @@ function _fit_chromaticity_card(io, d::ExplorerData)
     end
     print(io, "</section>")
     return
+end
+
+function _fit_comparison_card(io, d::ExplorerData)
+    isempty(d.comparisons) && return nothing
+    print(io, "<section class=\"card\"><h2>Candidate comparison</h2>")
+    rows = []
+    for r in d.comparisons
+        q = r["validation"]["quality"]
+        diag = r["diagnostics"]
+        push!(
+            rows, (
+                r["variant"], number(r["fit_seconds"]), number(r["generation_seconds"]),
+                number(diag["max_cube_violation"]), number(q["oklab_error"]["p99"]),
+                number(q["encoded_channel_error"]["p99"]), r["termination"], r["model_id"],
+            )
+        )
+    end
+    print(
+        io, html_table(
+            rows; headers = [
+                "candidate", "fit seconds", "table seconds",
+                "max gamut violation", "Oklab p99", "encoded channel p99", "termination", "model id",
+            ]
+        )
+    )
+    print(io, "<p class=\"muted\">Candidates share a versioned validation corpus. Solver and coefficient coordinates vary independently; no candidate is promoted.</p></section>")
+    return nothing
 end

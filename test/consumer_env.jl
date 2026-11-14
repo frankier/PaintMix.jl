@@ -16,7 +16,7 @@ using Test
 const ROOT = normpath(joinpath(@__DIR__, ".."))
 
 const FORBIDDEN = [
-    "Optim", "ForwardDiff", "JuliaLibWrapping", "JuliaC", "JLWInterop",
+    "Optim", "Optimization", "OptimizationBase", "OptimizationOptimJL", "OptimizationLBFGSB", "ForwardDiff", "JuliaLibWrapping", "JuliaC", "JLWInterop",
     "DuckDB", "XLSX", "DataFrames",
 ]
 

@@ -6,7 +6,7 @@
 #
 #   * `unmix_reference` enumerates all 15 nonempty pigment subsets, so a true
 #     boundary solution is found on the lower-dimensional face that contains
-#     it. It is the accuracy reference and the definition of correct.
+#     it. It is a numerical accuracy reference, not a proof of a global optimum.
 #   * `unmix_bulk` is the throughput path used to fill 256^3 table vertices.
 #     It starts from neighbouring solutions and reduces the active face
 #     adaptively. Its output is checked against the reference solver on
@@ -37,12 +37,16 @@ Read the solver settings from the configuration's `unmix` section.
 function UnmixSettings(cfg::AbstractDict)
     u = cfg["unmix"]
     T = Float64
-    return UnmixSettings{T}(
+    st = UnmixSettings{T}(
         Int(u["max_iterations"]),
         T(get(u, "tolerance", 1.0e-10)),
         T(get(u, "face_threshold", 1.0e-6)),
         Int(u["restarts"]),
     )
+    st.max_iterations >= 1 && st.restarts >= 1 || throw(ConfigError("inverse limits must be positive"))
+    isfinite(st.tolerance) && st.tolerance > 0 || throw(ConfigError("inverse tolerance must be finite and positive"))
+    isfinite(st.face_threshold) && 0 <= st.face_threshold < 0.25 || throw(ConfigError("inverse face threshold must be in [0, 0.25)"))
+    return st
 end
 
 """
@@ -59,12 +63,15 @@ Base.@kwdef struct UnmixResult{T <: AbstractFloat}
     iterations::Int
     converged::Bool
     restarts::Int
+    function_evaluations::Int = 0
+    gradient_evaluations::Int = 0
+    termination::Symbol = :unknown
 end
 
 """
     SolverScratch
 
-Reusable buffers for one solver instance. One per thread. The kernels are
+Reusable buffers for one solver instance. One per worker task. The kernels are
 allocation-free once a scratch exists; the public solvers are too, and the
 precompute tests check that. That is what makes 256^3 solves of 16.7 million
 points practical.
@@ -80,10 +87,12 @@ mutable struct SolverScratch
     A::Matrix{Float64}     # 3 x 3 normal matrix
     r::Vector{Float64}     # 3 residual
     g::Vector{Float64}     # 3 gradient
+    function_evaluations::Int
+    gradient_evaluations::Int
 end
 
 SolverScratch() =
-    SolverScratch(zeros(3, 4), zeros(3, 3), zeros(3, 3), zeros(3), zeros(3))
+    SolverScratch(zeros(3, 4), zeros(3, 3), zeros(3, 3), zeros(3), zeros(3), 0, 0)
 
 # --- small helpers ---------------------------------------------------------
 
@@ -237,6 +246,7 @@ function lm_active!(
     θ = theta0
     p = _softmax_k(SVector{M + 1, T}(θ..., zero(T)))
     c = _c_from_active(active, p)
+    sc.function_evaluations += 1
     m = _mix(model, c)
     sse = _sse(rgb, m)
     K == 1 && return c, sse, 0, true
@@ -249,6 +259,7 @@ function lm_active!(
         iterations += 1
         # Analytic dRGB/dc at the current point; the softmax chain rule is
         # applied on top of it below.
+        sc.gradient_evaluations += 1
         _jacobian4!(sc.J, model, c)
         @inbounds for i in 1:3
             sc.r[i] = m[i] - rgb[i]
@@ -295,6 +306,7 @@ function lm_active!(
             θt = θ + δ
             pt = _softmax_k(SVector{M + 1, T}(θt..., zero(T)))
             ct = _c_from_active(active, pt)
+            sc.function_evaluations += 1
             mt = _mix(model, ct)
             st = _sse(rgb, mt)
             if st < sse
@@ -310,7 +322,7 @@ function lm_active!(
             λ *= 10
         end
         if !accepted
-            converged = true
+            converged = maximum(i -> abs(sc.g[i]), 1:M) <= settings.tolerance || sse < T(1.0e-18)
             break
         end
         if sqrt(sum(abs2, δ)) < settings.tolerance
@@ -347,7 +359,7 @@ logits. `active` is a zero-padded `NTuple{4,Int}` whose first `n` entries are
 the active pigment indices.
 """
 function _solve_adaptive!(
-        sc::SolverScratch, model, rgb::SVector{3, T},
+        sc, model, rgb::SVector{3, T},
         seed::SVector{4, T}, settings::UnmixSettings,
     ) where {T}
     n, active = _active_pack(seed, settings.face_threshold)
@@ -358,7 +370,7 @@ end
 # into a concrete `NTuple{n,Int}` here, one branch per face. This is the only
 # place the arity is recovered.
 @inline function _polish_face!(
-        sc::SolverScratch, model, rgb::SVector{3, T},
+        sc, model, rgb::SVector{3, T},
         active::Active4, n::Int, c::SVector{4, T}, settings::UnmixSettings,
     ) where {T}
     n == 4 && return _polish!(sc, model, rgb, active, c, settings)
@@ -373,7 +385,7 @@ end
 # stays a fixed-width `(n, NTuple{4,Int})` pair throughout, so the loop is
 # allocation-free without an arity recursion.
 function _adaptive_face!(
-        sc::SolverScratch, model, rgb::SVector{3, T},
+        sc, model, rgb::SVector{3, T},
         active::Active4, n::Int, c::SVector{4, T}, settings::UnmixSettings,
     ) where {T}
     iters = 0
@@ -381,7 +393,7 @@ function _adaptive_face!(
     while true
         c, sse, k, conv = _polish_face!(sc, model, rgb, active, n, c, settings)
         iters += k
-        converged |= conv
+        converged = conv
         n == 1 && return c, sse, 1, active, iters, converged
         smallest = 0
         smallest_val = T(Inf)
@@ -417,8 +429,10 @@ reported rather than a global-optimality claim.
 function unmix_reference(
         model, rgb::SVector{3, T};
         settings::UnmixSettings{T} = UnmixSettings{T}(50, T(1.0e-10), T(1.0e-6), 4),
-        scratch::SolverScratch = SolverScratch(),
+        scratch = SolverScratch(),
     ) where {T}
+    scratch.function_evaluations = 0
+    scratch.gradient_evaluations = 0
     state = _ReferenceState{T}(
         SVector(T(0.25), T(0.25), T(0.25), T(0.25)), T(Inf), 0, false, 0,
     )
@@ -428,6 +442,8 @@ function unmix_reference(
         c = state.c, sse = state.sse, active = active, nactive = nactive,
         iterations = state.iters, converged = state.converged,
         restarts = state.restarts,
+        function_evaluations = scratch.function_evaluations, gradient_evaluations = scratch.gradient_evaluations,
+        termination = state.converged ? :stationary : :stalled_or_limit,
     )
 end
 
@@ -445,7 +461,7 @@ end
 # loop over it keeps the active set concrete. The early exit matters: once
 # the interior solve is exact there is no reason to enumerate the faces.
 function _reference_pass!(
-        state::_ReferenceState, sc::SolverScratch, model, rgb::SVector{3, T},
+        state::_ReferenceState, sc, model, rgb::SVector{3, T},
         settings::UnmixSettings, subsets,
     ) where {T}
     for active in subsets
@@ -456,12 +472,13 @@ function _reference_pass!(
 end
 
 function _subset_pass!(
-        state::_ReferenceState{T}, sc::SolverScratch, model, rgb::SVector{3, T},
+        state::_ReferenceState{T}, sc, model, rgb::SVector{3, T},
         active::Active4, settings::UnmixSettings,
     ) where {T}
     n = _active_count(active)
     if n == 1
         c = SVector{4, T}(ntuple(i -> i == active[1] ? one(T) : zero(T), Val(4)))
+        sc.function_evaluations += 1
         s = _sse(rgb, _mix(model, c))
         if s < state.sse
             state.c = c
@@ -481,8 +498,8 @@ function _subset_pass!(
         state.restarts = max(state.restarts, r)
         c, s, it, conv = _polish_face!(sc, model, rgb, active, n, seed, settings)
         state.iters += it
-        state.converged |= conv
         if s < state.sse
+            state.converged = conv
             state.c = c
             state.sse = s
         end
@@ -548,9 +565,11 @@ active-face reduction and keep the best objective. Seeds normally come from
 already-solved neighbouring grid vertices; the uniform seed is the fallback.
 """
 function unmix_bulk!(
-        sc::SolverScratch, model, rgb::SVector{3, T},
+        sc, model, rgb::SVector{3, T},
         seeds::NTuple{N, SVector{4, T}}, settings::UnmixSettings{T},
     ) where {T, N}
+    sc.function_evaluations = 0
+    sc.gradient_evaluations = 0
     best_c = seeds[1]
     best_sse = T(Inf)
     best_n, best_active = _active_pack(seeds[1], settings.face_threshold)
@@ -559,8 +578,8 @@ function unmix_bulk!(
     for seed in seeds
         c, s, n, a, it, conv = _solve_adaptive!(sc, model, rgb, seed, settings)
         total_iters += it
-        converged |= conv
         if s < best_sse
+            converged = conv
             best_c, best_sse = c, s
             best_active = a
             best_n = n
@@ -569,5 +588,7 @@ function unmix_bulk!(
     return UnmixResult(
         c = best_c, sse = best_sse, active = best_active, nactive = best_n,
         iterations = total_iters, converged = converged, restarts = N,
+        function_evaluations = sc.function_evaluations, gradient_evaluations = sc.gradient_evaluations,
+        termination = converged ? :stationary : :stalled_or_limit,
     )
 end

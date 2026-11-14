@@ -28,7 +28,7 @@ const PIPELINE = (
         output = "Surrogate pigments → inverse + forward tables", reference = "§3.2 · Eq. (9)", page = 7,
         passage = "precompute the expensive operations",
         path = "precompute/src/solvers.jl",
-        first = "            rgb = SVector{3, T}(i / (n - 1)", last = "            _record!(summary, r)",
+        first = "            rgb = SVector(T(i) / (n - 1)", last = "            _record!(summary, r)",
     ),
     (
         title = "Mix and paint", route = "palette", label = "Palette",

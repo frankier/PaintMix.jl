@@ -31,7 +31,7 @@ function FitSettings(cfg::AbstractDict)
         gradient_tolerance = Float64(get(s, "gradient_tolerance", 1.0e-8)),
     )
     st.parameterization in (:softplus, :direct) || throw(ConfigError("unknown parameterization"))
-    st.optimizer in (:lbfgs, :lbfgsb) || throw(ConfigError("unknown surrogate optimizer"))
+    haskey(OPTIMIZER_FACTORIES, st.optimizer) || throw(ConfigError("unknown surrogate optimizer"))
     st.derivative in (:forwarddiff, :finite_difference) || throw(ConfigError("unknown derivative method"))
     for x in (st.epsilon, st.time_limit_seconds, st.alpha_initial, st.alpha_final, st.gradient_tolerance)
         isfinite(x) && x > 0 || throw(ConfigError("fit scales and tolerances must be positive and finite"))
@@ -122,9 +122,11 @@ function profile_config(cfg::AbstractDict, profile::AbstractString)
 end
 
 """Identity of the physical fit problem, solver, inputs, and implementation."""
-function fit_job_id(cfg, db)
+function fit_job_id(cfg, db; solver = fit_solver_spec(cfg), source_id = "")
     spec = Dict{String, Any}(k => cfg[k] for k in ("spectra", "color", "saunderson", "pigments"))
     spec["fit"] = settings_dict(FitSettings(cfg))
+    spec["solver"] = solver_description(solver)
+    spec["solver_source"] = source_id
     spec["inputs"] = Dict(f.role => f.sha256 for f in db.source_files)
     spec["observer"] = db.observer_source.sha256
     spectra, quad = PigmentSpectra(cfg, db), Quadrature(cfg, db)
@@ -132,27 +134,25 @@ function fit_job_id(cfg, db)
         "K" => spectra.K, "S" => spectra.S,
         "weights" => quad.weights, "observer" => hcat(quad.x_bar, quad.y_bar, quad.z_bar), "illuminant" => quad.d65
     )
-    spec["implementation"] = implementation_hash(["experiments.jl", "surrogates.jl", "kubelka_munk.jl", "spectra.jl"])
-    spec["environment"] = Dict(
-        "julia" => string(VERSION), "optim" => _pkg_version(Optim), "forwarddiff" => _pkg_version(ForwardDiff),
-        "optimization" => _pkg_version(Optimization), "optimization_lbfgsb" => _pkg_version(OptimizationLBFGSB)
-    )
+    spec["implementation"] = implementation_hash(["solver_specs.jl", "experiments.jl", "surrogates.jl", "kubelka_munk.jl", "spectra.jl"])
+    spec["environment"] = numerical_environment(solver)
     return experiment_id(spec)
 end
 
 """Identity of a table job, including physical coefficients and resolved overrides."""
-function table_job_id(cfg, fit, st::TableSettings)
+function table_job_id(cfg, fit, st::TableSettings; point_solver = inverse_solver_spec(cfg), source_id = "")
     settings = settings_dict(st)
     delete!(settings, "threads")
     return experiment_id(
         Dict(
             "settings" => settings, "K" => fit.K, "S" => fit.S,
-            "environment" => Dict("julia" => string(VERSION), "staticarrays" => _pkg_version(parentmodule(SVector))),
+            "environment" => numerical_environment(point_solver),
+            "point_solver" => solver_description(point_solver), "solver_source" => source_id,
             "runtime_kernels" => bytes2hex(sha256(read(joinpath(pkgdir(PaintMix), "src", "lutkernels.jl")))),
             "unmix" => cfg["unmix"], "quantization" => cfg["quantization"],
             "grid" => Dict(k => v for (k, v) in cfg["grid"] if !(k in ("dev_n", "release_n"))),
             "spectra" => cfg["spectra"], "color" => cfg["color"], "saunderson" => cfg["saunderson"],
-            "implementation" => implementation_hash(["tables.jl", "solvers.jl", "unmix.jl", "export.jl", "kubelka_munk.jl"]),
+            "implementation" => implementation_hash(["solver_specs.jl", "tables.jl", "solvers.jl", "unmix.jl", "export.jl", "kubelka_munk.jl"]),
         )
     )
 end

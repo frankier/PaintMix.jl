@@ -225,3 +225,41 @@ end
     @test result.nactive == 3
     @test !result.converged
 end
+
+@testset "resolved solver choices reach pipeline and cache identities" begin
+    cfg, db, spectra, quad, _ = synthetic_model()
+    cfg["surrogate"]["surface_divisions"] = 2
+    cfg["surrogate"]["max_iterations"] = 2
+    cfg["surrogate"]["alpha_halvings"] = 0
+    cfg["solvers"] = Dict("fit" => Dict("method" => "bfgs", "solve_options" => Dict("maxiters" => 1)))
+    spec = fit_solver_spec(cfg)
+    @test spec.algorithm isa PaintMixPrecompute.Optim.BFGS
+    @test spec.solve_kwargs == (maxiters = 1,)
+    default = SolverSpec(optimizer(:lbfgs))
+    longer = SolverSpec(optimizer(:lbfgs; m = 20))
+    @test fit_job_id(cfg, db; solver = default) != fit_job_id(cfg, db; solver = longer)
+    @test fit_job_id(cfg, db; solver = default) != fit_job_id(cfg, db; solver = SolverSpec(optimizer(:lbfgs); solve_kwargs = (maxiters = 1,)))
+    @test fit_job_id(cfg, db; solver = default) != fit_job_id(cfg, db; solver = default, source_id = "changed")
+    @test haskey(numerical_environment()["packages"]["StaticArrays"], "version")
+    @test haskey(numerical_environment()["packages"], "LineSearches")
+    @test !occursin(pwd(), canonical_text(numerical_environment()))
+    @test_throws ArgumentError solver_description(SolverSpec(IOBuffer()))
+    # Explicit descriptions remain serializable, including algorithms' Nothing fields.
+    io = IOBuffer()
+    PaintMixPrecompute.TOML.print(io, solver_description(default))
+    @test position(io) > 0
+    register_optimizer!(:test_bfgs, PaintMixPrecompute.Optim.BFGS)
+    @test optimizer(:test_bfgs) isa PaintMixPrecompute.Optim.BFGS
+    mktempdir() do dir
+        result = run_pipeline(cfg; inputs = (db, spectra, quad), out_dir = dir, stage = :fit, log = nothing)
+        @test result["fit"].diagnostics["algorithm"] == string(spec.algorithm)
+        @test all(h -> h["iterations"] <= 1, result["fit"].history)
+        path = joinpath(dir, "solvers.jl")
+        write(path, "using PaintMixPrecompute
+configure_solvers(cfg) = (fit=SolverSpec(optimizer(:bfgs)), inverse=ActiveFaceLM())
+")
+        choices, digest = load_solver_file(path, cfg)
+        @test choices.fit.algorithm isa PaintMixPrecompute.Optim.BFGS
+        @test length(digest) == 64
+    end
+end

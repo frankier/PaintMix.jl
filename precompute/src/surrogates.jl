@@ -393,8 +393,7 @@ end
 # also bounds backends that do not implement Optimization's maxtime keyword.
 struct FitTimeLimit <: Exception end
 
-_default_algorithm(::Val{:lbfgs}) = Optim.LBFGS()
-_default_algorithm(::Val{:lbfgsb}) = OptimizationLBFGSB.LBFGSB()
+_default_algorithm(::Val{M}) where {M} = optimizer(M)
 
 function _finite_gradient!(G, f, x, lower)
     u = copy(x)

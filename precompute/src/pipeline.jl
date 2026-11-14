@@ -97,7 +97,8 @@ identity and integrity checks. Candidates are promoted only by explicit request.
 """
 function run_pipeline(
         cfg::AbstractDict; out_dir, profile = "dev", stage = :all,
-        settings = nothing, inputs = nothing, promote = false, force = false, force_import = false,
+        settings = nothing, inputs = nothing, fit_solver = nothing, point_solver = nothing,
+        solver_source = "", promote = false, force = false, force_import = false,
         root = normpath(joinpath(@__DIR__, "..", "..")), cfg_path = DEFAULT_CONFIG_PATH, log = stdout
     )
     stage in (:inputs, :fit, :tables, :validate, :promote, :all) || throw(ConfigError("unknown stage"))
@@ -106,18 +107,23 @@ function run_pipeline(
     mkpath(out_dir)
     db, spectra, quad = inputs === nothing ? pipeline_inputs(cfg; root, force_import) : inputs
     stage == :inputs && return Dict("database" => db)
-    fit_id = fit_job_id(cfg, db)
+    fit_solver = fit_solver === nothing ? fit_solver_spec(cfg) : fit_solver
+    point_solver = point_solver === nothing ? inverse_solver_spec(cfg) : point_solver
+    fit_id = fit_job_id(cfg, db; solver = fit_solver, source_id = solver_source)
     fit_path = joinpath(out_dir, "fits", "$fit_id.toml")
     W = length(spectra.wavelength)
     fit = load_surrogate(fit_path, cfg, fit_id, W)
     if fit === nothing
         stage in (:all, :fit) || throw(InputError("no matching fit; run --stage fit"))
-        fit = fit_surrogates(cfg, spectra, quad; log)
+        fit = fit_surrogates(
+            cfg, spectra, quad; log, algorithm = fit_solver.algorithm,
+            adtype = fit_solver.adtype, solve_kwargs = fit_solver.solve_kwargs
+        )
         save_surrogate(fit_path, fit, cfg, fit_id, W)
     end
     stage == :fit && return Dict("fit" => fit, "fit_job_id" => fit_id, "fit_path" => fit_path)
     spectral = SpectralModel(SpectralModel(spectra, quad); K = fit.K, S = fit.S)
-    job_hash = experiment_id(Dict("table" => table_job_id(cfg, fit, st), "fit" => fit_id))
+    job_hash = experiment_id(Dict("table" => table_job_id(cfg, fit, st; point_solver, source_id = solver_source), "fit" => fit_id))
     ft = nothing
     if stage in (:all, :tables)
         started = time()
@@ -130,7 +136,7 @@ function run_pipeline(
             summary[k] = report
         end
         inverse = generate_tables_inverse(
-            evaluator, st; settings = UnmixSettings(cfg),
+            evaluator, st; settings = UnmixSettings(cfg), point_solver,
             resume = slab_resume_function(cp), on_slab = slab_callback_function(cp), on_summary
         )
         ft = FloatTables(st.n, forward, inverse)
@@ -138,6 +144,8 @@ function run_pipeline(
         merge!(
             provenance, Dict(
                 "fit_job_id" => fit_id, "table_job_id" => job_hash,
+                "fit_solver" => solver_description(fit_solver), "point_solver" => solver_description(point_solver),
+                "numerical_environment" => numerical_environment(fit_solver, point_solver), "solver_source" => solver_source,
                 "resolved_config" => cfg, "resolved_config_sha256" => experiment_id(cfg), "table_settings" => settings_dict(st), "profile" => profile,
                 "generation_seconds" => time() - started,
                 "slab_summaries" => Dict(string(k) => v for (k, v) in summary)

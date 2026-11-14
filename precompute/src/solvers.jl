@@ -7,8 +7,14 @@ struct ActiveFaceLM end
 struct OptimizationInverse{A, K}
     algorithm::A
     solve_kwargs::K
+    identity::Union{Nothing, String}
 end
-OptimizationInverse(algorithm; kwargs...) = OptimizationInverse(algorithm, (; kwargs...))
+OptimizationInverse(algorithm; identity = nothing, kwargs...) =
+    OptimizationInverse(algorithm, (; kwargs...), identity === nothing ? nothing : String(identity))
+solver_description(s::OptimizationInverse) =
+    solver_description(SolverSpec(s.algorithm; solve_kwargs = s.solve_kwargs, identity = s.identity))
+
+_algorithm_component(c::OptimizationInverse) = c.algorithm
 
 mutable struct OptimizationScratch{A, K}
     algorithm::A

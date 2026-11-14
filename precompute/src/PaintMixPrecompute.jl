@@ -31,6 +31,8 @@ using Dates: Dates
 using DuckDB
 using ForwardDiff: ForwardDiff
 using Optim: Optim
+import Pkg
+import StaticArrays
 import Optimization
 import OptimizationOptimJL
 import OptimizationLBFGSB
@@ -43,6 +45,7 @@ using TOML: TOML
 include("inputdb.jl")
 include("spectra.jl")
 include("kubelka_munk.jl")
+include("solver_specs.jl")
 include("experiments.jl")
 include("surrogates.jl")
 include("unmix.jl")
@@ -52,7 +55,9 @@ include("validate.jl")
 include("export.jl")
 include("pipeline.jl")
 
-export SoftplusParameters, DirectParameters, SurrogateProblem, initial_parameters,
+export SolverSpec, register_optimizer!, optimizer, solver_description, fit_solver_spec,
+    inverse_solver_spec, numerical_environment, load_solver_file,
+    SoftplusParameters, DirectParameters, SurrogateProblem, initial_parameters,
     parameter_matrices, objective_terms, optimization_problem, solve_fit_step,
     FitSettings, TableSettings, ValidationSettings, settings_dict, canonical_text, experiment_id,
     profile_config, fit_job_id, table_job_id,

@@ -94,8 +94,38 @@ budget remains a failed target, not an implied convergence success.
 and numerical package versions. `table_job_id` includes fitted physical K/S,
 actual CLI overrides and grids, model conventions, and table implementation.
 Canonical serialization orders dictionary keys. Paths and timestamps do not
-identify numerical results. Custom algorithms should be recorded explicitly
-by callers managing their own experimental artifacts.
+identify numerical results. The pipeline accepts `fit_solver=SolverSpec(algorithm; adtype, solve_kwargs)`
+and `point_solver=OptimizationInverse(algorithm; options...)`. It records actual
+algorithm fields, derivative backend, solve options, dependency versions and
+source hashes. Opaque callbacks or custom state require an explicit `identity`
+that changes with their behavior. Use a fresh solver object for each run.
+
+For configuration files, optional `[solvers.fit]` and `[solvers.inverse]` tables
+select `method`, `algorithm_options`, and `solve_options`. Built-in method names
+are `lbfgs`, `bfgs`, `newton`, `nelder_mead`, `lbfgsb`, and (inverse only)
+`active_face_lm`. Additional keyword constructors can be registered through
+`register_optimizer!`; programmatic algorithm objects have no registry limit.
+The CLI exposes `--fit-solver` and `--point-solver` independently of `--solver`,
+which still selects traversal and seeding.
+
+A trusted `--solver-file CONFIG.jl` may import another installed backend and
+must define `configure_solvers(cfg)` returning `(fit=SolverSpec(...),
+inverse=OptimizationInverse(...))`. The CLI fingerprints this file's contents
+and invokes the pipeline after loading its definitions. Include external data
+or helper source identities explicitly in the solver's `identity`.
+
+```toml
+[solvers.fit]
+method = "lbfgs"
+[solvers.fit.algorithm_options]
+m = 20
+[solvers.fit.solve_options]
+maxiters = 300
+[solvers.inverse]
+method = "bfgs"
+[solvers.inverse.solve_options]
+maxiters = 50
+```
 
 Physical fit files have coefficient digests. Schema-2 checkpoints use
 `job.toml` plus atomic, SHA-256-checked slab completion records. Legacy

@@ -28,6 +28,15 @@ function parse_args(args)
         help = "coarse|reference|bulk inverse solver"
         arg_type = String
         default = "coarse"
+        "--fit-solver"
+        help = "registered fit optimizer (default: config)"
+        arg_type = String
+        "--point-solver"
+        help = "active_face_lm or a registered inverse optimizer (default: config)"
+        arg_type = String
+        "--solver-file"
+        help = "trusted Julia file defining configure_solvers(cfg)"
+        arg_type = String
         "--evaluator"
         help = "spectral|float_lut inverse evaluator"
         arg_type = String
@@ -71,13 +80,24 @@ function main(args = ARGS)
         println("checked ", checked, " input files")
         return nothing
     end
+    solvers = get!(cfg, "solvers", Dict{String, Any}())
+    for (flag, role) in (("fit-solver", "fit"), ("point-solver", "inverse"))
+        opts[flag] === nothing || (get!(solvers, role, Dict{String, Any}())["method"] = opts[flag])
+    end
+    choices, source_id = if opts["solver-file"] === nothing
+        ((fit = fit_solver_spec(cfg), inverse = inverse_solver_spec(cfg)), "")
+    else
+        load_solver_file(opts["solver-file"], cfg)
+    end
     st = TableSettings(
         cfg; profile = opts["profile"], strategy = Symbol(opts["solver"]),
         evaluator = Symbol(opts["evaluator"]), coarse_n = opts["coarse"], threads = opts["threads"]
     )
     out = something(opts["out"], joinpath(ROOT, "precompute", "output", opts["profile"]))
-    result = run_pipeline(
+    result = Base.invokelatest(
+        run_pipeline,
         cfg; out_dir = out, profile = opts["profile"], stage = Symbol(opts["stage"]),
+        fit_solver = choices.fit, point_solver = choices.inverse, solver_source = source_id,
         settings = st, promote = opts["promote"], force = opts["force"],
         force_import = opts["force-import"], cfg_path = opts["config"]
     )

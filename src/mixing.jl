@@ -100,13 +100,13 @@ linear-light sRGB. Coordinates are repaired onto the simplex first. The
 fourth concentration is implied; only the first three index the table.
 """
 @inline function forward_rgb(
-        model::PigmentModel, c1::T, c2::T, c3::T
+        model::AbstractPigmentModel, c1::T, c2::T, c3::T
     ) where {T <: AbstractFloat}
     r = _repair_simplex(c1, c2, c3)
-    return trilinear(model.forward, r[1], r[2], r[3])
+    return _forward_lookup(model.forward, r[1], r[2], r[3])
 end
 
-@inline forward_rgb(model::PigmentModel, c::AbstractVector{T}) where {T <: AbstractFloat} =
+@inline forward_rgb(model::AbstractPigmentModel, c::AbstractVector{T}) where {T <: AbstractFloat} =
     forward_rgb(model, c[1], c[2], c[3])
 
 """
@@ -124,7 +124,7 @@ instead of losing the byte quantization.
 latent belongs to `model` and must not be combined with latents from another
 model.
 """
-@inline function encode(model::PigmentModel, rgb::RGB{T}) where {T <: AbstractFloat}
+@inline function encode(model::AbstractPigmentModel, rgb::RGB{T}) where {T <: AbstractFloat}
     _check(rgb)
     return _encode_unchecked(model, rgb)
 end
@@ -132,7 +132,7 @@ end
 # Finite-checking split out so the status-code kernels, which validate the
 # whole buffer up front, do not re-check every element.
 @inline function _encode_unchecked(
-        model::PigmentModel, rgb::RGB{T}
+        model::AbstractPigmentModel, rgb::RGB{T}
     ) where {T <: AbstractFloat}
     x, y, z = rgb
     c = _repair_simplex(trilinear(model.inverse, x, y, z)...)
@@ -153,7 +153,7 @@ The fourth concentration is reconstructed as `1 - c1 - c2 - c3` rather than
 read from the latent, so that interpolation drift cannot move the point off
 the simplex.
 """
-@inline function decode(model::PigmentModel, z::Latent{T}) where {T <: AbstractFloat}
+@inline function decode(model::AbstractPigmentModel, z::Latent{T}) where {T <: AbstractFloat}
     m = forward_rgb(model, z.c[1], z.c[2], z.c[3])
     return m + z.r
 end
@@ -174,7 +174,7 @@ is exact in the binary endpoints. A `t` of a different real type is
 converted to `T`, the color scalar type.
 """
 function mix(
-        model::PigmentModel, a::RGB{T}, b::RGB{T}, t::T
+        model::AbstractPigmentModel, a::RGB{T}, b::RGB{T}, t::T
     ) where {T <: AbstractFloat}
     _check(a)
     _check(b)
@@ -185,7 +185,7 @@ end
 # Finite-checking split out, as in `_encode_unchecked`. Endpoint clamping
 # and the two exact-endpoint shortcuts stay here so the kernels match `mix`.
 @inline function _mix_unchecked(
-        model::PigmentModel, a::RGB{T}, b::RGB{T}, t::T
+        model::AbstractPigmentModel, a::RGB{T}, b::RGB{T}, t::T
     ) where {T <: AbstractFloat}
     t == zero(T) && return a
     t == one(T) && return b
@@ -196,7 +196,7 @@ end
 end
 
 function mix(
-        model::PigmentModel, a::RGB{T}, b::RGB{T}, t::Real
+        model::AbstractPigmentModel, a::RGB{T}, b::RGB{T}, t::Real
     ) where {T <: AbstractFloat}
     return mix(model, a, b, T(t))
 end
@@ -208,7 +208,7 @@ Write [`mix`](@ref) into the first three elements of `dest`. The caller owns
 `dest`, so bulk work can run without allocating a result per sample.
 """
 function mix!(
-        dest::AbstractVector{T}, model::PigmentModel, a::RGB{T}, b::RGB{T}, t::T
+        dest::AbstractVector{T}, model::AbstractPigmentModel, a::RGB{T}, b::RGB{T}, t::T
     ) where {T <: AbstractFloat}
     length(dest) >= 3 || throw(ArgumentError("dest must hold at least 3 elements"))
     c = mix(model, a, b, t)
@@ -231,7 +231,7 @@ All inputs are validated before anything is written, so a failed call leaves
 `dest` untouched. Returns [`PM_OK`](@ref) or one of the `PM_ERR_*` codes.
 """
 function bulk_mix_kernel!(
-        dest::AbstractVector{T}, model::PigmentModel,
+        dest::AbstractVector{T}, model::AbstractPigmentModel,
         as::AbstractVector{T}, bs::AbstractVector{T}, ts::AbstractVector{T},
         count::Integer
     ) where {T <: AbstractFloat}
@@ -266,7 +266,7 @@ Throwing wrapper around [`bulk_mix_kernel!`](@ref) that requires exact
 buffer lengths: `as`, `bs`, and `dest` hold `3n` elements and `ts` holds `n`.
 """
 function bulk_mix!(
-        dest::AbstractVector{T}, model::PigmentModel,
+        dest::AbstractVector{T}, model::AbstractPigmentModel,
         as::AbstractVector{T}, bs::AbstractVector{T}, ts::AbstractVector{T}
     ) where {T <: AbstractFloat}
     n = length(ts)
@@ -296,7 +296,7 @@ Weights must be finite and non-negative with a strictly positive total. If
 exactly one weight is positive, that input color is copied out unchanged.
 """
 function weighted_mix_kernel!(
-        dest::AbstractVector{T}, model::PigmentModel,
+        dest::AbstractVector{T}, model::AbstractPigmentModel,
         colors::AbstractVector{T}, weights::AbstractVector{T},
         count::Integer
     ) where {T <: AbstractFloat}
@@ -357,7 +357,7 @@ Throwing wrapper around [`weighted_mix_kernel!`](@ref). `colors` holds
 `3n` flat channels, `weights` holds `n`, and `dest` holds 3.
 """
 function weighted_mix!(
-        dest::AbstractVector{T}, model::PigmentModel,
+        dest::AbstractVector{T}, model::AbstractPigmentModel,
         colors::AbstractVector{T}, weights::AbstractVector{T}
     ) where {T <: AbstractFloat}
     n = length(weights)
@@ -381,7 +381,7 @@ repeatedly calling [`mix`](@ref): mixing is not associative, and repeated
 pairwise mixing loses the residual of the accumulated mixture.
 """
 function weighted_mix(
-        model::PigmentModel, colors::AbstractVector{<:RGB{T}},
+        model::AbstractPigmentModel, colors::AbstractVector{<:RGB{T}},
         weights::AbstractVector{T}
     ) where {T <: AbstractFloat}
     n = length(colors)

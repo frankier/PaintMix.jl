@@ -43,20 +43,26 @@ end
 
 """
     quantize_simplex(c) -> SVector{3,UInt8}
+    quantize_simplex(c, UInt16) -> SVector{3,UInt16}
 
 Quantize all four concentrations jointly to non-negative integers summing to
 255, then return the first three. The fourth is implied by the runtime and
 equals `255 - (b1 + b2 + b3) >= 0`.
 
+Passing `UInt16` instead uses an integer sum of 65535 for experimental
+payloads.
+
 Uses largest-remainder rounding with deterministic tie-breaking: ties go to
 the lower concentration index. Any leftover or excess after the floor is
 distributed one unit at a time, largest remainder first.
 """
-function quantize_simplex(c::SVector{4, T}) where {T <: AbstractFloat}
-    scaled = c .* 255
+quantize_simplex(c::SVector{4, T}) where {T <: AbstractFloat} = quantize_simplex(c, UInt8)
+function quantize_simplex(c::SVector{4, T}, ::Type{U}) where {T <: AbstractFloat, U <: Union{UInt8, UInt16}}
+    scale = Int(typemax(U))
+    scaled = c .* scale
     base = ntuple(i -> floor(Int, scaled[i]), Val(4))
     rem = ntuple(i -> scaled[i] - base[i], Val(4))
-    diff = 255 - (base[1] + base[2] + base[3] + base[4])
+    diff = scale - (base[1] + base[2] + base[3] + base[4])
     order = _remainder_order(rem)
     if diff >= 0
         for i in 1:min(diff, 4)
@@ -76,10 +82,10 @@ function quantize_simplex(c::SVector{4, T}) where {T <: AbstractFloat}
     # be needed if `c` was not exactly on the simplex.
     b = (max(base[1], 0), max(base[2], 0), max(base[3], 0), max(base[4], 0))
     s = b[1] + b[2] + b[3] + b[4]
-    if s != 255
-        b = _repair_byte_sum(b, s)
+    if s != scale
+        b = _repair_byte_sum(b, s, scale)
     end
-    return SVector(UInt8(b[1]), UInt8(b[2]), UInt8(b[3]))
+    return SVector(U(b[1]), U(b[2]), U(b[3]))
 end
 
 function _remainder_order(rem::NTuple{4, T}) where {T}
@@ -110,11 +116,11 @@ end
     return ntuple(k -> k == i ? t[k] + d : t[k], Val(N))
 end
 
-function _repair_byte_sum(b::NTuple{4, Int}, s::Int)
-    if s < 255
-        return _add_at(b, 1, 255 - s)
+function _repair_byte_sum(b::NTuple{4, Int}, s::Int, scale = 255)
+    if s < scale
+        return _add_at(b, 1, scale - s)
     end
-    excess = s - 255
+    excess = s - scale
     out = b
     for i in 1:4
         excess == 0 && break

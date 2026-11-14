@@ -56,6 +56,9 @@ library still needs Julia's `lib` directory on the loader path; `--bundle`
 produces the self-contained `juliac --bundle` tree instead (hundreds of
 megabytes).
 
+The compiled ABI accepts production `.pmx` payloads. Experimental `.pmxe`
+models are evaluated through the Julia runtime API.
+
 ## Language wrappers
 
 `compile.jl` emits three targets beside the shared library:

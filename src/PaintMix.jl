@@ -24,7 +24,8 @@ matching equation (7) of the paper. Use [`linear_from_srgb8`](@ref) and
 [`srgb8_from_linear`](@ref) for byte-oriented image data.
 
 The module is a pure evaluator. It owns no optimizer, no spectral model, and
-no file-format dependencies beyond the packaged `.pmx` payload. Table
+no file-format dependencies. It reads production `.pmx` and opt-in
+experimental `.pmxe` payloads. Table
 generation lives in the separate `PaintMixPrecompute` package, which shares
 the [`LUTKernels`](@ref) submodule.
 """
@@ -33,6 +34,11 @@ module PaintMix
 using StaticArrays: SVector
 
 export ByteLUT,
+    WordLUT,
+    SimplexLUT,
+    AbstractPigmentModel,
+    ExperimentalModel,
+    EXPERIMENTAL_FORMAT_VERSION,
     LUTKernels,
     PigmentModel,
     Latent,
@@ -73,9 +79,12 @@ export ByteLUT,
 
 include("lutkernels.jl")
 include("types.jl")
+include("experimental_types.jl")
 include("srgb.jl")
 include("lookup.jl")
+include("experimental_lookup.jl")
 include("mixing.jl")
 include("tables.jl")
+include("experimental_tables.jl")
 
 end # module PaintMix

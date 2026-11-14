@@ -23,6 +23,7 @@ direction is one-way: `precompute -> PaintMix` and `build -> PaintMix`.
 | `src/lookup.jl` | indexing, byte decoding, trilinear interpolation |
 | `src/srgb.jl` | linear-light sRGB <-> 8-bit adapters |
 | `src/mixing.jl` | `encode`, `decode`, `mix`, bulk and weighted mixing |
+| `src/experimental_*.jl` | opt-in wider inverse tables, packed simplex interpolation, `.pmxe` I/O |
 | `src/tables.jl` | `.pmx` reading, writing, validation, default model |
 | `data/default/` | the promoted release payload (untracked build artifact) |
 | `precompute/` | `PaintMixPrecompute`: spectra, surrogate fit, inverse solver, export |
@@ -37,6 +38,7 @@ direction is one-way: `precompute -> PaintMix` and `build -> PaintMix`.
 * `precompute/README.md` — pipeline stages, caching, and the input database.
 * `build/README.md` — the C ABI contract and compilation.
 * `build/EMBEDDING.md` — how the trimmed library embeds the payload.
+* `data/EXPERIMENTAL.md` — experimental `.pmxe` format and packed simplex lattice.
 * `data/default/README.md` — the `.pmx` byte layout and what it does not say.
 * `benchmarks/README.md`, `precompute/inputs/README.md` — data and timings.
 

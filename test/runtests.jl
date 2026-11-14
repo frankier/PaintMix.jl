@@ -26,6 +26,7 @@ using .SyntheticFixtures
     include("test_mixing.jl")
     include("test_colorspace.jl")
     include("test_format.jl")
+    include("test_experimental.jl")
     include("test_allocations.jl")
     include("test_quality.jl")
 end

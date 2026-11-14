@@ -55,9 +55,11 @@ include("tables.jl")
 include("solvers.jl")
 include("validate.jl")
 include("export.jl")
+include("precision.jl")
 include("pipeline.jl")
 
-export SolverSpec, register_optimizer!, optimizer, solver_description, fit_solver_spec,
+export quantize_inverse, generate_simplex_forward, experimental_model, precision_report,
+    SolverSpec, register_optimizer!, optimizer, solver_description, fit_solver_spec,
     inverse_solver_spec, numerical_environment, load_solver_file,
     SoftplusParameters, DirectParameters, GaugeParameters, SurrogateProblem, initial_parameters,
     parameter_matrices, objective_terms, optimization_problem, solve_fit_step,

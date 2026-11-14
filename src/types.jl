@@ -127,6 +127,9 @@ end
 const FLAG_FORWARD_SIMPLEX_PROJECTED = UInt32(0x00000001)
 const FLAG_INVERSE_LARGEST_REMAINDER = UInt32(0x00000002)
 
+"""Read-only lookup models accepted by the Julia encoding and mixing kernels."""
+abstract type AbstractPigmentModel end
+
 """
     PigmentModel
 
@@ -144,7 +147,7 @@ Tables are valid on the whole cube `[0, 1]^3`. Vertices outside the
 concentration simplex are padding; see `data/default/README.md` for the
 documented padding rule.
 """
-struct PigmentModel
+struct PigmentModel <: AbstractPigmentModel
     id::NTuple{16, UInt8}
     inverse::ByteLUT
     forward::ByteLUT
@@ -153,18 +156,18 @@ struct PigmentModel
 end
 
 """
-    grid_n(model::PigmentModel) -> Int
+    grid_n(model::AbstractPigmentModel) -> Int
 
 The edge length `n` of both lookup tables.
 """
-grid_n(m::PigmentModel) = m.forward.n
+grid_n(m::AbstractPigmentModel) = m.forward.n
 
 """
-    model_id(model::PigmentModel) -> String
+    model_id(model::AbstractPigmentModel) -> String
 
 The 16-byte model identifier as a lowercase hex string.
 """
-function model_id(m::PigmentModel)
+function model_id(m::AbstractPigmentModel)
     io = IOBuffer()
     for b in m.id
         print(io, string(b, base = 16, pad = 2))

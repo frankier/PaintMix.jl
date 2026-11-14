@@ -58,7 +58,7 @@ notions the plan separates (interpolation plus quantization, and perceptual
 bias) stay separate.
 """
 function quality_report(
-        model::PaintMix.PigmentModel, spectral::SpectralModel{T}, cfg::AbstractDict;
+        model::PaintMix.AbstractPigmentModel, spectral::SpectralModel{T}, cfg::AbstractDict;
         colors::Integer = ValidationSettings(cfg).colors, pairs::Integer = ValidationSettings(cfg).pairs,
         seed::Integer = ValidationSettings(cfg).seed,
         samples = validation_corpus(; colors, pairs, seed),
@@ -139,7 +139,7 @@ what the interpolation knots do to values *on* and just inside the domain of
 interest, which is what the padding rule can affect.
 """
 function padding_report(
-        model::PaintMix.PigmentModel, spectral::SpectralModel{T}, cfg::AbstractDict;
+        model::PaintMix.AbstractPigmentModel, spectral::SpectralModel{T}, cfg::AbstractDict;
         face_samples::Integer = 60, inside_depths = (0.0, 1.0e-3, 5.0e-3, 2.0e-2),
     ) where {T}
     n = PaintMix.grid_n(model)
@@ -172,7 +172,7 @@ function padding_report(
     end
     return Dict{String, Any}(
         "grid_n" => n,
-        "padding_rule" => cfg["quantization"]["padding"],
+        "padding_rule" => model.forward isa PaintMix.SimplexLUT ? "none-simplex-lattice" : cfg["quantization"]["padding"],
         "samples_per_depth" => 4 * (face_samples + 1) * (face_samples + 2) ÷ 2,
         "by_depth" => Dict{String, Any}(
             string(d) => Dict{String, Any}(
@@ -196,7 +196,7 @@ Encoder/decoder round-trip error of the byte tables, at `Float32` (the
 runtime scalar type) and `Float64`, over the deterministic corpus.
 """
 function roundtrip_report(
-        model::PaintMix.PigmentModel, cfg::AbstractDict; colors::Integer = 2000,
+        model::PaintMix.AbstractPigmentModel, cfg::AbstractDict; colors::Integer = 2000,
         seed::Integer = 7,
     )
     samples = validation_corpus(; colors, pairs = 1, seed)
@@ -233,25 +233,27 @@ three bytes summing to at most 255, so the implied fourth concentration is
 non-negative. Also reports the distribution of the stored sums, which shows
 how often the largest-remainder repair matters.
 """
-function quantization_report(model::PaintMix.PigmentModel, cfg::AbstractDict)
+function quantization_report(model::PaintMix.AbstractPigmentModel, cfg::AbstractDict)
     n = PaintMix.grid_n(model)
     d = model.inverse.data
-    sums = zeros(Int, 256)
-    bad = 0
+    scale = Int(typemax(eltype(d)))
+    bad, full, at255 = 0, 0, 0
     @inbounds for v in 0:(n^3 - 1)
         o = 3v
         s = Int(d[o + 1]) + Int(d[o + 2]) + Int(d[o + 3])
-        s <= 255 || (bad += 1)
-        sums[s + 1] += 1
+        s <= scale || (bad += 1)
+        full += s == scale
+        at255 += s == 255
     end
-    n255 = count(==(255), sums)
     return Dict{String, Any}(
         "vertices" => n^3,
         "invalid_vertices" => bad,
-        "sum_255_fraction" => n255 / n^3,
+        "sum_full_fraction" => full / n^3,
+        "concentration_scale" => scale,
+        "sum_255_fraction" => at255 / n^3,
         "rule" => cfg["quantization"]["rule"],
         "note" =>
-            "sum == 255 means the fourth concentration is zero; a sum below 255 " *
+            "sum == concentration_scale means the fourth concentration is zero; a smaller sum " *
             "carries positive white pigment",
     )
 end
@@ -296,7 +298,7 @@ error between consecutive samples. A large jump with a small color change is
 a basin change, not a modelling feature.
 """
 function continuity_report(
-        model::PaintMix.PigmentModel, cfg::AbstractDict;
+        model::PaintMix.AbstractPigmentModel, cfg::AbstractDict;
         lines::Integer = 256, points::Integer = 65, seed::Integer = 424242,
     )
     lines >= 1 && points >= 2 || throw(ArgumentError("continuity needs >=1 line and >=2 points"))
@@ -360,7 +362,7 @@ Also reports the same-color mixing residual and the reversal-symmetry
 residual of the runtime model.
 """
 function behavior_report(
-        model::PaintMix.PigmentModel, spectral::SpectralModel{T}, cfg::AbstractDict,
+        model::PaintMix.AbstractPigmentModel, spectral::SpectralModel{T}, cfg::AbstractDict,
     ) where {T}
     blue = SVector(0.02, 0.09, 0.42)
     yellow = SVector(0.71, 0.62, 0.02)

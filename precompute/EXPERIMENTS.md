@@ -1,6 +1,6 @@
 # Numerical experiments
 
-The runtime ABI and `.pmx` byte layout remain unchanged. Numerical choices
+The production ABI and `.pmx` byte layout remain unchanged. Numerical choices
 belong to `PaintMixPrecompute`; optimization packages never enter the runtime
 consumer dependency closure. Existing promoted payloads and legacy sidecars
 remain readable. New candidates have content-derived model IDs and schema-2
@@ -201,3 +201,22 @@ have a floating-point underflow guard. Starting mixtures agree with the
 other parameterizations despite the changed coefficient scale.
 Programmatic fits can opt into `stop_rule = "heldout_gamut"` and
 `gamut_tolerance` under `[surrogate]` independently of the parameterization.
+
+## Precision and interpolation candidates
+
+`julia --project=precompute precompute/scripts/precision.jl CANDIDATE_DIR OUT`
+loads the candidate's verified floating inverse checkpoints and authoritative
+physical coefficients, then compares 8-bit and 16-bit inverse concentrations
+with dense-cube and packed-simplex forward interpolation. All four rows share
+the inverse solutions, physical model, grid, forward RGB precision and actual
+validation corpus. It writes separately loadable `.pmxe` artifacts and a
+compact `precision.toml`; it never promotes candidates or refits pigments.
+The runtime supports these artifacts through the ordinary Julia mixing API;
+see [the experimental format](../data/EXPERIMENTAL.md). C ABI builds remain v1.
+
+The report measures full spectral-versus-table mixing plus separate forward
+and concentration-quantization distributions. These errors are not additive.
+`sum_full_fraction` counts vertices with zero fourth concentration; the legacy
+`sum_255_fraction` reports the actual fraction whose stored integer sum is
+255. The earlier histogram-bin-counting implementation of that statistic was
+incorrect; payload values and acceptance decisions are unaffected.

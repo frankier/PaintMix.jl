@@ -331,3 +331,33 @@ end
     @test fit.history[1]["heldout_gamut_violation"] <= 1.0e3
     @test fit.diagnostics["physical_target"]["corpus_sha256"] == target.digest
 end
+
+@testset "wider concentration quantization and simplex export" begin
+    cfg, _, _, _, model = synthetic_model()
+    samples = validation_corpus(; colors = 12, pairs = 32)
+    for U in (UInt8, UInt16), c in samples.concentrations
+        q = quantize_simplex(c, U)
+        @test sum(Int, q) <= typemax(U)
+        @test maximum(abs, Float64.(q) ./ typemax(U) - c[1:3]) <= 1.0 / typemax(U)
+    end
+    n = 4
+    inverse = generate_inverse(model, n; threads = 1)
+    forward = generate_simplex_forward(model, n; threads = 1)
+    if Threads.nthreads() >= 2
+        @test forward.data == generate_simplex_forward(model, n; threads = 2).data
+    end
+    for U in (UInt8, UInt16)
+        data = quantize_inverse(inverse, n, U)
+        inv = U == UInt8 ? ByteLUT(n, data) : WordLUT(n, data)
+        candidate = experimental_model(inv, forward)
+        @test all(c -> all(isfinite, PaintMix.forward_rgb(candidate, c)), samples.concentrations)
+        report = precision_report(candidate, model, cfg; samples)
+        @test report["roundtrip"]["float32"]["max"] < 2.0e-6
+        @test report["quality"]["corpus_sha256"] == samples.digest
+        @test report["quantization"]["invalid_vertices"] == 0
+        @test model_id(experimental_model(inv, forward)) == model_id(candidate)
+    end
+    inv = ByteLUT(2, repeat(UInt8[255, 0, 0], 8))
+    candidate = experimental_model(inv, ByteLUT(2, zeros(UInt8, 24)))
+    @test quantization_report(candidate, cfg)["sum_255_fraction"] == 1.0
+end

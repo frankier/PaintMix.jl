@@ -184,3 +184,9 @@ content digests; old release payloads remain readable. See
 [the experiment guide](precompute/EXPERIMENTS.md) for APIs and commands, error
 layers, and resource-sized SLURM jobs. Explorer accepts `--comparison PATH`
 to show candidate metrics side by side on `/fit`.
+
+Experimental precision and simplex interpolation candidates use a separate
+[`.pmxe` format](data/EXPERIMENTAL.md). `read_model` loads them for the Julia
+mixing API; the default model and compiled ABI retain production `.pmx`.
+The [experiment guide](precompute/EXPERIMENTS.md) describes regeneration and
+controlled comparisons.

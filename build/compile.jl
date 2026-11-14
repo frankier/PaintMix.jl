@@ -106,6 +106,7 @@ function compile(opts)
     # the byte loops in the unoptimized image-building interpreter. This is
     # the check that makes `validate = false` in library.jl honest.
     model = read_model(DEFAULT_PAYLOAD)
+    model isa PigmentModel || error("the compiled ABI requires a production .pmx payload")
     println(
         "Validated payload: $(filesize(DEFAULT_PAYLOAD)) bytes, n = $(grid_n(model)), " *
             "id = $(model_id(model))",

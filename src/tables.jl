@@ -289,15 +289,15 @@ function validate_model(model::PigmentModel; simplex::Bool = true)
     return model
 end
 
-function _check_simplex(lut::ByteLUT, n::Int)
+function _check_simplex(lut, n::Int, scale = 255)
     d = lut.data
     vertices = n^3
     @inbounds for v in 0:(vertices - 1)
         base = 3v + 1
         s = Int(d[base]) + Int(d[base + 1]) + Int(d[base + 2])
-        s <= 255 || throw(
+        s <= scale || throw(
             ArgumentError(
-                "inverse table vertex $v stores concentrations summing to $s > 255; " *
+                "inverse table vertex $v stores concentrations summing to $s > $scale; " *
                     "the implied fourth concentration would be negative"
             )
         )
@@ -335,11 +335,14 @@ function model_to_bytes(model::PigmentModel)
 end
 
 """
-    read_model(path) -> PigmentModel
+    read_model(path) -> Union{PigmentModel,ExperimentalModel}
 
-Read and validate a `.pmx` payload from disk.
+Read and validate a production `.pmx` or experimental `.pmxe` payload.
 """
-read_model(path::AbstractString) = PigmentModel(read(path))
+function read_model(path::AbstractString)
+    bytes = read(path)
+    return length(bytes) >= 8 && Tuple(bytes[1:8]) == _EXPERIMENTAL_MAGIC ? ExperimentalModel(bytes) : PigmentModel(bytes)
+end
 
 """
     default_payload_path() -> String

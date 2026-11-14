@@ -65,19 +65,18 @@ function comparison_summary(out; matched = false)
     open(joinpath(out, "comparison.md"), "w") do io
         println(io, "# Surrogate and release table comparison\n")
         println(io, "All candidates use the same measured inputs and validation corpus. No candidate is promoted.\n")
-        println(io, "| Variant | Fit seconds | Table seconds | Epush dense | Max gamut violation | Mixing Oklab p99 | Encoded channel p99 |")
-        println(io, "| --- | ---: | ---: | ---: | ---: | ---: | ---: |")
+        tail = matched ? " Held-out max violation | Physical target reached |" : ""
+        println(io, "| Variant | Fit seconds | Table seconds | Epush dense | Dense max violation | Mixing Oklab p99 | Encoded channel p99 |", tail)
+        println(io, "| --- | ---: | ---: | ---: | ---: | ---: | ---: |", matched ? " ---: | --- |" : "")
         for r in runs
             q = r["validation"]["quality"]
             d = r["diagnostics"]
-            println(
-                io, "| ", join(
-                    (
-                        r["variant"], r["fit_seconds"], r["generation_seconds"], d["Epush_dense"],
-                        d["max_cube_violation"], q["oklab_error"]["p99"], q["encoded_channel_error"]["p99"],
-                    ), " | "
-                ), " |"
+            row_values = (
+                r["variant"], r["fit_seconds"], r["generation_seconds"], d["Epush_dense"],
+                d["max_cube_violation"], q["oklab_error"]["p99"], q["encoded_channel_error"]["p99"],
             )
+            matched && (row_values = (row_values..., r["final_heldout_gamut_violation"], r["physical_target_reached"]))
+            println(io, "| ", join(row_values, " | "), " |")
         end
         matched && println(io, "\nMatched runs stop at held-out gamut violation <= 1e-3, or at the common schedule/time budget. Gauge coordinates remove one common K/S scale per wavelength.\n")
         println(io, "\nThe softplus/L-BFGS-B row isolates the solver change; the direct/L-BFGS-B row then isolates coefficient coordinates. These are local, budget-limited fits. Layer errors are reported separately and are not additive.")

@@ -1,0 +1,45 @@
+c_checks = 1781
+consumer_checks = 4
+consumer_packages = 17
+explorer_fast_checks = 533
+failures = 0
+fixups_browser_checks = 35
+fixups_commit = "cf6ef9d"
+grid_n = 256
+julia_on_client_path = false
+julia_version = "1.13.3"
+library_bytes = 102820416
+library_sha256 = "faef76a45359da85a201919ca94546291095c057828c6e2e71bf031f94876d52"
+main_browser_checks = 30
+main_runtime_commit = "18017b4"
+matched_source_commit = "de0dfea"
+model_id = "f78bfa4fe793ca748d7647605cb37147"
+payload_bytes = 100663424
+payload_sha256 = "11e3012d0f76030a0dd7b1a41472cc4e87c88b24151d7803d4078f4f92789cf3"
+precompute_tests = 4719
+python_checks = 1783
+r_checks = 1784
+relocated_clients_passed = true
+runtime_tests = 6274
+schema_version = 1
+wrapping_commit = "4f21b6de6a61590bf8e59c9d6c88b4a62722e177"
+
+[tools.JuliaC]
+deps = ["LIEF_Patchelf_jll", "LazyArtifacts", "Libdl", "Mmap", "ObjectFile", "PackageCompiler", "Pkg", "Preferences", "RelocatableFolders", "SHA", "StructIO", "TOML"]
+git-tree-sha1 = "b23c19d50a0f47d4cab16299c760ca842cd47599"
+registries = "General"
+uuid = "acedd4c2-ced6-4a15-accc-2607eb759ba2"
+version = "0.3.10"
+
+[tools.JuliaLibWrapping]
+deps = ["Graphs", "JSON", "Libdl", "OrderedCollections", "TOML"]
+git-tree-sha1 = "b81222d4886014b174a679998ee7ecf6ffc17b54"
+repo-rev = "rdyncall"
+repo-subdir = "JuliaLibWrapping"
+repo-url = "https://github.com/frankier/JuliaLibWrapping.jl.git"
+uuid = "d61f35a8-f6af-436f-bc10-cee6b101f7bd"
+version = "0.2.0"
+weakdeps = ["JuliaC"]
+
+    [tools.JuliaLibWrapping.extensions]
+    JuliaLibWrappingJuliaCExt = "JuliaC"

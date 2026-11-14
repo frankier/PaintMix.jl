@@ -142,6 +142,7 @@ end
     mktempdir() do dir
         result = run_pipeline(cfg; inputs, out_dir = dir, promote = false, log = nothing)
         @test isfile(result["payload_path"])
+        @test PaintMixPrecompute.TOML.parsefile(result["sidecar_path"])["config_path"] == "precompute/config/default.toml"
         @test haskey(result["validation"], "decomposition")
         validated = run_pipeline(cfg; inputs, out_dir = dir, stage = :validate, log = nothing)
         @test validated["model_id"] == result["model_id"]

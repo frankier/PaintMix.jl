@@ -42,6 +42,11 @@ function provenance_text(
     return String(take!(io))
 end
 
+function _config_label(path)
+    relative = relpath(abspath(path), normpath(joinpath(@__DIR__, "..", "..")))
+    return isabspath(relative) || first(splitpath(relative)) == ".." ? basename(path) : replace(relative, '\\' => '/')
+end
+
 """
     build_provenance(cfg, cfg_path, db, fit, validation) -> Dict{String,Any}
 
@@ -66,7 +71,7 @@ function build_provenance(
     return Dict{String, Any}(
         "schema_version" => 2,
         "generated_utc" => string(Dates.now(Dates.UTC)),
-        "config_path" => abspath(cfg_path),
+        "config_path" => _config_label(cfg_path),
         "config_hash" => config_hash(cfg_path),
         "inputs" => inputs,
         "pigments" => [

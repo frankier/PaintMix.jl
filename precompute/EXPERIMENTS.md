@@ -220,3 +220,12 @@ and concentration-quantization distributions. These errors are not additive.
 `sum_255_fraction` reports the actual fraction whose stored integer sum is
 255. The earlier histogram-bin-counting implementation of that statistic was
 incorrect; payload values and acceptance decisions are unaffected.
+
+The [follow-up record](results/followups/README.md) retains all four physical
+fits, the full-size matched-accuracy comparison, four runtime precision/layout
+candidates, real-payload compiled checks and both browser lanes. None of the
+matched fits reaches the held-out target, and no precision/layout variant
+meets the provisional mixing gates. These outcomes are retained explicitly.
+Generated provenance labels configuration files relative to the repository
+(or by filename for external configurations); it does not publish execution
+directories. Full candidate artifacts live under `precompute/output/followups/`.

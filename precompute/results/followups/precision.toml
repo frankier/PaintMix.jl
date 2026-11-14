@@ -1,0 +1,925 @@
+corpus_sha256 = "40f3ffa15dcff27d1a923fbd2f5230299a6b80435885ef3f3440a85f2a621b75"
+grid_n = 256
+implementation_sha256 = "6ac107cc5d559156f566a06db428bcee85985b1e49a6cd9da7833668b7b0f56a"
+schema_version = 1
+script_sha256 = "338cf449776f634cb3f0440f2cbcd8d9aeef9deb0c99d6934b9bb76209422057"
+source_fit_job_id = "7ed3fa02be6ca5b6157cdd9bdab6e4439a4a3025c7537f61698b63555d25a8fe"
+source_model_id = "2e7b0348fa5708a29e930bcfe38ec56e"
+source_payload_sha256 = "9b06aad29d40a1de1a4d1379fce6c3cff717d83b5020d86d5e89e099af1885c4"
+
+[environment]
+julia = "1.13.3"
+
+    [environment.packages.ADTypes]
+    tree_hash = "629de23e1c16911b439dabd2303c08af9575b226"
+    uuid = "47edcb42-4c32-4615-8424-f2b9edc5f35b"
+    version = "1.24.0"
+
+    [environment.packages.AbstractTrees]
+    tree_hash = "2d9c9a55f9c93e8887ad391fbae72f8ef55e1177"
+    uuid = "1520ce14-60c1-5f80-bbc7-55ef81b5835c"
+    version = "0.4.5"
+
+    [environment.packages.Accessors]
+    tree_hash = "8c0bc12397dabf5d2dfc4b5763ec463854cc44d3"
+    uuid = "7d9f7c33-5ae7-4f3b-8dc6-eff91059b697"
+    version = "0.1.46"
+
+    [environment.packages.Adapt]
+    tree_hash = "7c2c19b5a26e601634bf718490b89d59685f122e"
+    uuid = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
+    version = "4.7.1"
+
+    [environment.packages.AliasTables]
+    tree_hash = "9876e1e164b144ca45e9e3198d0b689cadfed9ff"
+    uuid = "66dad0bd-aa9a-41b7-9441-69ab47430ed8"
+    version = "1.1.3"
+
+    [environment.packages.ArgTools]
+    source_hash = "8d08112e39d89672001729f4a8a3cfbc1ad2d001cf55b53e1dff705340b5954f"
+    uuid = "0dad84c5-d112-42e6-8d28-ef12dabb789f"
+    version = "1.1.2"
+
+    [environment.packages.ArrayInterface]
+    tree_hash = "1aec1ff0dcaa83a484e7f72097562fa3102c6722"
+    uuid = "4fba245c-0d91-5ea0-9b3e-6abc04ee57a9"
+    version = "7.30.2"
+
+    [environment.packages.Artifacts]
+    source_hash = "bb2f750ace4865f408e25de0e4ef714679a0ed1b0df38b7b536c0eb3eebe7453"
+    uuid = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
+    version = "1.11.0"
+
+    [environment.packages.Base64]
+    source_hash = "1382f30cccd9e7626e3c84977af3498e46294eddf46e3abdb8f5e7820542a38b"
+    uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
+    version = "1.11.0"
+
+    [environment.packages.CommonSolve]
+    tree_hash = "6c389fa857f6ca5a95474b52a52023fd77f24cb7"
+    uuid = "38540f10-b2f7-11e9-35d8-d573e4eb0ff2"
+    version = "0.2.14"
+
+    [environment.packages.CommonSubexpressions]
+    tree_hash = "cda2cfaebb4be89c9084adaca7dd7333369715c5"
+    uuid = "bbf7d656-a473-5ed7-a52c-81e309532950"
+    version = "0.3.1"
+
+    [environment.packages.Compat]
+    tree_hash = "9d8a54ce4b17aa5bdce0ea5c34bc5e7c340d16ad"
+    uuid = "34da2185-b29b-5c13-b0c7-acf172513d20"
+    version = "4.18.1"
+
+    [environment.packages.CompilerSupportLibraries_jll]
+    source_hash = "f6137cdcde4b07ee5b51e990a43d47da898721d5c76e237523eff2c11dde5091"
+    uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
+    version = "1.5.5+2"
+
+    [environment.packages.CompositionsBase]
+    tree_hash = "802bb88cd69dfd1509f6670416bd4434015693ad"
+    uuid = "a33af91c-f02d-484b-be07-31d278c5ca2b"
+    version = "0.1.2"
+
+    [environment.packages.ConsoleProgressMonitor]
+    tree_hash = "3ab7b2136722890b9af903859afcf457fa3059e8"
+    uuid = "88cd18e8-d9cc-4ea6-8889-5259c0d15c8b"
+    version = "0.1.2"
+
+    [environment.packages.ConstructionBase]
+    tree_hash = "b4b092499347b18a015186eae3042f72267106cb"
+    uuid = "187b0558-2788-49d3-abe0-74a17ed4e7c9"
+    version = "1.6.0"
+
+    [environment.packages.DataAPI]
+    tree_hash = "abe83f3a2f1b857aac70ef8b269080af17764bbe"
+    uuid = "9a962f9c-6df0-11e9-0e5d-c546b8b5ee8a"
+    version = "1.16.0"
+
+    [environment.packages.DataStructures]
+    tree_hash = "b0bc6d2cad1fed8b7fd59a1551a991cb3d2809e6"
+    uuid = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
+    version = "0.19.6"
+
+    [environment.packages.Dates]
+    source_hash = "f187783944648bfde6553bf0dcce982feb43948f2a15f5b6c8e85f92df8ed438"
+    uuid = "ade2ca70-3891-5945-98fb-dc099432e06a"
+    version = "1.11.0"
+
+    [environment.packages.DiffResults]
+    tree_hash = "782dd5f4561f5d267313f23853baaaa4c52ea621"
+    uuid = "163ba53b-c6d8-5494-b064-1a9d43ac40c5"
+    version = "1.1.0"
+
+    [environment.packages.DiffRules]
+    tree_hash = "79a2aca180a85c690c58a020d47b426954b590f8"
+    uuid = "b552c78f-8df3-52c6-915a-8e097449b14b"
+    version = "1.16.0"
+
+    [environment.packages.DifferentiationInterface]
+    tree_hash = "0693d8b0a4608ff289d228ab4c598df5894845cd"
+    uuid = "a0c0ee7d-e4b9-4e03-894e-1c5f64a51d63"
+    version = "0.7.21"
+
+    [environment.packages.Distributed]
+    source_hash = "2c6208ee073ba8ce06da57946481d4ff86786f37b44d29409128fec74cdfcc3c"
+    uuid = "8ba89e20-285c-5b6f-9357-94700520ee1b"
+    version = "1.11.0"
+
+    [environment.packages.DocStringExtensions]
+    tree_hash = "7442a5dfe1ebb773c29cc2962a8980f47221d76c"
+    uuid = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
+    version = "0.9.5"
+
+    [environment.packages.Downloads]
+    source_hash = "463e57b5e9dfad03d1e6f52c36d8899eb501082973dff889264075c6cc7c1622"
+    uuid = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
+    version = "1.7.0"
+
+    [environment.packages.EnumX]
+    tree_hash = "c49898e8438c828577f04b92fc9368c388ac783c"
+    uuid = "4e289a0a-7415-4d19-859d-a7e5c4648b56"
+    version = "1.0.7"
+
+    [environment.packages.ExprTools]
+    tree_hash = "d2e49e7efd29719d6f28b891b0e0e159daa9d2b4"
+    uuid = "e2ba6199-217a-4e67-a87a-7c52f15ade04"
+    version = "0.1.11"
+
+    [environment.packages.ExproniconLite]
+    tree_hash = "250aa1562e840b38c72b44a9ebef0f39f6b6e950"
+    uuid = "55351af7-c7e9-48d6-89ff-24e801d99491"
+    version = "0.10.16"
+
+    [environment.packages.FastClosures]
+    tree_hash = "acebe244d53ee1b461970f8910c235b259e772ef"
+    uuid = "9aa1b823-49e4-5ca5-8b0f-3971ec8bab6a"
+    version = "0.3.2"
+
+    [environment.packages.FileWatching]
+    source_hash = "1a124847fd7e7e0cc908fb8feb4bde9ed001f3f35949131ed89e2437adc8d43d"
+    uuid = "7b1f6079-737a-58dc-b8bc-7a2ca5c1b5ee"
+    version = "1.11.0"
+
+    [environment.packages.FillArrays]
+    tree_hash = "5bad39456d9f0166184fce2248783dd9862645c1"
+    uuid = "1a297f60-69ca-5386-bcde-b61e274b549b"
+    version = "1.17.0"
+
+    [environment.packages.FiniteDiff]
+    tree_hash = "5031f23e040bf17082e5b52422d77b5e844eefb1"
+    uuid = "6a86dc24-6348-571c-b903-95158fe2bd41"
+    version = "2.33.0"
+
+    [environment.packages.ForwardDiff]
+    tree_hash = "3b0f72e2ffef1a139ac450725c9ecd01c0a3c050"
+    uuid = "f6369f11-7733-5829-9624-2563aa707210"
+    version = "1.4.6"
+
+    [environment.packages.FunctionWrappers]
+    tree_hash = "d62485945ce5ae9c0c48f124a84998d755bae00e"
+    uuid = "069b7b12-0de2-55c6-9aab-29f3d0a68a2e"
+    version = "1.1.3"
+
+    [environment.packages.FunctionWrappersWrappers]
+    tree_hash = "2bcce3ad6f6977d617928d7707fdc86ac83cce03"
+    uuid = "77dc65aa-8811-40c2-897b-53d922fa7daf"
+    version = "1.13.0"
+
+    [environment.packages.Future]
+    source_hash = "4d8de27fcd289fbbe514ab572d5b2d69019ee1a2e6c2fb0ac73661b6f3aa54c9"
+    uuid = "9fa8497b-333b-5362-9e8d-4d0656e87820"
+    version = "1.11.0"
+
+    [environment.packages.GPUArraysCore]
+    tree_hash = "f60436514e6d73f8ee069ae4ee0ff038fe96b69d"
+    uuid = "46192b85-c4d5-4398-a991-12ede77f4527"
+    version = "0.2.2"
+
+    [environment.packages.InverseFunctions]
+    tree_hash = "5cc6ad3e2bfc75a11eed92632ee341d37f4a4536"
+    uuid = "3587e190-3f89-42d0-90ee-14403ec27112"
+    version = "0.1.18"
+
+    [environment.packages.IrrationalConstants]
+    tree_hash = "b2d91fe939cae05960e760110b328288867b5758"
+    uuid = "92d709cd-6900-40b7-9082-c6be49f344b6"
+    version = "0.2.6"
+
+    [environment.packages.IteratorInterfaceExtensions]
+    tree_hash = "a3f24677c21f5bbe9d2a714f95dcd58337fb2856"
+    uuid = "82899510-4779-5014-852e-03e436cf321d"
+    version = "1.0.0"
+
+    [environment.packages.JLLWrappers]
+    tree_hash = "7204148362dafe5fe6a273f855b8ccbe4df8173e"
+    uuid = "692b3bcd-3c85-4b1f-b108-f13ce0eb3210"
+    version = "1.8.0"
+
+    [environment.packages.Jieko]
+    tree_hash = "2f05ed29618da60c06a87e9c033982d4f71d0b6c"
+    uuid = "ae98c720-c025-4a4a-838c-29b094483192"
+    version = "0.2.1"
+
+    [environment.packages.JuliaSyntaxHighlighting]
+    source_hash = "53168b984433be8775a53cd0fdb210f3f672a0be25b6ab124739522e3fd0e52f"
+    uuid = "ac6e5ff7-fb65-4e79-a425-ec3bc9c03011"
+    version = "1.12.0"
+
+    [environment.packages.LBFGSB]
+    tree_hash = "e2e6f53ee20605d0ea2be473480b7480bd5091b5"
+    uuid = "5be7bae1-8223-5378-bac3-9e7378a2f6e6"
+    version = "0.4.1"
+
+    [environment.packages.L_BFGS_B_jll]
+    tree_hash = "77feda930ed3f04b2b0fbb5bea89e69d3677c6b0"
+    uuid = "81d17ec3-03a1-5e46-b53e-bddc35a13473"
+    version = "3.0.1+0"
+
+    [environment.packages.LeftChildRightSiblingTrees]
+    tree_hash = "d4816abce26971e3237b46a47b99991f306e4832"
+    uuid = "1d6d02ad-be62-4b6b-8a6d-2f90e265016e"
+    version = "0.3.0"
+
+    [environment.packages.LibCURL]
+    source_hash = "e4987c8e706084cfb5b927e29c903c0fbb5ab218cbf0c4910fd85f645e857ab6"
+    uuid = "b27032c2-a3e7-50c8-80cd-2d36dbcbfd21"
+    version = "1.0.0"
+
+    [environment.packages.LibCURL_jll]
+    source_hash = "5dc12f5674d8c8331d290838f6e5addb3a3a10fb2a023d604d6c83d4ed78b8f8"
+    uuid = "deac9b47-8bc7-5906-a0fe-35ac56dc84c0"
+    version = "8.22.0+0"
+
+    [environment.packages.LibGit2]
+    source_hash = "1243ae51c34c73bb777db0f14c241316afa5cf15576f72125ac98044d063c1ae"
+    uuid = "76f85450-5226-5b5a-8eaa-529ad045b433"
+    version = "1.11.0"
+
+    [environment.packages.LibGit2_jll]
+    source_hash = "3a7db9ba8c24f824829156aa7ca76bef7f12df0931b1a93ecdc1f4e2bdaef3b4"
+    uuid = "e37daf67-58a4-590a-8e99-b0245dd2ffc5"
+    version = "1.9.7+0"
+
+    [environment.packages.LibSSH2_jll]
+    source_hash = "f8e1b02ee2de4d386b7f11f6199baa4b4e09c483ead10296ba9e5281882eaee1"
+    uuid = "29816b5a-b9ab-546f-933c-edad1886dfa8"
+    version = "1.11.104+0"
+
+    [environment.packages.Libdl]
+    source_hash = "bf005fda3d9623fbd5aec15adeb8b426e761c8b28afebe626b9ffe0d02d0510f"
+    uuid = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
+    version = "1.11.0"
+
+    [environment.packages.LineSearches]
+    tree_hash = "9ea3422d03222c6de679934d1c08f0a99405aa03"
+    uuid = "d3d80556-e9d4-5f37-9878-2ab0fcc64255"
+    version = "7.5.1"
+
+    [environment.packages.LinearAlgebra]
+    source_hash = "7dbb65d2f0204bcd3af3a16e83f48a3957d7cf33a7ae8c907190660d3967d934"
+    uuid = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+    version = "1.13.0"
+
+    [environment.packages.LogExpFunctions]
+    tree_hash = "bba2d9aa057d8f126415de240573e86a8f39d2a1"
+    uuid = "2ab3a3ac-af41-5b50-aa03-7779005ae688"
+    version = "1.0.1"
+
+    [environment.packages.Logging]
+    source_hash = "52dd336f3b122c56dd5ce8b3d0bbc5052637ec0d6a20cd013c879fa58b29f397"
+    uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
+    version = "1.11.0"
+
+    [environment.packages.LoggingExtras]
+    tree_hash = "f00544d95982ea270145636c181ceda21c4e2575"
+    uuid = "e6f89c97-d47a-5376-807f-9c37f3926c36"
+    version = "1.2.0"
+
+    [environment.packages.MacroTools]
+    tree_hash = "1e0228a030642014fe5cfe68c2c0a818f9e3f522"
+    uuid = "1914dd2f-81c6-5fcd-8719-6d5c9610ff09"
+    version = "0.5.16"
+
+    [environment.packages.Markdown]
+    source_hash = "fd0367c694e53b6fa6aebbbfe4cbc96bb864b95116a4829ed2a088d2d953bf23"
+    uuid = "d6f4376e-aef5-505a-96c1-9c027394607a"
+    version = "1.11.0"
+
+    [environment.packages.Missings]
+    tree_hash = "ec4f7fbeab05d7747bdf98eb74d130a2a2ed298d"
+    uuid = "e1d29d7a-bbdc-5cf2-9ac0-f12de2c33e28"
+    version = "1.2.0"
+
+    [environment.packages.Moshi]
+    tree_hash = "3f234cf937eb1d58f613440ecb022da784ad34d4"
+    uuid = "2e0e35c7-a2e4-4343-998d-7ef72827ed2d"
+    version = "0.3.13"
+
+    [environment.packages.MozillaCACerts_jll]
+    source_hash = "d9c8e70052cb9dc7dc84b5354a342e91be4d8be04f392c97d6207a5730fc040d"
+    uuid = "14a3606d-f60d-562e-9121-12d972cd8159"
+    version = "2026.10.20"
+
+    [environment.packages.NLSolversBase]
+    tree_hash = "25a6638571a902ecfb1ae2a18fc1575f86b1d4df"
+    uuid = "d41bc354-129a-5804-8e4c-c37616107c6c"
+    version = "7.10.0"
+
+    [environment.packages.NaNMath]
+    tree_hash = "dbd2e8cd2c1c27f0b584f6661b4309609c5a685e"
+    uuid = "77ba4419-2d1f-58cd-9bb1-8ffee604a2e3"
+    version = "1.1.4"
+
+    [environment.packages.NetworkOptions]
+    source_hash = "f180d40972db920a1f99308bccba29913c37cf027bfb389d4f782e9f1c66016b"
+    uuid = "ca575930-c2e3-43a9-ace4-1e988b2c1908"
+    version = "1.3.0"
+
+    [environment.packages.OpenBLAS_jll]
+    source_hash = "5df69c4fa90e405990c14244f78744f6e6556394c244f15fc39edef97eee1a8b"
+    uuid = "4536629a-c528-5b80-bd46-f80d51c5b363"
+    version = "0.3.30+0"
+
+    [environment.packages.OpenLibm_jll]
+    source_hash = "62dc89f51aaf0ac7dc39e1b87362b627da8d681d34cb65edda7f64970d751416"
+    uuid = "05823500-19ac-5b8b-9628-191a04bc5112"
+    version = "0.8.7+0"
+
+    [environment.packages.OpenSSL_jll]
+    source_hash = "c297f9ee142dc5c8575944c230346f656f93a75e56534152b1278cacf9a1d648"
+    uuid = "458c3c95-2e84-50aa-8efc-19380b2a3a95"
+    version = "3.5.8+0"
+
+    [environment.packages.OpenSpecFun_jll]
+    tree_hash = "1346c9208249809840c91b26703912dff463d335"
+    uuid = "efe28fd5-8261-553b-a9e1-b2916fc3738e"
+    version = "0.5.6+0"
+
+    [environment.packages.Optim]
+    tree_hash = "48968edaf014f67e58fe4c8a4ce72d392aed3294"
+    uuid = "429524aa-4258-5aef-a3af-852621145aeb"
+    version = "1.13.3"
+
+    [environment.packages.Optimization]
+    tree_hash = "166ff0e9c44c45f26113fef6971b8783d7ce7998"
+    uuid = "7f7a1694-90dd-40f0-9382-eb1efda571ba"
+    version = "5.4.0"
+
+    [environment.packages.OptimizationBase]
+    tree_hash = "9d1129ecde9f1773521196bdb2c5f16170bb2f6c"
+    uuid = "bca83a33-5cc9-4baa-983d-23429ab6bcbb"
+    version = "4.2.0"
+
+    [environment.packages.OptimizationLBFGSB]
+    tree_hash = "35f04dd9d54215c142f04a3a44cd4c3569e60b91"
+    uuid = "22f7324a-a79d-40f2-bebe-3af60c77bd15"
+    version = "1.3.0"
+
+    [environment.packages.OptimizationOptimJL]
+    tree_hash = "ba8f23a14d861a303e829afaf67a7b3f75da945f"
+    uuid = "36348300-93cb-4f02-beb5-3c3902f8871e"
+    version = "0.4.8"
+
+    [environment.packages.OrderedCollections]
+    tree_hash = "05f45c2e0de6259db764adbfd2f1dc6d3f8de13c"
+    uuid = "bac558e1-5e72-5ebc-8fee-abe8a469f55d"
+    version = "2.0.1"
+
+    [environment.packages.PCRE2_jll]
+    source_hash = "ee8ba2a7ccb38fdee6b0d868b054af8cac2f78e2f6219db75e736a7ca6e0f68a"
+    uuid = "efcefdf7-47ab-520b-bdef-62a2eaa19f15"
+    version = "10.47.0+0"
+
+    [environment.packages.PDMats]
+    tree_hash = "123266c25174ef6c8d4718920abc206452cf8de6"
+    uuid = "90014a1f-27ba-587c-ab20-58faa44d9150"
+    version = "0.11.41"
+
+    [environment.packages.PaintMix]
+    source_hash = "6da38b5c08fb1a05123662672a5ae15da610ddb865bea9d8cddc4562e2b2e1b7"
+    uuid = "baf22a60-1c55-4971-a207-55391bb51cf2"
+    version = "0.1.0"
+
+    [environment.packages.Pkg]
+    source_hash = "26e491544121264f3de2ee69ebcc321d2fe675aa8518022736a32670b24948d4"
+    uuid = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
+    version = "1.13.0"
+
+    [environment.packages.PositiveFactorizations]
+    tree_hash = "17275485f373e6673f7e7f97051f703ed5b15b20"
+    uuid = "85a6dd25-e78a-55b7-8502-1745935b8125"
+    version = "0.2.4"
+
+    [environment.packages.PreallocationTools]
+    tree_hash = "cd00e28071a75c98664663f87c2ae447d25c0503"
+    uuid = "d236fae5-4411-538c-8e31-a6e3d9e00b46"
+    version = "1.7.1"
+
+    [environment.packages.PrecompileTools]
+    tree_hash = "edbeefc7a4889f528644251bdb5fc9ab5348bc2c"
+    uuid = "aea7be01-6a6a-4083-8856-8a6e6704d82a"
+    version = "1.3.4"
+
+    [environment.packages.Preferences]
+    tree_hash = "5005266de4bfe50e53ff44a5cb5c540b6e47a254"
+    uuid = "21216c6a-2e73-6563-6e65-726566657250"
+    version = "1.6.0"
+
+    [environment.packages.Printf]
+    source_hash = "5885850de4a33c890bc065520525b267d6537ec1162451f9b6fb79b3ac7f1f77"
+    uuid = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+    version = "1.11.0"
+
+    [environment.packages.ProgressLogging]
+    tree_hash = "f0803bc1171e455a04124affa9c21bba5ac4db32"
+    uuid = "33c8b6b6-d38a-422a-b730-caa89a2f386c"
+    version = "0.1.6"
+
+    [environment.packages.ProgressMeter]
+    tree_hash = "ce5ba3edfdeba107a721748d53b5f5887f415853"
+    uuid = "92933f4c-e287-5a05-a399-4b506db050ca"
+    version = "1.13.0"
+
+    [environment.packages.PtrArrays]
+    tree_hash = "4fbbafbc6251b883f4d2705356f3641f3652a7fe"
+    uuid = "43287f4e-b6f4-7ad1-bb20-aadabca52c3d"
+    version = "1.4.0"
+
+    [environment.packages.Random]
+    source_hash = "c9b54302ca47bc397d2844a92f21ea19c842282448a0ad771cdf438d15761d6f"
+    uuid = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+    version = "1.11.0"
+
+    [environment.packages.RecipesBase]
+    tree_hash = "0c0dcffc464cda2ff33fc8ffc1dd1bdd53cd98be"
+    uuid = "3cdcf5f2-1ef4-517c-9805-6587b60abb01"
+    version = "1.4.0"
+
+    [environment.packages.RecursiveArrayTools]
+    tree_hash = "d0282d612f22dcad7b81cf487b746e63aa2a6709"
+    uuid = "731186ca-8d62-57ce-b412-fbd966d074cd"
+    version = "3.54.0"
+
+    [environment.packages.Reexport]
+    tree_hash = "45e428421666073eab6f2da5c9d310d99bb12f9b"
+    uuid = "189a3867-3050-52da-a836-e630ba90ab69"
+    version = "1.2.2"
+
+    [environment.packages.RuntimeGeneratedFunctions]
+    tree_hash = "9bb075002b40849582905394bb3031fb77aa102d"
+    uuid = "7e49a35a-f44a-4d26-94aa-eba1b4ca6b47"
+    version = "0.5.27"
+
+    [environment.packages.SHA]
+    source_hash = "ec4d06088784fa97a27481e8a24afab4cb06f623cece7b40b8231ca499be4d3a"
+    uuid = "ea8e919c-243c-51af-8825-aaa63cd721ce"
+    version = "1.0.0"
+
+    [environment.packages.SciMLBase]
+    tree_hash = "d56cb3b924cdf9297c171113e6a6ae9694e370eb"
+    uuid = "0bca4576-84f4-4d90-8ffe-ffa030f20462"
+    version = "2.155.2"
+
+    [environment.packages.SciMLLogging]
+    tree_hash = "4e1e21f14a284f892eb62923a356c70a2a0c68e1"
+    uuid = "a6db7da4-7206-11f0-1eab-35f2a5dbe1d1"
+    version = "1.10.1"
+
+    [environment.packages.SciMLOperators]
+    tree_hash = "3feb8a7bce88bb3ef051a4eda8106004ad040b6f"
+    uuid = "c0aeaf25-5076-4817-a8d5-81caf7dfa961"
+    version = "1.30.4"
+
+    [environment.packages.SciMLPublic]
+    tree_hash = "74685afb51732a464fbce79a72708f7c4203ceb7"
+    uuid = "431bcebd-1456-4ced-9d72-93c2757fff0b"
+    version = "1.3.0"
+
+    [environment.packages.SciMLStructures]
+    tree_hash = "4b8fc0ffe22b4ecba7a02f1fec0b3757db014d0c"
+    uuid = "53ae85a6-f571-4167-b2af-e1d143709226"
+    version = "1.10.6"
+
+    [environment.packages.Serialization]
+    source_hash = "bb13f784534f989dd985039bd3f3dde7780f80bc9ba59f2a002a61cad52ab212"
+    uuid = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
+    version = "1.11.0"
+
+    [environment.packages.Setfield]
+    tree_hash = "c5391c6ace3bc430ca630251d02ea9687169ca68"
+    uuid = "efcf1570-3423-57d1-acb7-fd33fddbac46"
+    version = "1.1.2"
+
+    [environment.packages.Sockets]
+    source_hash = "763859e18bdb9a5be63b0e65519a8fdce6c9468c0a9d483683e21d8fb2c59c07"
+    uuid = "6462fe0b-24de-5631-8697-dd941f90decc"
+    version = "1.11.0"
+
+    [environment.packages.SortingAlgorithms]
+    tree_hash = "13cd91cc9be159e3f4d95b857fa2aa383b53772a"
+    uuid = "a2af1166-a08f-5f64-846c-94a0d3cef48c"
+    version = "1.2.3"
+
+    [environment.packages.SparseArrays]
+    source_hash = "8f3a40d0ee04a597ff0fbcf0f18644a117ec4f3ccbc6e5dfa48c33f4b01f8811"
+    uuid = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+    version = "1.13.0"
+
+    [environment.packages.SparseConnectivityTracer]
+    tree_hash = "277d8929a56912e7342458d4db22ee45e4c0e75c"
+    uuid = "9f842d2f-2579-4b1d-911e-f412cf18a3f5"
+    version = "1.2.4"
+
+    [environment.packages.SparseMatrixColorings]
+    tree_hash = "0730f14b07c68fd3b3a6fae89a829a5124a7ae7e"
+    uuid = "0a514795-09f3-496d-8182-132a7b665d35"
+    version = "0.4.29"
+
+    [environment.packages.SpecialFunctions]
+    tree_hash = "429071b23f4c9a13fb6582f807cc2ef454082408"
+    uuid = "276daf66-3868-5448-9aa4-cd146d93841b"
+    version = "2.9.0"
+
+    [environment.packages.StaticArrays]
+    tree_hash = "39e70e0ab5d7f89833a62ab7c79df15d4fc417c1"
+    uuid = "90137ffa-7385-5640-81b9-e52037218182"
+    version = "1.9.22"
+
+    [environment.packages.StaticArraysCore]
+    tree_hash = "6ab403037779dae8c514bad259f32a447262455a"
+    uuid = "1e83bf80-4336-4d27-bf5d-d5a4f845583c"
+    version = "1.4.4"
+
+    [environment.packages.Statistics]
+    tree_hash = "e2b53ce13a53367e96601081e33d34746b571bad"
+    uuid = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+    version = "1.11.5"
+
+    [environment.packages.StatsAPI]
+    tree_hash = "178ed29fd5b2a2cfc3bd31c13375ae925623ff36"
+    uuid = "82ae8749-77ed-4fe6-ae5f-f523153014b0"
+    version = "1.8.0"
+
+    [environment.packages.StatsBase]
+    tree_hash = "adb9da019510162e67a4493fc235c23203d8b09e"
+    uuid = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
+    version = "0.34.13"
+
+    [environment.packages.StyledStrings]
+    source_hash = "e00d09c41694c1c0a5d3f0c987d49d81eb7615c68de77f62d873351a407a4412"
+    uuid = "f489334b-da3d-4c2e-b8f0-e476e12c162b"
+    version = "1.11.0"
+
+    [environment.packages.SuiteSparse]
+    source_hash = "669f080809157c0ac33fa5e9a52183348df5f54fb5f4dac71e015543fe61ec94"
+    uuid = "4607b0f0-06f3-5cda-b6b1-a6196a1729e9"
+    version = "nothing"
+
+    [environment.packages.SuiteSparse_jll]
+    source_hash = "79f165037e2d2b9b722910d364de1e6c04cd404875d5d89746381e2e37573860"
+    uuid = "bea87d4a-7f5b-5778-9afe-8cc45184846c"
+    version = "7.10.1+0"
+
+    [environment.packages.SymbolicIndexingInterface]
+    tree_hash = "42dd4c193a1bacea5b6adf78b6224de907b06351"
+    uuid = "2efcf032-c050-4f8e-a9bb-153293bab1f5"
+    version = "0.3.56"
+
+    [environment.packages.TOML]
+    source_hash = "819a5847c0997d531e213a6ddf45eb3b6168e0bad1a3c52d8c720852622f638c"
+    uuid = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
+    version = "1.0.3"
+
+    [environment.packages.Tar]
+    source_hash = "2408f2621201cf122d23c445493a8e6bdc1a161c51e5a9285591b0af7dd09fad"
+    uuid = "a4e569a6-e804-4fa4-b0f3-eef7a1d5b13e"
+    version = "1.10.0"
+
+    [environment.packages.TerminalLoggers]
+    tree_hash = "81c9b4137edfe56a56efcdcb35d721b2ce3e2416"
+    uuid = "5d786b92-1e48-4d6f-9151-6b4477ca9bed"
+    version = "0.1.8"
+
+    [environment.packages.UUIDs]
+    source_hash = "4252cc22884d260e9e451e0b67233155b27343367fa19f00987542cd5d1cde18"
+    uuid = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
+    version = "1.11.0"
+
+    [environment.packages.Unicode]
+    source_hash = "d3c0c06458643ddffafbfb21777168ca67bf5fa1438c07aae7bc7c4eaeaa0bef"
+    uuid = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
+    version = "1.11.0"
+
+    [environment.packages.Zlib_jll]
+    source_hash = "f639e91d054a285c9184a7c24e6dd73a418ce8ac95d2c0fe1ecf74802642ec6e"
+    uuid = "83775a58-1f1d-513f-b197-d71354ab007a"
+    version = "1.3.2+0"
+
+    [environment.packages.Zstd_jll]
+    source_hash = "46e254ee754d3b8fe0b8dc4caec11dc638fa85def009fb85c487afe69bf23cd9"
+    uuid = "3161d3a3-bdf6-5164-811a-617609db77b4"
+    version = "1.5.7+1"
+
+    [environment.packages.libblastrampoline_jll]
+    source_hash = "023b57ba855ef4c4464e8f3eb9a508d1fdd35e09bb09d39e3cbe9fa09487712a"
+    uuid = "8e850b90-86db-534c-a0d3-1478176c7d93"
+    version = "5.15.0+0"
+
+    [environment.packages.nghttp2_jll]
+    source_hash = "cdb90cf1f7f2a3b2d6ea31bd39459b6bd0b9c75c5f93db18030342126f944179"
+    uuid = "8e850ede-7688-5339-a07c-302acd2aaf8d"
+    version = "1.70.0+0"
+
+    [environment.packages.p7zip_jll]
+    source_hash = "abe0085ca3b7d39381f020d86df341cd4557c78395658767563ff4f2ea845faa"
+    uuid = "3f19e933-33d8-53b3-aaab-bd5110c3b7a0"
+    version = "17.8.3+0"
+
+[[runs]]
+model_id = "b28ebea170ad8df799eba8cb8fb5d56f"
+payload_bytes = 100663424
+payload_sha256 = "39e2a5d2205adbb8ab827a43b972e280eccb7f08850860814b3fc9788dee4b0a"
+variant = "8-cube"
+
+    [runs.report.concentration_channel]
+    max = 0.23723547717191196
+    mean = 0.0030546906350837513
+    p99 = 0.06498342885258512
+    samples = 716
+
+    [runs.report.forward_channel]
+    max = 0.1505850702723801
+    mean = 0.0022887555928571795
+    p99 = 0.026655176413691417
+    samples = 716
+
+    [runs.report.quality]
+    corpus_colors = 512
+    corpus_sha256 = "40f3ffa15dcff27d1a923fbd2f5230299a6b80435885ef3f3440a85f2a621b75"
+    corpus_version = 2
+    pairs = 20000
+
+        [runs.report.quality.channel_error]
+        max = 0.21415387601956604
+        mean = 0.014401029100976837
+        p99 = 0.09725971031993208
+
+        [runs.report.quality.encoded_channel_error]
+        max = 0.45812847589788125
+        mean = 0.011532362031121469
+        p99 = 0.09819350180911951
+
+        [runs.report.quality.oklab_error]
+        max = 0.11399970830859092
+        mean = 0.00467561409332504
+        p99 = 0.0356442315992515
+
+        [runs.report.quality.worst_channel_sample]
+        a = [0.0306883206551245, 0.21350455896112108, 0.4317585928743467]
+        b = [0.6902618843578886, 0.8269098043177392, 0.8527010495718986]
+        error = 0.21415387601956604
+        t = 0.8697218382593529
+
+    [runs.report.quantization]
+    concentration_scale = 255
+    invalid_vertices = 0
+    note = "sum == concentration_scale means the fourth concentration is zero; a smaller sum carries positive white pigment"
+    rule = "simplex-largest-remainder"
+    sum_255_fraction = 0.0031395554542541504
+    sum_full_fraction = 0.0031395554542541504
+    vertices = 16777216
+
+    [runs.report.roundtrip]
+    corpus_sha256 = "9e56b9cc3686cef0a6288c7dbb9ec2a6f8320c1bb387c7676929fcc625ec5b4b"
+    corpus_version = 2
+    samples = 2000
+
+        [runs.report.roundtrip.float32]
+        max = 1.4901161193847656e-8
+        mean = 6.769696483388543e-10
+
+        [runs.report.roundtrip.float64]
+        max = 8.673617379884035e-19
+        mean = 4.336808689942018e-22
+
+    [runs.report.runtime]
+    allocated_bytes = 0
+    checksum = [8774.371335137854, 9065.527712923986, 8813.637536265873]
+    pairs = 20000
+    warm_scalar_ns = 363.8755
+[[runs]]
+model_id = "74ce418570d47d29decc39cb47d99678"
+payload_bytes = 58818944
+payload_sha256 = "d4016f4b5fe7a2517ce94cbb702b32e2522bce6b9832d63f0de2678169f82205"
+variant = "8-simplex"
+
+    [runs.report.concentration_channel]
+    max = 0.23723547717191196
+    mean = 0.0030546906350837513
+    p99 = 0.06498342885258512
+    samples = 716
+
+    [runs.report.forward_channel]
+    max = 0.13270507027237988
+    mean = 0.002345100897631437
+    p99 = 0.02477422864586698
+    samples = 716
+
+    [runs.report.quality]
+    corpus_colors = 512
+    corpus_sha256 = "40f3ffa15dcff27d1a923fbd2f5230299a6b80435885ef3f3440a85f2a621b75"
+    corpus_version = 2
+    pairs = 20000
+
+        [runs.report.quality.channel_error]
+        max = 0.21399070309810092
+        mean = 0.014357754266957255
+        p99 = 0.097259710319932
+
+        [runs.report.quality.encoded_channel_error]
+        max = 0.45812847589788125
+        mean = 0.01152929423249497
+        p99 = 0.09799216330530774
+
+        [runs.report.quality.oklab_error]
+        max = 0.1137456531980152
+        mean = 0.00467997428662251
+        p99 = 0.03564850109821398
+
+        [runs.report.quality.worst_channel_sample]
+        a = [0.0306883206551245, 0.21350455896112108, 0.4317585928743467]
+        b = [0.6902618843578886, 0.8269098043177392, 0.8527010495718986]
+        error = 0.21399070309810092
+        t = 0.8697218382593529
+
+    [runs.report.quantization]
+    concentration_scale = 255
+    invalid_vertices = 0
+    note = "sum == concentration_scale means the fourth concentration is zero; a smaller sum carries positive white pigment"
+    rule = "simplex-largest-remainder"
+    sum_255_fraction = 0.0031395554542541504
+    sum_full_fraction = 0.0031395554542541504
+    vertices = 16777216
+
+    [runs.report.roundtrip]
+    corpus_sha256 = "9e56b9cc3686cef0a6288c7dbb9ec2a6f8320c1bb387c7676929fcc625ec5b4b"
+    corpus_version = 2
+    samples = 2000
+
+        [runs.report.roundtrip.float32]
+        max = 1.4901161193847656e-8
+        mean = 6.769696483388543e-10
+
+        [runs.report.roundtrip.float64]
+        max = 8.673617379884035e-19
+        mean = 4.336808689942018e-22
+
+    [runs.report.runtime]
+    allocated_bytes = 0
+    checksum = [8772.326628754143, 9062.51898674215, 8813.13945212559]
+    pairs = 20000
+    warm_scalar_ns = 346.43545
+[[runs]]
+model_id = "7b8ec777b1a4517efb4887e0b3a201b7"
+payload_bytes = 150995072
+payload_sha256 = "ab77f13d02a21ac4dfa127532f076134b6df57ac3c315adcc4da0450518aad09"
+variant = "16-cube"
+
+    [runs.report.concentration_channel]
+    max = 0.005720537495838229
+    mean = 3.4725842991211386e-5
+    p99 = 0.000671807329783336
+    samples = 716
+
+    [runs.report.forward_channel]
+    max = 0.1505850702723801
+    mean = 0.0022887555928571795
+    p99 = 0.026655176413691417
+    samples = 716
+
+    [runs.report.quality]
+    corpus_colors = 512
+    corpus_sha256 = "40f3ffa15dcff27d1a923fbd2f5230299a6b80435885ef3f3440a85f2a621b75"
+    corpus_version = 2
+    pairs = 20000
+
+        [runs.report.quality.channel_error]
+        max = 0.16480968906368965
+        mean = 0.011346255445488188
+        p99 = 0.07283792014373314
+
+        [runs.report.quality.encoded_channel_error]
+        max = 0.33358520091141586
+        mean = 0.008683079490623424
+        p99 = 0.06335118575801585
+
+        [runs.report.quality.oklab_error]
+        max = 0.08684543212129146
+        mean = 0.0034750778819641797
+        p99 = 0.02170837255799902
+
+        [runs.report.quality.worst_channel_sample]
+        a = [0.5454440538204258, 0.2696362851486571, 0.0908416269884117]
+        b = [0.819973847952164, 0.959793148797003, 0.9916228732260481]
+        error = 0.16480968906368965
+        t = 0.7498075211572286
+
+    [runs.report.quantization]
+    concentration_scale = 65535
+    invalid_vertices = 0
+    note = "sum == concentration_scale means the fourth concentration is zero; a smaller sum carries positive white pigment"
+    rule = "simplex-largest-remainder"
+    sum_255_fraction = 0.0001627206802368164
+    sum_full_fraction = 0.0030707716941833496
+    vertices = 16777216
+
+    [runs.report.roundtrip]
+    corpus_sha256 = "9e56b9cc3686cef0a6288c7dbb9ec2a6f8320c1bb387c7676929fcc625ec5b4b"
+    corpus_version = 2
+    samples = 2000
+
+        [runs.report.roundtrip.float32]
+        max = 1.4901161193847656e-8
+        mean = 6.667251000180841e-10
+
+        [runs.report.roundtrip.float64]
+        max = 8.673617379884035e-19
+        mean = 4.336808689942018e-22
+
+    [runs.report.runtime]
+    allocated_bytes = 0
+    checksum = [8752.321054267122, 9061.713504325255, 8813.70582223798]
+    pairs = 20000
+    warm_scalar_ns = 364.9356
+[[runs]]
+model_id = "23c6805eb1f8cc97feee7127722dea38"
+payload_bytes = 109150592
+payload_sha256 = "17188f6eec824ae5443436d05d83ce123b311c24da1886cb0263034fff49b436"
+variant = "16-simplex"
+
+    [runs.report.concentration_channel]
+    max = 0.005720537495838229
+    mean = 3.4725842991211386e-5
+    p99 = 0.000671807329783336
+    samples = 716
+
+    [runs.report.forward_channel]
+    max = 0.13270507027237988
+    mean = 0.002345100897631437
+    p99 = 0.02477422864586698
+    samples = 716
+
+    [runs.report.quality]
+    corpus_colors = 512
+    corpus_sha256 = "40f3ffa15dcff27d1a923fbd2f5230299a6b80435885ef3f3440a85f2a621b75"
+    corpus_version = 2
+    pairs = 20000
+
+        [runs.report.quality.channel_error]
+        max = 0.16518849679844705
+        mean = 0.011308551081634746
+        p99 = 0.0724144444535989
+
+        [runs.report.quality.encoded_channel_error]
+        max = 0.33358520091141586
+        mean = 0.008679900996208781
+        p99 = 0.06285119483896362
+
+        [runs.report.quality.oklab_error]
+        max = 0.08731152369184411
+        mean = 0.0034848193413023394
+        p99 = 0.02172859673101627
+
+        [runs.report.quality.worst_channel_sample]
+        a = [0.5454440538204258, 0.2696362851486571, 0.0908416269884117]
+        b = [0.819973847952164, 0.959793148797003, 0.9916228732260481]
+        error = 0.16518849679844705
+        t = 0.7498075211572286
+
+    [runs.report.quantization]
+    concentration_scale = 65535
+    invalid_vertices = 0
+    note = "sum == concentration_scale means the fourth concentration is zero; a smaller sum carries positive white pigment"
+    rule = "simplex-largest-remainder"
+    sum_255_fraction = 0.0001627206802368164
+    sum_full_fraction = 0.0030707716941833496
+    vertices = 16777216
+
+    [runs.report.roundtrip]
+    corpus_sha256 = "9e56b9cc3686cef0a6288c7dbb9ec2a6f8320c1bb387c7676929fcc625ec5b4b"
+    corpus_version = 2
+    samples = 2000
+
+        [runs.report.roundtrip.float32]
+        max = 1.4901161193847656e-8
+        mean = 6.723130354657769e-10
+
+        [runs.report.roundtrip.float64]
+        max = 8.673617379884035e-19
+        mean = 4.336808689942018e-22
+
+    [runs.report.runtime]
+    allocated_bytes = 0
+    checksum = [8750.916352583748, 9059.934058076606, 8813.848994695101]
+    pairs = 20000
+    warm_scalar_ns = 353.4264

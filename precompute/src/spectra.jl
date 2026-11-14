@@ -59,8 +59,8 @@ end
     SpectralModel{T}
 
 `PigmentSpectra` and `Quadrature` fused into the layout the hot loops want:
-`K` and `S` are `W x 4` (wavelength-major) so a wavelength's four pigment
-coefficients are adjacent.
+`K` and `S` are `W x 4`, matching the kernels' wavelength-first indexing.
+Each column stores one pigment's wavelength samples contiguously.
 
 A surrogate fit produces one of these from fitted `K`/`S` while reusing the
 same quadrature, which is why the two are separate fields rather than one

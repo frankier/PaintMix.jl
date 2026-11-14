@@ -81,3 +81,30 @@ a bundled runtime (`--bundle`), or on a machine without the depot that built
 it. Step 7 covers the release matrix. The dummy payload is also not a
 substitute for the production model: nothing here says anything about table
 quality, only about transport.
+
+
+## Promoted payload verification
+
+The production payload, model `f78bfa4fe793ca748d7647605cb37147`, was also
+compiled and checked with Julia 1.13.3, JuliaC 0.3.10, JLWInterop 0.2.0 and
+wrapping revision `4f21b6de6a61590bf8e59c9d6c88b4a62722e177`.
+This was a non-bundled x86-64 Linux build on one compute CPU.
+
+| Quantity | Value |
+| --- | --- |
+| Real payload | 100,663,424 bytes, n=256 |
+| Compiled image | 98.874 MiB |
+| Linked library | 98.057 MiB |
+| Compilation / linking, excluding setup | 15.691 / 0.570 seconds |
+| C checks | 1,781 passed |
+| Python checks | 1,783 passed |
+| R checks | 1,784 passed |
+| Relocated clients without Julia on PATH | All three passed again |
+
+The generated library and bindings are retained in ignored `build/out-release/`.
+The [portable verification record](../precompute/results/followups/release-verification.toml)
+contains the exact payload/library SHA-256 values and tool metadata. The
+runtime's shared libraries are still required for this non-bundled build.
+Bundling, a clean distribution image and other operating systems/architectures
+remain separate release checks. `PAINTMIX_REQUIRE_R=1` makes missing R
+coverage a failure; `smoke/relocate.sh` checks a separate copied output tree.

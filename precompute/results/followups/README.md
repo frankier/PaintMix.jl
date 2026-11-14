@@ -115,6 +115,20 @@ check in the R loader environment crashed. The clean-environment repeat
 processes; the final browser jobs passed. The failed setup/job statuses are
 retained rather than represented as wholly successful allocations.
 
+## Build dependency pins
+
+The build projects now pin JuliaC 0.3.10, JLWInterop 0.2.0, library StaticArrays
+1.9.24 and the immutable wrapping revision. The separate tools manifest is
+tracked to lock its transitive dependencies. All 28 verified tool source trees
+remain unchanged. The shared workspace lock advances StaticArrays from
+1.9.22 to 1.9.24; runtime consumer compatibility remains `1`.
+
+The pinned configuration passed the real-payload C/Python/R smoke and
+relocation checks again. Runtime tests (6,274), two-worker precompute tests
+(4,719) and fresh-consumer checks (4; 17 packages) passed. Original Float64
+baseline table digests remain identical. [build-pins.toml](build-pins.toml)
+retains the resolved versions, source hashes and repeated verification.
+
 ## Remaining work
 
 1. Improve boundary sampling and stopping behavior until the common physical
@@ -125,5 +139,3 @@ retained rather than represented as wholly successful allocations.
 3. Decide whether to stabilize the experimental format, then extend Explorer
    and compiled bindings to it and run a bundled, multi-platform release matrix.
 4. Review/merge `explorer-fixups` when desired. It remains separate from main.
-5. Choose exact build-tool pins versus the current compatibility ranges; the
-   complete tested versions and immutable wrapping revision are recorded here.

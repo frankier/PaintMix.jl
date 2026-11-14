@@ -1,0 +1,32 @@
+build_job = 3091022
+regression_job = 3091023
+runtime_tests = 6274
+precompute_tests = 4719
+baseline_preserved = true
+workspace_staticarrays_previous = "1.9.22"
+c_checks = 1781
+python_checks = 1783
+r_checks = 1784
+failures = 0
+relocated_clients_passed = true
+consumer_checks = 4
+consumer_packages = 17
+library_bytes = 102820416
+library_sha256 = "e9d135ff24a16591cc0a15dab76958fa928bac8405727686924546d058e634d2"
+julia_version = "1.13.3"
+runtime_staticarrays_compat = "1"
+schema_version = 1
+verified_registry_trees_unchanged = 28
+wrapping_commit = "4f21b6de6a61590bf8e59c9d6c88b4a62722e177"
+
+[source_trees]
+JLWInterop = "7783d6605e87332b09de7dfce71cc8ad547b7f90"
+JuliaC = "b23c19d50a0f47d4cab16299c760ca842cd47599"
+JuliaLibWrapping = "b81222d4886014b174a679998ee7ecf6ffc17b54"
+StaticArrays = "8a8a52f887f38d44014e24ee46b8a7311c625f6d"
+
+[versions]
+JLWInterop = "0.2.0"
+JuliaC = "0.3.10"
+JuliaLibWrapping = "0.2.0"
+StaticArrays = "1.9.24"

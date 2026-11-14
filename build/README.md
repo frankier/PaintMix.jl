@@ -50,6 +50,16 @@ julia --project=build build/compile.jl --payload data/default/default.pmx
 bash build/smoke/run.sh                                    # C + Python + R vs Julia
 ```
 
+The library project pins JLWInterop 0.2.0 and StaticArrays 1.9.24. The
+separate tools project pins JuliaC 0.3.10 and the verified R-capable wrapping
+revision. The root workspace manifest locks the library dependencies;
+`build/build-env/Manifest.toml` locks the tools and their own transitive
+dependencies. These are the
+versions verified with Julia 1.13.3. Update the pins and lockfiles together
+and repeat real-payload smoke and relocation checks when changing them.
+The shared workspace lock also selects StaticArrays 1.9.24; the runtime
+project's StaticArrays compatibility range remains `1` for consumers.
+
 `compile.jl` copies the chosen payload to `build/data/payload.pmx`, which is
 the path `library.jl` reads while the image is built. Without `--bundle` the
 library still needs Julia's `lib` directory on the loader path; `--bundle`

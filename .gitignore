@@ -6,7 +6,6 @@
 /build/out*/
 /build/data/*.pmx
 /build/*-bundle/
-/build/build-env/Manifest.toml
 /test/Manifest.toml
 /benchmarks/Manifest.toml
 /precompute/test/Manifest.toml

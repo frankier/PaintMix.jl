@@ -1,8 +1,9 @@
 # explorer — interactive viewer
 
 A local web app that shows the PaintMix input database, the precompute
-intermediates, and the runtime payload. It answers "what is in the data, and
-what does each processing step do to it?" on one page.
+intermediates, and the runtime payload. Start at `/` and follow the pipeline:
+measured spectra → fitted surrogate pigments → lookup tables → runtime mixing.
+The CIE view compares the stages rather than adding a processing step.
 
 This is a development tool. It is not part of the runtime package and not part
 of the root workspace. The tracked root `Manifest.toml` stays free of Makie,
@@ -21,7 +22,7 @@ Playwright browser lane.
 
 | Route | Contents |
 | --- | --- |
-| `GET /` | overview: provenance banner, data card, links |
+| `GET /` | pipeline front page, stage availability, CIE comparison, expandable loaded data |
 | `GET /spectra` | measured, fitted, and derived K, S, K/S, R∞, R′ curves with a wavelength crosshair and readout |
 | `GET /cie` | CIE 1931 locus with a wavelength crown, sRGB triangle, the three pigment chromaticity layers, nominal colors, mixture gamut, and click-to-probe |
 | `GET /palette` | sRGB cube with the pure-pigment vertices and the mixing path of a selected pair, the pairwise mixture ramp matrix, the mixer ramp, and the nominal table |
@@ -36,6 +37,43 @@ Playwright browser lane.
 | `GET /fig/fit` | the fit figure alone (debug/iframe) |
 | `GET /provenance` | configuration, inputs and hashes, environment, payload header, acceptance gates, caveats |
 | `GET /static/...` | CSS |
+
+Every figure page carries the same numbered pipeline, one guiding question,
+and a next step. “Why this works · paper & code” pairs a short paper excerpt
+and a page/equation reference with an escaped excerpt read from the local
+source, plus a GitHub line link. Detailed captions and validation tables are
+collapsed under “Readouts, conventions & validation”. The interactive figure
+and its controls remain visible. The source banner expands to show model
+identity; `/provenance` retains the full metadata.
+
+The paper is Sochorová and Jamriška,
+[*Practical Pigment Mixing for Digital Painting* (2021)](https://doi.org/10.1145/3478513.3480549).
+The pipeline follows §2 (spectral reference), §3.1 (surrogates), §3.2 (table
+precomputation), and §3, Eqs. (12–14) (runtime latents). The fit explanation
+calls out the default softplus/L-BFGS substitution; padding and joint byte
+rounding are identified as implementation choices.
+
+## Remaining work
+
+The original route/figure phases are implemented. The remaining explanatory
+work needs data that the current payload and sidecar do not contain:
+
+- [#2: surrogate-fit snapshots](https://github.com/frankier/PaintMix.jl/issues/2)
+  for a continuation scrubber that links spectra, gamut movement, and loss.
+  The existing history stores scalar summaries and final coefficients only.
+- [#3: sampled inverse-solver traces](https://github.com/frankier/PaintMix.jl/issues/3)
+  for target → constrained solve → quantization → runtime lookup explanations.
+  Slab statistics do not preserve individual optimisation paths.
+
+Both traces should be bounded and opt-in, leave runtime dependencies and
+default solver allocations unchanged, and support older sidecars. Issue
+specifications are also in `issues/`.
+
+Further polish: simplify the controls and plot legends within the Bonito
+figures, measure paint latency/frame throughput, decide whether the heavy
+browser lane is a required gate, and verify the full workbook pigment mapping
+before adding the optional 24-pigment overlay. A chromaticity hull is a 2D
+comparison, not evidence of containment in the full RGB cube.
 
 `/spectra` is one WGLMakie figure built inside a Bonito `App`. Pigment and
 quantity checkboxes, a measured/fitted toggle (shown only when a sidecar

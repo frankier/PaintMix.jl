@@ -494,11 +494,15 @@ function fit_surrogates(
     problem = SurrogateProblem(st, spectra, quad)
     x = initial_parameters(problem.parameters, spectra)
     history = Dict{String, Any}[]
+    stopping = _fit_stopping(st, problem)
+    progress = (reached = false, values = Dict{String, Any}())
     started = time()
     deadline = started + st.time_limit_seconds
     for (step, alpha) in enumerate(alpha_schedule(st))
         x, entry = solve_fit_step(problem, x, alpha, algorithm, st; deadline, adtype, solve_kwargs)
         epush, epull = objective_terms(problem, x)
+        progress = _fit_progress(stopping, problem, x, epush)
+        merge!(entry, progress.values)
         merge!(
             entry, Dict(
                 "step" => step, "alpha" => alpha, "Epush" => epush,
@@ -513,12 +517,16 @@ function fit_surrogates(
             )
             flush(log)
         end
-        epush <= st.push_tolerance && break
+        progress.reached && break
         entry["termination"] == "TimeLimit" && break
     end
     K, S = parameter_matrices(problem.parameters, x, length(spectra.wavelength))
     model = SpectralModel(problem.base; K, S)
     diagnostics = surrogate_diagnostics(model, problem.base, problem.quadrature, problem.targets)
+    diagnostics["physical_target"] = _target_description(stopping)
+    diagnostics["physical_target_reached"] = progress.reached
+    diagnostics["physical_termination"] = progress.reached ? "TargetReached" :
+        (!isempty(history) && last(history)["termination"] == "TimeLimit" ? "TimeLimit" : "ScheduleExhausted")
     diagnostics["parameterization"] = string(st.parameterization)
     diagnostics["algorithm"] = string(algorithm)
     diagnostics["derivative"] = adtype === nothing ? string(st.derivative) : string(adtype)

@@ -14,6 +14,8 @@ Base.@kwdef struct FitSettings
     alpha_halvings::Int = 40
     push_tolerance::Float64 = 1.0e-8
     gradient_tolerance::Float64 = 1.0e-8
+    stop_rule::Symbol = :push
+    gamut_tolerance::Float64 = 1.0e-3
 end
 
 function FitSettings(cfg::AbstractDict)
@@ -29,8 +31,12 @@ function FitSettings(cfg::AbstractDict)
         alpha_halvings = Int(s["alpha_halvings"]),
         push_tolerance = Float64(get(s, "push_tolerance", 1.0e-8)),
         gradient_tolerance = Float64(get(s, "gradient_tolerance", 1.0e-8)),
+        stop_rule = Symbol(get(s, "stop_rule", "push")),
+        gamut_tolerance = Float64(get(s, "gamut_tolerance", 1.0e-3)),
     )
-    st.parameterization in (:softplus, :direct) || throw(ConfigError("unknown parameterization"))
+    st.parameterization in (:softplus, :direct, :gauge) || throw(ConfigError("unknown parameterization"))
+    st.stop_rule in (:push, :heldout_gamut) || throw(ConfigError("unknown fit stopping rule"))
+    isfinite(st.gamut_tolerance) && st.gamut_tolerance > 0 || throw(ConfigError("invalid gamut target"))
     haskey(OPTIMIZER_FACTORIES, st.optimizer) || throw(ConfigError("unknown surrogate optimizer"))
     st.derivative in (:forwarddiff, :finite_difference) || throw(ConfigError("unknown derivative method"))
     for x in (st.epsilon, st.time_limit_seconds, st.alpha_initial, st.alpha_final, st.gradient_tolerance)
@@ -134,7 +140,7 @@ function fit_job_id(cfg, db; solver = fit_solver_spec(cfg), source_id = "")
         "K" => spectra.K, "S" => spectra.S,
         "weights" => quad.weights, "observer" => hcat(quad.x_bar, quad.y_bar, quad.z_bar), "illuminant" => quad.d65
     )
-    spec["implementation"] = implementation_hash(["solver_specs.jl", "experiments.jl", "surrogates.jl", "kubelka_munk.jl", "spectra.jl"])
+    spec["implementation"] = implementation_hash(["solver_specs.jl", "experiments.jl", "surrogates.jl", "gauge.jl", "fit_targets.jl", "kubelka_munk.jl", "spectra.jl"])
     spec["environment"] = numerical_environment(solver)
     return experiment_id(spec)
 end

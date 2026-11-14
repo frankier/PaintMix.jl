@@ -174,3 +174,30 @@ seconds at 1, 2, 4, and 8 workers. Four CPUs per table job were selected; no
 exclusive node was reserved. All numerical checks and comparison jobs after
 the initial local baseline test ran on SLURM compute nodes using a private
 scratch workspace and Julia 1.13.3.
+
+## Matched physical accuracy and gauge
+
+`compare.jl OUT fit|tables|all|summary [VARIANT] [dev|release] --matched`
+compares the original three choices plus `gauge-lbfgsb`. Every row uses the
+same disjoint held-out concentration probes and stops when their maximum
+Euclidean distance outside the linear-RGB cube is at most `1e-3`. The probes
+combine a 41-division boundary grid, near-vertex samples and interior samples;
+fit quadrature nodes are excluded. Their actual values have a common digest.
+This criterion is independent of coefficient coordinates and native optimizer
+gradient stopping flags. The existing dense diagnostic remains a separate
+check; neither sample set proves continuous containment.
+
+Matched runs retain the common 200-iteration-per-step and 7,200-second fit
+limits, but extend the continuation floor to `alpha_final = 1e-6` with the
+same 40-halving cap. Record a missed target as schedule or time exhaustion.
+The default fit still uses its original push stopping rule and schedule.
+
+`parameterization = "gauge"` selects `GaugeParameters`. At each wavelength,
+it fixes mean S to one and uses four softplus K coordinates plus three
+softmax S ratios. The common K/S scale is removed, leaving seven variables.
+The configured epsilon floors measured coefficients before normalization;
+it is not an absolute lower bound in the normalized gauge. Positive values
+have a floating-point underflow guard. Starting mixtures agree with the
+other parameterizations despite the changed coefficient scale.
+Programmatic fits can opt into `stop_rule = "heldout_gamut"` and
+`gamut_tolerance` under `[surrogate]` independently of the parameterization.

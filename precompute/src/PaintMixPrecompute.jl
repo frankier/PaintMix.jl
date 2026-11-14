@@ -48,6 +48,8 @@ include("kubelka_munk.jl")
 include("solver_specs.jl")
 include("experiments.jl")
 include("surrogates.jl")
+include("gauge.jl")
+include("fit_targets.jl")
 include("unmix.jl")
 include("tables.jl")
 include("solvers.jl")
@@ -57,7 +59,7 @@ include("pipeline.jl")
 
 export SolverSpec, register_optimizer!, optimizer, solver_description, fit_solver_spec,
     inverse_solver_spec, numerical_environment, load_solver_file,
-    SoftplusParameters, DirectParameters, SurrogateProblem, initial_parameters,
+    SoftplusParameters, DirectParameters, GaugeParameters, SurrogateProblem, initial_parameters,
     parameter_matrices, objective_terms, optimization_problem, solve_fit_step,
     FitSettings, TableSettings, ValidationSettings, settings_dict, canonical_text, experiment_id,
     profile_config, fit_job_id, table_job_id,

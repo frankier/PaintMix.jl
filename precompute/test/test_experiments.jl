@@ -293,3 +293,41 @@ end
     @test metrics.push == Epush(model, sq)
     @test metrics.pull == Epull(model, sq, surface_targets(model, sq))
 end
+
+@testset "gauge coordinates preserve mixtures and derivatives" begin
+    cfg, _, spectra, quad, model = synthetic_model()
+    soft = SoftplusParameters(1.0e-6)
+    gauge = GaugeParameters(1.0e-6)
+    x = initial_parameters(gauge, spectra)
+    W = length(spectra.wavelength)
+    @test length(x) == 7W
+    K, S = parameter_matrices(gauge, x, W)
+    @test all(>(0), K) && all(>(0), S)
+    @test vec(sum(S; dims = 1)) ≈ fill(4.0, W)
+    Ks, Ss = parameter_matrices(soft, initial_parameters(soft, spectra), W)
+    original = SpectralModel(model; K = Ks, S = Ss)
+    normalized = SpectralModel(model; K, S)
+    for c in validation_corpus(; colors = 12, pairs = 1).concentrations
+        @test mix_rgb(normalized, c) ≈ mix_rgb(original, c) atol = 1.0e-13
+    end
+    cfg["surrogate"]["parameterization"] = "gauge"
+    cfg["surrogate"]["optimizer"] = "lbfgsb"
+    cfg["surrogate"]["surface_divisions"] = 2
+    problem = SurrogateProblem(FitSettings(cfg), spectra, quad)
+    f = u -> sum(objective_terms(problem, u))
+    ad = ForwardDiff.gradient(f, x)
+    fd = similar(ad)
+    PaintMixPrecompute._finite_gradient!(fd, f, x, -Inf)
+    @test ad ≈ fd rtol = 1.0e-4 atol = 1.0e-7
+    cfg["surrogate"]["stop_rule"] = "heldout_gamut"
+    cfg["surrogate"]["gamut_tolerance"] = 1.0e3
+    cfg["surrogate"]["max_iterations"] = 2
+    target = PaintMixPrecompute._fit_stopping(FitSettings(cfg), problem)
+    @test all(c -> !(c in problem.quadrature.points), target.points)
+    fit = fit_surrogates(cfg, spectra, quad)
+    @test length(fit.history) == 1
+    @test fit.diagnostics["physical_target_reached"]
+    @test fit.diagnostics["physical_termination"] == "TargetReached"
+    @test fit.history[1]["heldout_gamut_violation"] <= 1.0e3
+    @test fit.diagnostics["physical_target"]["corpus_sha256"] == target.digest
+end

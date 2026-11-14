@@ -14,7 +14,7 @@ plotting, a web server, and a browser toolkit.
 
 | Question | Choice |
 | --- | --- |
-| Deliverable | This plan only, in this pass. No code yet. |
+| Deliverable | Implemented local explorer; current status and remaining work are in `README.md`. |
 | Data layer | Depend on `../precompute` (`PaintMixPrecompute`) and reuse `open_database`, `PigmentSpectra`, `Quadrature`, `SpectralModel`, `mix_rgb`, `km_reflectance`, `saunderson`, `theta_parameters`, `linear_srgb_to_oklab`. Do not duplicate colorimetry. |
 | Payload | Load the promoted release model `data/default/default.pmx` (256³, 96 MiB). Degrade to a precompute dev payload, then to a synthetic model, rather than failing. |
 | Painting demo | A server-side WGLMakie brush canvas **and** a two/three-pigment mixer ramp. |
@@ -520,7 +520,31 @@ separate, opt-in lane, structured like Bonnie's suite.
 Phases 1–2 cover the explicit request; 3–4 the palette and painting demo;
 5–6 the "intermediate steps" exploration the request invites.
 
-## Big remaining problems
+## Narrative and hierarchy
+
+The landing page now places every visualisation within a four-stage story:
+measure (`/spectra`), fit (`/fit`), bake (`/tables`), and use at runtime
+(`/palette`, `/paint`). `/cie` compares the measured, fitted, and runtime
+layers across that pipeline. `/provenance` is supporting evidence.
+
+Figure pages share stage navigation, a guiding question, paper/code excerpts,
+and a continuation link. Detailed readouts and metadata use progressive
+disclosure. New explanations should extend this structure instead of adding
+another equally weighted panel to the front page.
+
+The next substantive gaps are versioned, bounded fit snapshots
+([#2](https://github.com/frankier/PaintMix.jl/issues/2)) and sampled inverse
+traces ([#3](https://github.com/frankier/PaintMix.jl/issues/3)). Current scalar
+summaries cannot support optimisation replay. Keep source measurements,
+surrogate bias, numerical inversion, interpolation, and byte rounding distinct
+when those explanations are added.
+
+## Original implementation risks
+
+This is the historical phase checklist. Dependency pins, injectable data,
+template escaping checks, throttled painting and the opt-in browser lane are
+implemented. Paint throughput measurements, browser gate policy and the
+optional full pigment mapping still need follow-up; see `README.md`.
 
 These can sink the viewer or the schedule. They are decisions to make, in
 rough order of weight.

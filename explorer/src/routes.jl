@@ -69,7 +69,7 @@ function register_routes!()
     @get "/spectra" function (req::HTTP.Request)
         d = explorer_data()
         head = head_content()
-        body = app_html(spectra_app(d)) * spectra_caption(d)
+        body = app_html(spectra_app(d)) * diagnostic_details(spectra_caption(d))
         return Oxygen.html(
             render_page(
                 "spectra"; title = "PaintMix explorer — spectra", head = head,
@@ -81,7 +81,7 @@ function register_routes!()
     @get "/cie" function (req::HTTP.Request)
         d = explorer_data()
         head = head_content()
-        body = app_html(cie_app(d)) * cie_caption(d)
+        body = app_html(cie_app(d)) * diagnostic_details(cie_caption(d))
         return Oxygen.html(
             render_page("cie"; title = "PaintMix explorer — CIE 1931", head = head, body = body)
         )
@@ -91,7 +91,7 @@ function register_routes!()
         d = explorer_data()
         head = head_content()
         body = app_html(palette_cube_app(d)) * app_html(palette_mixer_app(d)) *
-            palette_ramp_matrix(d) * palette_caption(d)
+            diagnostic_details(palette_ramp_matrix(d) * palette_caption(d))
         return Oxygen.html(
             render_page(
                 "palette"; title = "PaintMix explorer — palette", head = head,
@@ -103,7 +103,7 @@ function register_routes!()
     @get "/paint" function (req::HTTP.Request)
         d = explorer_data()
         head = head_content()
-        body = app_html(paint_app(d)) * paint_caption(d)
+        body = app_html(paint_app(d)) * diagnostic_details(paint_caption(d))
         return Oxygen.html(
             render_page(
                 "paint"; title = "PaintMix explorer — paint", head = head, body = body
@@ -114,7 +114,7 @@ function register_routes!()
     @get "/tables" function (req::HTTP.Request)
         d = explorer_data()
         head = head_content()
-        body = app_html(tables_app(d)) * tables_caption(d)
+        body = app_html(tables_app(d)) * diagnostic_details(tables_caption(d))
         return Oxygen.html(
             render_page(
                 "tables"; title = "PaintMix explorer — tables", head = head, body = body
@@ -125,7 +125,7 @@ function register_routes!()
     @get "/fit" function (req::HTTP.Request)
         d = explorer_data()
         head = head_content()
-        body = app_html(fit_app(d)) * fit_caption(d)
+        body = app_html(fit_app(d)) * diagnostic_details(fit_caption(d))
         return Oxygen.html(
             render_page(
                 "fit"; title = "PaintMix explorer — surrogate fit", head = head,

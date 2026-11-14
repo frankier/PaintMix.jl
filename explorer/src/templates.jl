@@ -56,6 +56,9 @@ function render_page(
         :head => safe_html(head),
         :body => safe_html(body),
         :banner => safe_html(provenance_banner(explorer_data())),
+        :intro => safe_html(page_intro(name)),
+        :evidence => safe_html(evidence_panel(name)),
+        :next => safe_html(next_step(name)),
     )
     for (k, v) in extra
         init[Symbol(k)] = v
@@ -111,12 +114,10 @@ function provenance_banner(d::ExplorerData)
     id = PaintMix.model_id(d.model)
     sidecar = d.sidecar === nothing ? "sidecar absent" : "sidecar present"
     return """
-    <div class="banner">
-      <span class="badge">$(_esc(d.source))</span>
-      <span>model <code>$(id)</code></span>
-      <span>grid $(PaintMix.grid_n(d.model))<sup>3</sup></span>
-      <span>$(sidecar)</span>
-    </div>
+    <details class="banner">
+      <summary>Loaded: $(_esc(d.source)) · $(PaintMix.grid_n(d.model))³ grid · $(sidecar)</summary>
+      <p>Model <code>$(id)</code> · <a href="/provenance">Sources, acceptance gates &amp; caveats →</a></p>
+    </details>
     """
 end
 
@@ -127,7 +128,7 @@ end
 """
     index_body(d) -> String
 
-The overview data card and the page list.
+The pipeline landing page, with data availability separated from the story.
 """
 function index_body(d::ExplorerData)
     id = PaintMix.model_id(d.model)
@@ -142,26 +143,70 @@ function index_body(d::ExplorerData)
         ("Spectral reference", state_word(d.spectral !== nothing)),
         ("Fitted surrogate", state_word(d.fitted !== nothing)),
     ]
+    steps = IOBuffer()
+    for (i, stage) in enumerate(PIPELINE)
+        available = i == 1 ? d.spectral !== nothing : i == 2 ? d.fitted !== nothing : true
+        status = available ? (i >= 3 ? "Loaded tables" : "Data available") : "Data unavailable"
+        print(
+            steps, """
+            <li class="pipeline-stage">
+              <span class="step-number">0$i</span>
+              <h3><a href="/$(stage.route)">$(stage.title) <span aria-hidden="true">↗</span></a></h3>
+              <p>$(stage.description)</p>
+              <p class="stage-output">$(stage.output)</p>
+              <span class="stage-status">$status</span>
+              $(i == 4 ? "<a class=\"text-link\" href=\"/paint\">Open the paint canvas →</a>" : "")
+            </li>
+            """
+        )
+    end
+    synthetic = d.source == "synthetic" ? "<p class=\"data-notice\">You are viewing synthetic demonstration tables. Measured pigment behaviour requires the input database and a generated payload.</p>" : ""
+    curve = mix_curve(d.model, nominal_rgb(1), nominal_rgb(3); n = 32)
+    paint_ramp = ramp_gradient([hex_from_linear(curve.paint[:, j]) for j in 1:32])
+    rgb_ramp = ramp_gradient([hex_from_linear(curve.naive[:, j]) for j in 1:32])
     return """
-    <section class="cards">
-      <article class="card">
-        <h2>Loaded data</h2>
-        $(html_table(rows))
-      </article>
-      <article class="card">
-        <h2>Explore</h2>
-        <ul class="links">
-          <li><a href="/provenance">Provenance</a> — sources, hashes, gates, caveats</li>
-          <li><a href="/spectra">Spectra</a> — measured, fitted, and derived curves</li>
-          <li><a href="/cie">CIE 1931</a> — locus, gamut, pigment points, click-to-probe</li>
-          <li><a href="/palette">Palette</a> — sRGB cube, mixing curves, ramps, mixer</li>
-          <li><a href="/paint">Paint</a> — brush canvas and mixer ramp</li>
-          <li><a href="/tables">Tables</a> — lookup-table slices and validation</li>
-          <li><a href="/fit">Fit</a> — surrogate fit and continuation history</li>
-        </ul>
-      </article>
+    <section class="hero">
+      <div>
+      <p class="eyebrow">Inside PaintMix</p>
+      <h1>From pigment spectra<br>to paint on screen.</h1>
+      <p class="lede">Follow how measured pigments become a fast RGB mixing model.</p>
+      <a class="button" href="/spectra">Start with the pigments →</a>
+      <a class="text-link" href="/paint">Try painting first</a>
+      </div>
+      <figure class="hero-comparison">
+        <figcaption>Blue + yellow · loaded model</figcaption>
+        <span>PaintMix</span><div class="hero-ramp" role="img" aria-label="Blue to yellow mixed with the loaded PaintMix tables" style="background:$paint_ramp"></div>
+        <span>Linear RGB</span><div class="hero-ramp" role="img" aria-label="The same blue to yellow mixed in linear RGB" style="background:$rgb_ramp"></div>
+        <a class="text-link" href="/palette">Explore the difference →</a>
+      </figure>
     </section>
+    $synthetic
+    <section aria-labelledby="pipeline-title">
+      <div class="section-heading"><h2 id="pipeline-title">The pipeline</h2><span>Four stages, from measurement to mixing</span></div>
+      <div class="pipeline-phases"><span>Precompute · build once</span><span>Runtime · every mix</span></div>
+      <ol class="pipeline">$(String(take!(steps)))</ol>
+    </section>
+    <aside class="cross-stage">
+      <div><p class="eyebrow">Compare across stages</p>
+        <h2><a href="/cie">Where do the colours move?</a></h2>
+        <p>The CIE 1931 view connects measured pigments, fitted surrogates, and runtime colours.</p>
+      </div><a class="text-link" href="/cie">Open the gamut comparison →</a>
+    </aside>
+    <details class="diagnostics"><summary>Loaded data &amp; validation</summary>
+      $(html_table(rows))
+      <p><a href="/provenance">Inspect provenance, acceptance gates &amp; caveats →</a></p>
+      $(provenance_gates(d))
+    </details>
+    <p class="paper-credit">Based on Sochorová &amp; Jamriška (2021),
+      <a href="$(PAPER_URL)">Practical Pigment Mixing for Digital Painting</a>.
+      Expand “paper &amp; code” beside each stage for the relevant passage and implementation.</p>
     """
+end
+
+function provenance_gates(d::ExplorerData)
+    gates = sidecar_section(d, "acceptance_gates")
+    gates isa AbstractDict || return "<p class=\"muted\">Acceptance gates not available: no sidecar.</p>"
+    return html_table([(k, v ? "pass" : "FAIL") for (k, v) in sort(collect(gates); by = first)])
 end
 
 """

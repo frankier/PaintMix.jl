@@ -11,24 +11,22 @@
 <header>
   <div class="masthead">
     <a class="brand" href="/">PaintMix explorer</a>
-    <nav>
-      <a href="/">Overview</a>
-      <a href="/spectra">Spectra</a>
-      <a href="/cie">CIE 1931</a>
-      <a href="/palette">Palette</a>
-      <a href="/paint">Paint</a>
-      <a href="/tables">Tables</a>
-      <a href="/fit">Fit</a>
-      <a href="/provenance">Provenance</a>
+    <nav aria-label="Main navigation">
+      <a href="/">Pipeline</a>
+      <a href="/paint">Try painting</a>
+      <a href="/provenance">Data &amp; provenance</a>
     </nav>
   </div>
   {{ banner |> safe }}
 </header>
 <main>
+{{ intro |> safe }}
+{{ evidence |> safe }}
 {% block body %}{% endblock %}
+{{ next |> safe }}
 </main>
 <footer>
-  <span>Development tool. Not part of the runtime package or its dependency graph.</span>
+  <span>PaintMix · A pigment mixing model, from paper to implementation.</span>
 </footer>
 </body>
 </html>

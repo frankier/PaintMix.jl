@@ -262,6 +262,9 @@ else
                     for (route, name, text) in pages
                         with_route_page(browser, base, route, name) do page
                             expect(page; to_have_title = r"^PaintMix explorer")
+                            # Readouts are secondary to the figure. Open them
+                            # before checking their visible contents.
+                            evaluate(page, "() => document.querySelectorAll('details').forEach(d => d.open = true)")
                             expect(locator(page, "body"); to_contain_text = text)
                         end
                     end

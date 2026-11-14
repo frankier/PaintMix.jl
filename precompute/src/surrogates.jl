@@ -251,13 +251,8 @@ end
 Split a parameter vector into `4 x W` pigment-major `K` and `S` matrices.
 """
 function theta_parameters(theta::AbstractVector{T}, W::Integer, epsilon::Real) where {T}
-    K = Matrix{T}(undef, 4, W)
-    S = Matrix{T}(undef, 4, W)
-    @inbounds for i in 1:4, j in 1:W
-        K[i, j] = _unpack(theta[(i - 1) * W + j], epsilon)
-        S[i, j] = _unpack(theta[4W + (i - 1) * W + j], epsilon)
-    end
-    return K, S
+    K, S = theta_parameters_wl(theta, W, epsilon)
+    return _transpose_coefficients(K, S, T)
 end
 
 """
@@ -268,13 +263,14 @@ that [`mix_rgb_params`](@ref) indexes. The pigment-major layout is what the
 provenance sidecar records; this one is what the objective evaluates.
 """
 function theta_parameters_wl(theta::AbstractVector{T}, W::Integer, epsilon::Real) where {T}
-    K = Matrix{T}(undef, W, 4)
-    S = Matrix{T}(undef, W, 4)
-    @inbounds for i in 1:4, j in 1:W
-        K[j, i] = _unpack(theta[(i - 1) * W + j], epsilon)
-        S[j, i] = _unpack(theta[4W + (i - 1) * W + j], epsilon)
+    blocks = _coefficient_blocks(theta, W)
+    return map(blocks) do block
+        out = Matrix{T}(undef, W, 4)
+        for i in eachindex(out)
+            out[i] = _unpack(block[i], epsilon)
+        end
+        out
     end
-    return K, S
 end
 
 """
@@ -340,12 +336,15 @@ function initial_parameters(p::DirectParameters, spectra)
 end
 
 parameter_matrices(p::SoftplusParameters, x, W) = theta_parameters(x, W, p.epsilon)
+function _coefficient_blocks(x, W)
+    length(x) == 8W || throw(DimensionMismatch("expected 8W coefficient coordinates"))
+    return reshape(view(x, 1:(4W)), W, 4), reshape(view(x, (4W + 1):(8W)), W, 4)
+end
 function parameter_matrices(::DirectParameters, x, W)
-    return permutedims(reshape(x[1:(4W)], W, 4)), permutedims(reshape(x[(4W + 1):end], W, 4))
+    return _transpose_coefficients(_coefficient_blocks(x, W)...)
 end
 _parameter_matrices_wl(p::SoftplusParameters, x, W) = theta_parameters_wl(x, W, p.epsilon)
-_parameter_matrices_wl(::DirectParameters, x, W) =
-    (reshape(view(x, 1:(4W)), W, 4), reshape(view(x, (4W + 1):(8W)), W, 4))
+_parameter_matrices_wl(::DirectParameters, x, W) = _coefficient_blocks(x, W)
 _parameter_bounds(::SoftplusParameters, x) = (;)
 _parameter_bounds(p::DirectParameters, x) = (lb = fill(p.epsilon, length(x)), ub = fill(Inf, length(x)))
 
@@ -540,21 +539,10 @@ function surrogate_diagnostics(
         model::SpectralModel, base::SpectralModel, sq::SurfaceQuadrature, targets
     )
     denser = SurfaceQuadrature(40)
-    push_fit = Epush(model, sq)
-    pull_fit = Epull(model, sq, targets)
-    denser_targets = surface_targets(base, denser)
-    push_dense = Epush(model, denser)
-    pull_dense = Epull(model, denser, denser_targets)
-    worst_push = 0.0
-    worst_pull = 0.0
-    deviations = Float64[]
-    @inbounds for (i, c) in enumerate(denser.points)
-        rgb = mix_rgb(model, c)
-        worst_push = max(worst_push, cube_outside_penalty(rgb))
-        d = oklab_distance_squared(linear_srgb_to_oklab(rgb), denser_targets[i])
-        worst_pull = max(worst_pull, d)
-        push!(deviations, sqrt(d))
-    end
+    fit = _surface_metrics(model, sq, targets)
+    dense = _surface_metrics(model, denser, surface_targets(base, denser))
+    worst_push, worst_pull = dense.worst_push, dense.worst_pull
+    deviations = dense.deviations
     # Radial interior samples complement the boundary quadrature. Neither is
     # a proof of continuous containment.
     for cface in denser.points[1:8:end], depth in (0.1, 0.5, 0.9)
@@ -566,10 +554,10 @@ function surrogate_diagnostics(
         push!(deviations, sqrt(d))
     end
     return Dict{String, Any}(
-        "Epush_fit" => push_fit,
-        "Epull_fit" => pull_fit,
-        "Epush_dense" => push_dense,
-        "Epull_dense" => pull_dense,
+        "Epush_fit" => fit.push,
+        "Epull_fit" => fit.pull,
+        "Epush_dense" => dense.push,
+        "Epull_dense" => dense.pull,
         "max_cube_violation_squared" => worst_push,
         "max_cube_violation" => sqrt(max(worst_push, 0.0)),
         "max_oklab_deviation" => sqrt(max(worst_pull, 0.0)),
@@ -581,4 +569,20 @@ function surrogate_diagnostics(
         "dense_divisions" => 40,
         "quadrature" => quadrature_report(model, sq),
     )
+end
+
+function _surface_metrics(model, sq, targets)
+    push_total, pull_total, worst_push, worst_pull = 0.0, 0.0, 0.0, 0.0
+    deviations = Vector{Float64}(undef, length(sq.points))
+    for (i, c) in enumerate(sq.points)
+        rgb = mix_rgb(model, c)
+        p = cube_outside_penalty(rgb)
+        d = oklab_distance_squared(linear_srgb_to_oklab(rgb), targets[i])
+        push_total += sq.weights[i] * p
+        pull_total += sq.weights[i] * d
+        worst_push = max(worst_push, p)
+        worst_pull = max(worst_pull, d)
+        deviations[i] = sqrt(d)
+    end
+    return (push = push_total, pull = pull_total, worst_push, worst_pull, deviations)
 end

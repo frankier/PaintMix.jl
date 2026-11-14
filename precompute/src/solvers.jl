@@ -66,6 +66,10 @@ Base.@kwdef mutable struct SlabSummary
     unconverged::Int = 0
     max_sse::Float64 = 0.0
 end
+_record!(::Nothing, r::UnmixResult) = nothing
+_remember!(::Nothing, i, c) = nothing
+_remember!(row, i, c) = (row[i] = c; nothing)
+
 function _record!(s::SlabSummary, r::UnmixResult)
     s.points += 1
     s.iterations += r.iterations
@@ -119,9 +123,9 @@ function _inverse_strategy_slab!(strategy, dest, model, st, k, ctx, settings, co
     n = st.n
     for j in 0:(n - 1)
         for i in 0:(n - 1)
-            rgb = SVector{3, T}(i / (n - 1), j / (n - 1), k / (n - 1))
+            rgb = SVector(T(i) / (n - 1), T(j) / (n - 1), T(k) / (n - 1))
             r = _strategy_solve(strategy, sc, model, rgb, settings, coarse, st.coarse_n, cur, prev, i, j, uniform)
-            cur[i + 1] = r.c
+            _remember!(cur, i + 1, r.c)
             o = _table_offset(n, i, j, k)
             dest[o + 1], dest[o + 2], dest[o + 3] = r.c[1], r.c[2], r.c[3]
             _record!(summary, r)

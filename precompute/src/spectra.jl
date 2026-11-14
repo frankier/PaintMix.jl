@@ -228,6 +228,11 @@ function _color_matrix(cfg::AbstractDict)
     )
 end
 
+function _transpose_coefficients(K, S, ::Type{T} = promote_type(eltype(K), eltype(S))) where {T}
+    convert_layout(A) = permutedims!(Matrix{T}(undef, size(A, 2), size(A, 1)), A, (2, 1))
+    return convert_layout(K), convert_layout(S)
+end
+
 """
     SpectralModel(spectra, quad) -> SpectralModel
 
@@ -241,12 +246,7 @@ function SpectralModel(spectra::PigmentSpectra{T}, quad::Quadrature{T}) where {T
             "spectra have $(length(spectra.wavelength)) samples, quadrature has $W"
         )
     )
-    K = Matrix{T}(undef, W, 4)
-    S = Matrix{T}(undef, W, 4)
-    @inbounds for i in 1:4, j in 1:W
-        K[j, i] = spectra.K[i, j]
-        S[j, i] = spectra.S[i, j]
-    end
+    K, S = _transpose_coefficients(spectra.K, spectra.S, T)
     return SpectralModel(K, S, quad, spectra.k1, spectra.k2)
 end
 
@@ -263,12 +263,7 @@ function SpectralModel(
     W, _ = size(model.K)
     size(K) == (4, W) || throw(InputError("K must be 4 x $W, got $(size(K))"))
     size(S) == (4, W) || throw(InputError("S must be 4 x $W, got $(size(S))"))
-    Kt = Matrix{T}(undef, W, 4)
-    St = Matrix{T}(undef, W, 4)
-    @inbounds for i in 1:4, j in 1:W
-        Kt[j, i] = T(K[i, j])
-        St[j, i] = T(S[i, j])
-    end
+    Kt, St = _transpose_coefficients(K, S, T)
     return SpectralModel(Kt, St, model.quad, model.k1, model.k2)
 end
 
@@ -279,12 +274,5 @@ The surrogate pigment parameters in the `4 x W` pigment-major layout, the
 form the configuration and the provenance sidecar record.
 """
 function pigment_parameters(model::SpectralModel{T}) where {T}
-    W = size(model.K, 1)
-    K = Matrix{T}(undef, 4, W)
-    S = Matrix{T}(undef, 4, W)
-    @inbounds for i in 1:4, j in 1:W
-        K[i, j] = model.K[j, i]
-        S[i, j] = model.S[j, i]
-    end
-    return K, S
+    return _transpose_coefficients(model.K, model.S, T)
 end

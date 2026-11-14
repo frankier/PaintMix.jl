@@ -263,3 +263,33 @@ configure_solvers(cfg) = (fit=SolverSpec(optimizer(:bfgs)), inverse=ActiveFaceLM
         @test length(digest) == 64
     end
 end
+
+@testset "legacy slab adapters share traversal and diagnostics" begin
+    cfg, _, spectra, quad, model = synthetic_model()
+    n = 4
+    settings = UnmixSettings(cfg)
+    coarse = generate_inverse(model, 2; settings, threads = 1)
+    for strategy in (:reference, :bulk, :coarse)
+        st = TableSettings(n, strategy, :spectral, 2, settings.max_iterations, 1)
+        expected = generate_tables_inverse(model, st; settings)
+        actual = similar(expected)
+        sc = SolverScratch()
+        cur, prev = Vector{SVector{4, Float64}}(undef, n), Vector{SVector{4, Float64}}(undef, n)
+        for k in 0:(n - 1)
+            if strategy == :reference
+                reference_slab!(actual, model, n, k, sc, settings)
+            elseif strategy == :bulk
+                inverse_slab!(actual, model, n, k, sc, settings, cur, prev)
+            else
+                coarse_to_fine_slab!(actual, model, n, k, sc, settings, coarse, 2)
+            end
+        end
+        @test actual == expected
+    end
+    K, S = pigment_parameters(model)
+    @test K == spectra.K && S == spectra.S
+    sq = SurfaceQuadrature(3)
+    metrics = PaintMixPrecompute._surface_metrics(model, sq, surface_targets(model, sq))
+    @test metrics.push == Epush(model, sq)
+    @test metrics.pull == Epull(model, sq, surface_targets(model, sq))
+end

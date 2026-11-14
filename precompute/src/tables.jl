@@ -256,36 +256,8 @@ function inverse_slab!(
         scratch, settings::UnmixSettings{T},
         seedrow::Vector{SVector{4, T}}, prevrow::Vector{SVector{4, T}},
     ) where {T}
-    d = n - 1
-    z = T(k) / d
-    uniform = SVector(T(0.25), T(0.25), T(0.25), T(0.25))
-    cur = seedrow
-    prev = prevrow
-    @inbounds for j in 0:(n - 1)
-        y = T(j) / d
-        for i in 0:(n - 1)
-            x = T(i) / d
-            rgb = SVector(x, y, z)
-            # `cur[i]` is (i-1, j) from earlier in this row; `prev[i+1]` is
-            # (i, j-1) from the previous row. Keeping the two buffers distinct
-            # is what makes the traversal a proper 4-neighbour continuation.
-            c = if j > 0 && i > 0
-                unmix_bulk!(scratch, model, rgb, (cur[i], prev[i + 1]), settings).c
-            elseif j > 0
-                unmix_bulk!(scratch, model, rgb, (prev[i + 1],), settings).c
-            elseif i > 0
-                unmix_bulk!(scratch, model, rgb, (cur[i],), settings).c
-            else
-                unmix_bulk!(scratch, model, rgb, (uniform,), settings).c
-            end
-            cur[i + 1] = c
-            o = _table_offset(n, i, j, k)
-            dest[o + 1] = c[1]
-            dest[o + 2] = c[2]
-            dest[o + 3] = c[3]
-        end
-        cur, prev = prev, cur
-    end
+    st = TableSettings(n, :bulk, :spectral, 2, settings.max_iterations, 1)
+    _inverse_strategy_slab!(Val(:bulk), dest, model, st, k, (scratch, seedrow, prevrow), settings, nothing, nothing)
     return nothing
 end
 
@@ -303,25 +275,13 @@ function reference_slab!(
         dest::AbstractVector{T}, model, n::Int, k::Int,
         scratch, settings::UnmixSettings{T},
     ) where {T}
-    d = n - 1
-    z = T(k) / d
-    @inbounds for j in 0:(n - 1)
-        y = T(j) / d
-        for i in 0:(n - 1)
-            rgb = SVector(T(i) / d, y, z)
-            r = unmix_reference(model, rgb; settings = settings, scratch = scratch)
-            o = _table_offset(n, i, j, k)
-            dest[o + 1] = r.c[1]
-            dest[o + 2] = r.c[2]
-            dest[o + 3] = r.c[3]
-        end
-    end
+    st = TableSettings(n, :reference, :spectral, 2, settings.max_iterations, 1)
+    _inverse_strategy_slab!(Val(:reference), dest, model, st, k, (scratch, nothing, nothing), settings, nothing, nothing)
     return nothing
 end
 
 # The `solver` keyword is a user-facing `Symbol`. Validate it and turn it
-# into a `Val` once; `_check_solver` and the two `_solver_setup` methods then
-# make the two paths dispatch instead of branching on the symbol.
+# into a `Val` once before dispatching to the shared traversal.
 _check_solver(::Val{:reference}) = nothing
 _check_solver(::Val{:bulk}) = nothing
 _check_solver(::Val{S}) where {S} =
@@ -612,22 +572,8 @@ function coarse_to_fine_slab!(
         dest::AbstractVector{T}, model, n::Int, k::Int, scratch,
         settings::UnmixSettings{T}, coarse::AbstractVector{T}, cn::Int,
     ) where {T}
-    d = n - 1
-    z = T(k) / d
-    uniform = SVector(T(0.25), T(0.25), T(0.25), T(0.25))
-    @inbounds for j in 0:(n - 1)
-        y = T(j) / d
-        for i in 0:(n - 1)
-            x = T(i) / d
-            rgb = SVector(x, y, z)
-            seed = coarse_seed(coarse, cn, x, y, z)
-            r = unmix_bulk!(scratch, model, rgb, (seed, uniform), settings)
-            o = _table_offset(n, i, j, k)
-            dest[o + 1] = r.c[1]
-            dest[o + 2] = r.c[2]
-            dest[o + 3] = r.c[3]
-        end
-    end
+    st = TableSettings(n, :coarse, :spectral, cn, settings.max_iterations, 1)
+    _inverse_strategy_slab!(Val(:coarse), dest, model, st, k, (scratch, nothing, nothing), settings, coarse, nothing)
     return nothing
 end
 

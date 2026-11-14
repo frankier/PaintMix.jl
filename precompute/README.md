@@ -132,6 +132,11 @@ On this machine (12 physical cores, `julia -t 14`, `surface_divisions = 20`):
 | Inverse table, coarse n = 64 plus fine polish | a few minutes; the fine pass is ~45 µs per vertex single-threaded |
 | Validation | < 1 s |
 
+Legacy slab entry points and the pipeline use one traversal, seed-policy
+dispatch, and optional diagnostic accumulator. Coefficient layout conversion
+also lives at one boundary; diagnostic push, pull, and boundary extrema share
+one spectral pass.
+
 The inverse solver is allocation-free in the hot path: `unmix_bulk!` and
 `_solve_adaptive!` allocate nothing per solve, and a test asserts it. Getting
 there took a few rounds. An earlier round removed the `ntuple` closures in the

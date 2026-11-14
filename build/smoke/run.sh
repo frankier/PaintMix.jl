@@ -38,7 +38,7 @@ status=0
 "$work/client" "$out/reference.txt" || status=1
 
 echo "== Python client"
-python3 "$here/client.py" "$out" "$out/reference.txt" || status=1
+"${PYTHON:-python3}" "$here/client.py" "$out" "$out/reference.txt" || status=1
 
 # The R package needs rdyncall and the R toolchain. Skip with a message when
 # they are not installed, so the C and Python checks still run on a host
@@ -52,6 +52,10 @@ if command -v Rscript >/dev/null 2>&1 && \
     R_LIBS="$rlib" Rscript "$here/client.R" "$out" "$out/reference.txt" || status=1
 else
     echo "== R client (skipped: Rscript or rdyncall is not available)"
+    if [ "${PAINTMIX_REQUIRE_R:-0}" = 1 ]; then
+        echo "R smoke coverage is required for this run" >&2
+        status=1
+    fi
 fi
 
 if [ "$status" -ne 0 ]; then

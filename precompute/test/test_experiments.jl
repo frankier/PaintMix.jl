@@ -356,6 +356,12 @@ end
         @test report["quality"]["corpus_sha256"] == samples.digest
         @test report["quantization"]["invalid_vertices"] == 0
         @test model_id(experimental_model(inv, forward)) == model_id(candidate)
+        mktempdir() do dir
+            payload, target = joinpath(dir, "experimental.pmxe"), joinpath(dir, "default.pmx")
+            write_model(payload, candidate)
+            @test_throws InputError PaintMixPrecompute.promote(payload, target)
+            @test !isfile(target)
+        end
     end
     inv = ByteLUT(2, repeat(UInt8[255, 0, 0], 8))
     candidate = experimental_model(inv, ByteLUT(2, zeros(UInt8, 24)))

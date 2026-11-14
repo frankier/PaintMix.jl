@@ -278,6 +278,7 @@ function promote(
         expected_id::Union{Nothing, AbstractString} = nothing,
     )
     model = PaintMix.read_model(candidate_payload)
+    model isa PaintMix.PigmentModel || throw(InputError("experimental payloads cannot be promoted as production defaults"))
     if expected_id !== nothing
         got = PaintMix.model_id(model)
         got == expected_id || throw(

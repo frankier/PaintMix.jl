@@ -112,3 +112,11 @@ against `paintmix.h`), from Python (`client.py`, importing the generated
 `paintmix` package). All three clients cover mixing, encoding, decoding,
 weighted mixing, the error contract, and the model-info identity. The R
 client is skipped with a message when `Rscript` or `rdyncall` is absent.
+Set `PAINTMIX_REQUIRE_R=1` for release verification so missing R coverage fails.
+
+For a non-bundled build, `build/smoke/relocate.sh OUT` copies the library and
+both wrappers to disk-backed scratch and reruns the clients without Julia on
+`PATH`. Run the ordinary smoke check first to generate `reference.txt`. Set
+`TMPDIR` to disk-backed scratch and `JULIA_LIB_DIR` to the tested runtime's
+library directory. `PAINTMIX_CLEAN_PATH` can supply a system command path
+without a Julia executable; by default it uses the POSIX command path.

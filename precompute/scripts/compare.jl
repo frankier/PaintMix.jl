@@ -45,6 +45,7 @@ function comparison_summary(out; matched = false)
                 "gradient_evaluations" => sum(get(h, "gradient_evaluations", 0) for h in history),
                 "termination" => d["surrogate"]["diagnostics"]["termination"],
                 "physical_target" => get(d["surrogate"]["diagnostics"], "physical_target", Dict()),
+                "final_heldout_gamut_violation" => isempty(history) ? -1.0 : get(last(history), "heldout_gamut_violation", -1.0),
                 "physical_target_reached" => get(d["surrogate"]["diagnostics"], "physical_target_reached", false),
                 "first_physical_target_seconds" => physical === nothing ? -1.0 : history[physical]["seconds"],
                 "push_target_reached" => reached !== nothing,

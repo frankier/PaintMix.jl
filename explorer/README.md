@@ -205,10 +205,12 @@ writes a screenshot, a console log, and a page-error log per page under
 `EXPLORER_E2E_ARTIFACTS`. It also asserts the model id and acceptance gates
 on `/` and `/provenance`; toggles a pigment and a quantity on `/spectra` and
 checks the readout table; clicks the diagram on
-`/cie` and checks the probe readout; and paints the same stroke on `/paint` in
-both the paint and naive-RGB modes, comparing the canvas data URL so the two
-blends are shown to differ. The `/spectra` and `/cie` interactions skip when
-the untracked input database is absent, so the lane still runs on a bare
+`/cie` and checks the probe readout; and drags a stroke on `/paint` in both the
+paint and naive-RGB modes with Playwright.jl's page-level mouse API. The paint
+test reads the canvas back as pixels, asserts that points down the drag path
+carry paint rather than only the press point, and compares the two blends'
+colour checksums. The `/spectra` and `/cie` interactions skip when the
+untracked input database is absent, so the lane still runs on a bare
 checkout.
 
 `EXPLORER_E2E_BROWSER` swaps the engine (default `chromium`; WGLMakie can trip

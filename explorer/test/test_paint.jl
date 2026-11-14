@@ -108,10 +108,11 @@ using Explorer
     end
 
     @testset "paint_pixel maps the image axis" begin
-        # Row 1 is at the top, so the highest data y maps to row 1.
-        @test Explorer.paint_pixel((3.0, 8.0), 8) == (3, 1)
-        @test Explorer.paint_pixel((3.0, 1.0), 8) == (3, 8)
-        @test Explorer.paint_pixel((2.6, 4.4), 8) == (3, 5)
+        # Row 1 is at the bottom of the y-up axis, so canvas row and data y
+        # agree.
+        @test Explorer.paint_pixel((3.0, 8.0)) == (3, 8)
+        @test Explorer.paint_pixel((3.0, 1.0)) == (3, 1)
+        @test Explorer.paint_pixel((2.6, 4.4)) == (3, 4)
     end
 
     @testset "canvas_image is a copy" begin

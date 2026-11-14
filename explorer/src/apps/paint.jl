@@ -71,8 +71,7 @@ function paint_dom(session, d::ExplorerData)
         return
     end
     function paint_at(pos)
-        h, _ = size(canvas.latent)
-        col, row = paint_pixel(pos, h)
+        col, row = paint_pixel(pos)
         mode = rgb_box.value[] ? Val(:rgb) : Val(:paint)
         dab!(
             canvas, model, brush[], col, row, radius_slider.value[],
@@ -94,8 +93,13 @@ function paint_dom(session, d::ExplorerData)
             end
         end
     end
-    Bonito.on(session, mouse.mouseposition) do pos
-        dragging[] && paint_at(pos)
+    # Priority 2 outranks the Axis interaction, which registers at 1. Once a
+    # drag starts that interaction returns `Consume(true)`, and
+    # `Observables.notify` stops at the first consumer, so a default-priority
+    # observer never sees a drag. The value it hands over is the raw screen
+    # position; `Makie.mouseposition` projects it into the axis' data space.
+    Bonito.on(mouse.mouseposition; priority = 2) do _
+        dragging[] && paint_at(Makie.mouseposition(ax.scene))
     end
     Bonito.on(session, clear_button.value) do _
         clear!(canvas, model)

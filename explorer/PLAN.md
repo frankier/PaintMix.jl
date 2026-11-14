@@ -493,8 +493,9 @@ separate, opt-in lane, structured like Bonnie's suite.
   * `/` and `/provenance` show the model id and the gate table;
   * `/spectra`: toggle a pigment and a quantity, assert the figure redraws;
   * `/cie`: click the diagram, assert the probe readout appears;
-  * `/paint`: drag across the canvas and assert it changes, then flip the
-    paint-vs-RGB toggle and assert the result differs.
+  * `/paint`: drag a stroke with the page-level mouse API and assert paint
+    lands along the whole path, not just at the press; then paint the same
+    stroke in the naive-RGB mode on a fresh page and assert the blends differ.
 * WGLMakie can trip browser "slow script" protection; Bonnie carries a
   separate Firefox lane for exactly that. Default to Chromium and expose
   `EXPLORER_E2E_BROWSER` to swap engines.

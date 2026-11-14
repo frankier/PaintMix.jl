@@ -130,12 +130,13 @@ function picked_result(model::PigmentModel, hex::AbstractString)
 end
 
 """
-    paint_pixel(pos, height) -> (col, row)
+    paint_pixel(pos) -> (col, row)
 
 Map a mouse data position on an `image!` axis to canvas indices. `image!`
-puts row 1 at the top, so the data y axis runs upward.
+puts row 1 at the bottom of the y-up axis, so the data position is already
+the canvas index.
 """
-paint_pixel(pos, height::Integer) = (round(Int, pos[1]), round(Int, Int(height) - pos[2] + 1))
+paint_pixel(pos) = (round(Int, pos[1]), round(Int, pos[2]))
 
 # The bounding box of the dab disc, clamped to the canvas, or `nothing` when
 # the disc lies entirely outside.

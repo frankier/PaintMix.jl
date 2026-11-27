@@ -56,6 +56,7 @@ include("solvers.jl")
 include("validate.jl")
 include("export.jl")
 include("precision.jl")
+include("traces.jl")
 include("pipeline.jl")
 
 export quantize_inverse, generate_simplex_forward, experimental_model, precision_report,

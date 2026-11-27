@@ -228,6 +228,8 @@ end
 
 # --- Levenberg-Marquardt on one active face --------------------------------
 
+@inline _trace_iterate!(::Nothing, iteration, c, rgb, sse) = nothing
+
 """
     lm_active!(sc, model, rgb, active, theta0, settings) -> (c, sse, iters, converged)
 
@@ -240,7 +242,7 @@ count, and whether the step stationarity test passed.
 """
 function lm_active!(
         sc::SolverScratch, model, rgb::SVector{3, T},
-        active::NTuple{K, Int}, theta0::SVector{M, T}, settings::UnmixSettings,
+        active::NTuple{K, Int}, theta0::SVector{M, T}, settings::UnmixSettings, trace = nothing,
     ) where {T, K, M}
     @assert M == K - 1 "softmax needs K - 1 free logits"
     θ = theta0
@@ -315,6 +317,7 @@ function lm_active!(
                 c = ct
                 m = mt
                 sse = st
+                _trace_iterate!(trace, iterations, c, m, sse)
                 λ = max(λ / 3, T(1.0e-12))
                 accepted = true
                 break
@@ -576,9 +579,11 @@ function unmix_bulk!(
     total_iters = 0
     converged = false
     for seed in seeds
+        _trace_seed!(sc, seed)
         c, s, n, a, it, conv = _solve_adaptive!(sc, model, rgb, seed, settings)
         total_iters += it
         if s < best_sse
+            _trace_winner!(sc)
             converged = conv
             best_c, best_sse = c, s
             best_active = a
@@ -592,3 +597,6 @@ function unmix_bulk!(
         termination = converged ? :stationary : :stalled_or_limit,
     )
 end
+
+@inline _trace_seed!(sc, seed) = nothing
+@inline _trace_winner!(sc) = nothing

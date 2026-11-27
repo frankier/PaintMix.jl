@@ -104,7 +104,7 @@ function evidence_panel(name)
         <pre><code>$(_esc(excerpt.code))</code></pre>
         <a href="$(CODE_URL)$(stage.path)#L$(excerpt.first)-L$(excerpt.last)">$(stage.path):$(excerpt.first)–$(excerpt.last) ↗</a>
         """
-    caveat = i == 2 ? "<p class=\"muted\">This implementation defaults to L-BFGS in softplus coordinates; the paper uses L-BFGS-B. Saved history contains continuation summaries, not a replay of pigment motion.</p>" :
+    caveat = i == 2 ? "<p class=\"muted\">This implementation defaults to L-BFGS in softplus coordinates. Recorded fit traces replay the physical pigments at each continuation step.</p>" :
         i == 3 ? "<p class=\"muted\">Simplex padding and joint concentration rounding are implementation choices. The validation reports below measure their effects.</p>" : ""
     return """
     <details class="explanation">

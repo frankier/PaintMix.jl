@@ -114,7 +114,8 @@ function register_routes!()
     @get "/tables" function (req::HTTP.Request)
         d = explorer_data()
         head = head_content()
-        body = app_html(tables_app(d)) * diagnostic_details(tables_caption(d))
+        params = HTTP.URIs.queryparams(HTTP.URI(req.target))
+        body = inverse_trace_panel(d, params) * app_html(tables_app(d)) * diagnostic_details(tables_caption(d))
         return Oxygen.html(
             render_page(
                 "tables"; title = "PaintMix explorer — tables", head = head, body = body

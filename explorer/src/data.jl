@@ -40,6 +40,7 @@ struct ExplorerData
     derived::DerivedCurves
     notes::Vector{String}
     comparisons::Vector{Dict{String, Any}}
+    traces::Dict{String, Any}
 end
 
 function ExplorerData(;
@@ -55,10 +56,11 @@ function ExplorerData(;
         derived::DerivedCurves = DerivedCurves(),
         notes::Vector{String} = String[],
         comparisons::Vector{Dict{String, Any}} = Dict{String, Any}[],
+        traces::Dict{String, Any} = Dict{String, Any}(),
     )
     return ExplorerData(
         cfg, db, spectra, quad, spectral, fitted, model, String(source),
-        sidecar, derived, notes, comparisons
+        sidecar, derived, notes, comparisons, traces
     )
 end
 
@@ -136,11 +138,11 @@ function find_sidecar(model::PigmentModel, payload_path::Union{Nothing, Abstract
     id = PaintMix.model_id(model)
     if payload_path !== nothing
         path = joinpath(dirname(payload_path), "$id.toml")
-        isfile(path) && return TOML.parsefile(path)
+        isfile(path) && return TOML.parsefile(path), dirname(path)
     end
     path = joinpath(OUTPUT, "release", "$id.toml")
-    isfile(path) && return TOML.parsefile(path)
-    return nothing
+    isfile(path) && return TOML.parsefile(path), dirname(path)
+    return nothing, nothing
 end
 
 function build_fitted(sidecar::Dict{String, Any}, spectral::SpectralModel)
@@ -212,10 +214,13 @@ function load_explorer_data(;
     model, source, used_path = load_payload(payload_path, notes)
 
     sidecar = nothing
+    traces = Dict{String, Any}()
     if with_sidecar
-        sidecar = find_sidecar(model, used_path)
+        sidecar, sidecar_dir = find_sidecar(model, used_path)
         if sidecar === nothing
             push!(notes, "provenance sidecar absent; fitted curves unavailable")
+        else
+            traces = load_traces(sidecar, sidecar_dir, model, notes; payload_path = used_path)
         end
     else
         push!(notes, "sidecar disabled (--no-sidecar)")
@@ -245,7 +250,7 @@ function load_explorer_data(;
     return ExplorerData(;
         cfg = cfg, db = db, spectra = spectra, quad = quad, spectral = spectral,
         fitted = fitted, model = model, source = source, sidecar = sidecar,
-        derived = derived, notes = notes, comparisons = comparisons,
+        derived = derived, notes = notes, comparisons = comparisons, traces = traces,
     )
 end
 
@@ -258,4 +263,28 @@ function load_comparison(path::AbstractString)
         r["validation"]["quality"]["corpus_sha256"] == doc["corpus_sha256"] || error("comparison corpus mismatch")
     end
     return rows
+end
+
+function load_traces(sidecar, dir, model, notes; payload_path = nothing)
+    traces = Dict{String, Any}()
+    refs = Base.get(sidecar, "traces", Dict())
+    isempty(refs) && return traces
+    if payload_path !== nothing && PaintMixPrecompute.payload_digest(payload_path) != Base.get(sidecar, "payload_sha256", nothing)
+        push!(notes, "solver traces unavailable: payload digest mismatch")
+        return traces
+    end
+    for kind in ("fit", "inverse")
+        haskey(refs, kind) || continue
+        try
+            trace = PaintMixPrecompute.read_trace(dir, refs[kind], kind)
+            trace["model_id"] == PaintMix.model_id(model) || error("trace model id mismatch")
+            keys = kind == "fit" ? ("payload_sha256", "surrogate_sha256", "fit_job_id") :
+                ("payload_sha256", "surrogate_sha256", "fit_job_id", "table_job_id")
+            all(k -> Base.get(trace, k, nothing) == Base.get(sidecar, k, nothing), keys) || error("trace identity mismatch")
+            traces[kind] = trace
+        catch err
+            push!(notes, "$kind trace unavailable: $(sprint(showerror, err))")
+        end
+    end
+    return traces
 end

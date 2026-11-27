@@ -227,7 +227,11 @@ struct SurrogateFit{T <: AbstractFloat}
     history::Vector{Dict{String, Any}}
     diagnostics::Dict{String, Any}
     quadrature::SurfaceQuadrature{T}
+    trace::Union{Nothing, Dict{String, Any}}
 end
+
+SurrogateFit(K, S, theta, history, diagnostics, quadrature) =
+    SurrogateFit(K, S, theta, history, diagnostics, quadrature, nothing)
 
 """
     initial_theta(spectra, epsilon) -> Vector
@@ -484,15 +488,17 @@ remains softplus with L-BFGS. Continuation and diagnostics are solver-independen
 """
 function fit_surrogates(
         cfg::AbstractDict, spectra::PigmentSpectra, quad::Quadrature;
-        algorithm = nothing, adtype = nothing, solve_kwargs = (;), log = nothing
+        algorithm = nothing, adtype = nothing, solve_kwargs = (;), log = nothing, trace_fit = false
     )
     st = FitSettings(cfg)
     if algorithm === nothing
         st.parameterization == :direct && st.optimizer == :lbfgs && throw(ConfigError("direct coefficients require optimizer=lbfgsb or an explicit bounded algorithm"))
         algorithm = _default_algorithm(Val(st.optimizer))
     end
+    trace_fit && check_fit_trace_limits(st, length(spectra.wavelength))
     problem = SurrogateProblem(st, spectra, quad)
     x = initial_parameters(problem.parameters, spectra)
+    snapshots = trace_fit ? [parameter_matrices(problem.parameters, x, length(spectra.wavelength))] : nothing
     history = Dict{String, Any}[]
     stopping = _fit_stopping(st, problem)
     progress = (reached = false, values = Dict{String, Any}())
@@ -510,6 +516,7 @@ function fit_surrogates(
             )
         )
         push!(history, entry)
+        snapshots === nothing || push!(snapshots, parameter_matrices(problem.parameters, x, length(spectra.wavelength)))
         if log !== nothing
             println(
                 log, "  alpha=", alpha, " Epush=", epush, " Epull=", epull,
@@ -531,7 +538,8 @@ function fit_surrogates(
     diagnostics["algorithm"] = string(algorithm)
     diagnostics["derivative"] = adtype === nothing ? string(st.derivative) : string(adtype)
     diagnostics["termination"] = isempty(history) ? "NotStarted" : last(history)["termination"]
-    return SurrogateFit(K, S, x, history, diagnostics, problem.quadrature)
+    trace = snapshots === nothing ? nothing : build_fit_trace(cfg, spectra, problem, snapshots, history)
+    return SurrogateFit(K, S, x, history, diagnostics, problem.quadrature, trace)
 end
 
 """

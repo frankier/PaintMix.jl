@@ -300,3 +300,23 @@ reports with `precompute/scripts/compare.jl`; see
 [`precompute/EXPERIMENTS.md`](../precompute/EXPERIMENTS.md). Fitted spectra are
 loaded from physical absorption/scattering coefficients for every new
 parameterization. Schema-1 softplus-only sidecars remain supported.
+
+
+## Solver replay
+
+With a recorded fit trace, `/fit` provides one scrubber for the K/S curves,
+sampled linear RGB and CIE gamuts, and continuation losses. The gray points
+show the initial gamut and the readout shows held-out cube violation and
+Oklab drift. The trace carries its own spectral integration data.
+
+On `/tables`, select a recorded probe to inspect the target, per-seed active
+faces and accepted iterations, float concentrations, joint byte rounding,
+actual inverse cell vertices, and runtime interpolation and signed residual.
+The reference SSE is a comparison across bounded local solves. Enter a
+linear RGB triple to inspect another point. An unrecorded point uses a fresh
+spectral diagnostic when the fitted surrogate is available and always shows
+its runtime lookup. Both pages label missing traces and continue to display
+the data available from older payloads.
+
+See the [precompute trace guide](../precompute/README.md#explorer-traces) for
+the capture flags, schema, bounds, and regeneration commands.

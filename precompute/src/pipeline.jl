@@ -9,7 +9,10 @@ function save_surrogate(path, fit, cfg, job_hash, W)
         "history" => fit.history, "diagnostics" => fit.diagnostics,
         "settings" => settings_dict(FitSettings(cfg))
     )
-    doc["coefficients_sha256"] = experiment_id(Dict("K" => fit.K, "S" => fit.S))
+    doc["coefficients_sha256"] = coefficient_digest(fit.K, fit.S)
+    if fit.trace !== nothing
+        doc["trace"] = write_trace(dirname(path), merge(fit.trace, Dict("fit_job_id" => job_hash)))
+    end
     mkpath(dirname(path))
     open(path * ".tmp", "w") do io
         TOML.print(io, doc; sorted = true)
@@ -32,10 +35,16 @@ function load_surrogate(path, cfg, job_hash, W)
     K = reshape(Float64.(doc["absorption"]), 4, W)
     S = reshape(Float64.(doc["scattering"]), 4, W)
     all(x -> isfinite(x) && x > 0, K) && all(x -> isfinite(x) && x > 0, S) || throw(InputError("invalid fitted coefficients"))
-    experiment_id(Dict("K" => K, "S" => S)) == doc["coefficients_sha256"] || throw(InputError("fit coefficient digest mismatch"))
+    coefficient_digest(K, S) == doc["coefficients_sha256"] || throw(InputError("fit coefficient digest mismatch"))
+    trace = if haskey(doc, "trace")
+        candidate = read_trace(dirname(path), doc["trace"], "fit")
+        candidate["fit_job_id"] == job_hash && candidate["surrogate_sha256"] == doc["coefficients_sha256"] ||
+            throw(InputError("fit trace identity mismatch"))
+        candidate
+    end
     return SurrogateFit(
         K, S, Float64.(doc["theta"]), _as_dicts(doc["history"]),
-        Dict{String, Any}(doc["diagnostics"]), SurfaceQuadrature(cfg)
+        Dict{String, Any}(doc["diagnostics"]), SurfaceQuadrature(cfg), trace
     )
 end
 
@@ -76,7 +85,7 @@ function _reuse_payload(out, job_hash)
     doc = TOML.parsefile(manifest)
     doc["job_hash"] == job_hash || throw(InputError("table artifact belongs to different resolved settings"))
     payload = joinpath(out, "default.pmx")
-    bytes2hex(sha256(read(payload))) == doc["payload_sha256"] || throw(InputError("payload digest mismatch"))
+    payload_digest(payload) == doc["payload_sha256"] || throw(InputError("payload digest mismatch"))
     model = PaintMix.read_model(payload)
     PaintMix.model_id(model) == doc["model_id"] || throw(InputError("payload model id mismatch"))
     sidecar = joinpath(out, "$(doc["model_id"]).toml")
@@ -85,7 +94,8 @@ function _reuse_payload(out, job_hash)
     provenance["payload_sha256"] == doc["payload_sha256"] || throw(InputError("sidecar payload digest mismatch"))
     return Dict{String, Any}(
             "model" => model, "model_id" => PaintMix.model_id(model),
-            "payload_path" => payload, "sidecar_path" => sidecar
+            "payload_path" => payload, "sidecar_path" => sidecar,
+            "traces" => get(provenance, "traces", Dict{String, Any}())
         ), provenance
 end
 
@@ -99,9 +109,11 @@ function run_pipeline(
         cfg::AbstractDict; out_dir, profile = "dev", stage = :all,
         settings = nothing, inputs = nothing, fit_solver = nothing, point_solver = nothing,
         solver_source = "", promote = false, force = false, force_import = false,
+        trace_fit = false, trace_inverse = false,
         root = normpath(joinpath(@__DIR__, "..", "..")), cfg_path = DEFAULT_CONFIG_PATH, log = stdout
     )
     stage in (:inputs, :fit, :tables, :validate, :promote, :all) || throw(ConfigError("unknown stage"))
+    trace_inverse && !(stage in (:all, :tables)) && throw(ConfigError("inverse trace requires the tables or all stage"))
     cfg = profile_config(cfg, profile)
     st = settings === nothing ? TableSettings(cfg; profile) : settings
     mkpath(out_dir)
@@ -113,15 +125,21 @@ function run_pipeline(
     fit_path = joinpath(out_dir, "fits", "$fit_id.toml")
     W = length(spectra.wavelength)
     fit = load_surrogate(fit_path, cfg, fit_id, W)
-    if fit === nothing
-        stage in (:all, :fit) || throw(InputError("no matching fit; run --stage fit"))
+    if fit === nothing || (trace_fit && fit.trace === nothing)
+        stage in (:all, :fit) || throw(InputError("no matching fit with requested capture; run --stage fit"))
         fit = fit_surrogates(
             cfg, spectra, quad; log, algorithm = fit_solver.algorithm,
-            adtype = fit_solver.adtype, solve_kwargs = fit_solver.solve_kwargs
+            adtype = fit_solver.adtype, solve_kwargs = fit_solver.solve_kwargs, trace_fit
         )
         save_surrogate(fit_path, fit, cfg, fit_id, W)
     end
-    stage == :fit && return Dict("fit" => fit, "fit_job_id" => fit_id, "fit_path" => fit_path)
+    if stage == :fit
+        metadata = TOML.parsefile(fit_path)
+        return Dict(
+            "fit" => fit, "fit_job_id" => fit_id, "fit_path" => fit_path,
+            "fit_trace" => get(metadata, "trace", nothing)
+        )
+    end
     spectral = SpectralModel(SpectralModel(spectra, quad); K = fit.K, S = fit.S)
     job_hash = experiment_id(Dict("table" => table_job_id(cfg, fit, st; point_solver, source_id = solver_source), "fit" => fit_id))
     ft = nothing
@@ -151,7 +169,9 @@ function run_pipeline(
                 "slab_summaries" => Dict(string(k) => v for (k, v) in summary)
             )
         )
-        result = export_model(ft, cfg, provenance; out_dir = out_dir)
+        capture_inverse = trace_inverse ?
+            ((model, doc) -> build_inverse_trace(model, spectral, evaluator, ft, doc, UnmixSettings(cfg))) : nothing
+        result = export_model(ft, cfg, provenance; out_dir = out_dir, fit_trace = fit.trace, capture_inverse)
         provenance = TOML.parsefile(result["sidecar_path"])
         open(joinpath(out_dir, "artifact.toml"), "w") do io
             TOML.print(

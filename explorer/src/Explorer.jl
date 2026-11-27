@@ -50,6 +50,7 @@ include("apps/palette.jl")
 include("apps/paint.jl")
 include("apps/tables.jl")
 include("apps/fit.jl")
+include("apps/traces.jl")
 include("routes.jl")
 
 export ExplorerData,

@@ -533,12 +533,11 @@ and a continuation link. Detailed readouts and metadata use progressive
 disclosure. New explanations should extend this structure instead of adding
 another equally weighted panel to the front page.
 
-The next substantive gaps are versioned, bounded fit snapshots
-([#2](https://github.com/frankier/PaintMix.jl/issues/2)) and sampled inverse
-traces ([#3](https://github.com/frankier/PaintMix.jl/issues/3)). Current scalar
-summaries cannot support optimisation replay. Keep source measurements,
-surrogate bias, numerical inversion, interpolation, and byte rounding distinct
-when those explanations are added.
+Opt-in fit snapshots replay the physical coefficients, sampled gamut and
+losses at each continuation step. Sampled inverse traces explain the
+continuous solve through byte rounding, interpolation and residual. The
+[trace guide](../precompute/README.md#explorer-traces) documents generation
+and the diagnostic limits.
 
 ## Original implementation risks
 

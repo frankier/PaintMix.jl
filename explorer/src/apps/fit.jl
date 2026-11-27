@@ -102,17 +102,11 @@ function fit_dom(session, d::ExplorerData)
     c = d.derived
     h = fit_history(d)
     has_spectra = !isempty(c.wavelength) && c.fitted_K !== nothing
-    if !has_spectra && h === nothing
-        return Bonito.DOM.div(
-            Bonito.DOM.p(
-                "Fit data not available: the spectral reference and the " *
-                    "provenance sidecar are both absent.";
-                class = "muted",
-            ),
-        )
+    trace = Base.get(d.traces, "fit", nothing)
+    panels = Any[fit_trace_dom(session, trace)]
+    if !has_spectra && h === nothing && trace === nothing
+        push!(panels, Bonito.DOM.p("Fit data not available: the spectral reference and the provenance sidecar are both absent."; class = "muted"))
     end
-
-    panels = Any[]
     if has_spectra
         push!(
             panels,

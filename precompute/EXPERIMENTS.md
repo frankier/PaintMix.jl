@@ -229,3 +229,9 @@ meets the provisional mixing gates. These outcomes are retained explicitly.
 Generated provenance labels configuration files relative to the repository
 (or by filename for external configurations); it does not publish execution
 directories. Full candidate artifacts live under `precompute/output/followups/`.
+
+
+Add `--trace-fit` to a fit run, `--trace-inverse` to a tables run, or both
+to an all-stage run to record the [Explorer traces](README.md#explorer-traces)
+for a candidate. The comparison TOML retains each captured trace's schema,
+digest and path relative to the report directory.

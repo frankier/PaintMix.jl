@@ -11,6 +11,7 @@ using Explorer
 using PaintMix
 
 include("helpers.jl")
+isdefined(@__MODULE__, :PlotFixtures) || include("fixtures.jl")
 
 const SYNTHETIC_ID = "00000000000000000000000000000000"
 
@@ -211,6 +212,7 @@ const SYNTHETIC_ID = "00000000000000000000000000000000"
             @test occursin("Bonito.init_session", body)
             @test occursin("canvas", body)
             @test occursin("Forward plane", body)
+            @test occursin("Recorded inverse probes unavailable", body)
             @test occursin("fourth concentration", body)
             @test occursin("Acceptance gates", body)
             @test occursin("Not available: no sidecar.", body)
@@ -233,6 +235,7 @@ const SYNTHETIC_ID = "00000000000000000000000000000000"
             body = String(HTTP.get("http://127.0.0.1:$port/fit"; retry = false).body)
             @test occursin("Bonito.init_session", body)
             @test occursin("Fit data not available", body)
+            @test occursin("Continuation trace unavailable", body)
             @test occursin("Not available: no sidecar.", body)
             @test !occursin("&lt;script", body)
             @test occursin("aria-current=\"step\"", body)
@@ -247,6 +250,35 @@ const SYNTHETIC_ID = "00000000000000000000000000000000"
             @test occursin("Bonito.init_session", String(fig.body))
         finally
             Explorer.close_explorer(viewer)
+        end
+    end
+
+    @testset "solver trace replay and fresh diagnostics" begin
+        mktempdir() do dir
+            data = PlotFixtures.traced_data(dir)
+            @test isempty(data.notes)
+            @test length(data.traces) == 2
+            port = free_port()
+            viewer = Explorer.serve_explorer(data; port, async = true)
+            try
+                base = "http://127.0.0.1:$port"
+                fit = String(HTTP.get("$base/fit"; retry = false).body)
+                @test occursin("Continuation replay", fit)
+                @test occursin(r"Initial (?:&#40;|\()0/2(?:&#41;|\))", fit)
+                @test occursin("Sampled Oklab drift", fit)
+                recorded = String(HTTP.get("$base/tables?probe=2"; retry = false).body)
+                @test occursin("Interior mixture", recorded)
+                @test occursin("Recorded diagnostic probe", recorded)
+                @test occursin("Inverse cell vertices and stored byte rounding", recorded)
+                fresh = String(HTTP.get("$base/tables?r=0.13&g=0.27&b=0.48"; retry = false).body)
+                @test occursin("Fresh diagnostic solve", fresh)
+                @test occursin("Signed runtime residual", fresh)
+                @test !occursin("Inverse cell vertices and stored byte rounding", fresh)
+                invalid = String(HTTP.get("$base/tables?r=NaN"; retry = false).body)
+                @test occursin("Enter three finite linear RGB channels", invalid)
+            finally
+                Explorer.close_explorer(viewer)
+            end
         end
     end
 

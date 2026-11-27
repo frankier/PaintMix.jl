@@ -31,9 +31,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1.13'
+
       # `runic-action` installs Runic in its own `@runic` environment, so the
-      # runtime dependency allow-list stays unchanged. It uses the Julia that
-      # ships with the runner image, hence no `setup-julia` step.
+      # runtime dependency allow-list stays unchanged. Install Julia explicitly
+      # because hosted runner images do not guarantee it is available.
       - uses: fredrikekre/runic-action@v1
         with:
           version: '1'

@@ -197,3 +197,58 @@ precompute/test/runtests.jl`; synthetic tests need no measurement files.
 `baseline.jl` records tiny forward/reference/bulk table digests and can run
 unchanged against two source snapshots. The runtime consumer check continues
 to enforce StaticArrays as the only non-stdlib runtime dependency.
+
+
+## Explorer traces
+
+Tracing is opt-in. Use the same profile, solver choices, configuration and
+output directory for the fit and tables stages. The tables stage can reuse
+verified slab checkpoints when adding inverse diagnostics to an existing run.
+
+```sh
+julia --project=precompute precompute/scripts/generate.jl \
+  --profile dev --stage fit --trace-fit --no-promote
+julia -t auto --project=precompute precompute/scripts/generate.jl \
+  --profile dev --stage tables --trace-inverse --no-promote
+julia --project=explorer explorer/run.jl \
+  --payload precompute/output/dev/default.pmx
+```
+
+Use both flags in one `--stage all` run to capture both traces and validate
+the payload. Requesting a fit trace reruns an untraced cached fit to capture
+its intermediate coefficients. A traced fit can be reused with either
+flag setting. The inverse flag uses the unquantized tables, including any
+resumed slabs.
+
+Both artifacts are schema-1 TOML documents. Cache entries and exported
+sidecars carry versioned, relative filenames and SHA-256 digests. Exported
+traces identify the fit, input checksums, resolved configuration, physical
+surrogate and exact payload. Keep the sidecar and its trace files together
+when moving a payload. Legacy sidecars can omit the `traces` section.
+
+- **Fit.** Each snapshot stores the four rows of physical K and S in the
+  recorded pigment and wavelength order, with alpha, loss terms, cumulative
+  solve time and termination. Step zero records the optimizer's physical
+  initialization. Integration data support replay without the input database.
+  The artifact stores the weighted fitting boundary once and a separate
+  deterministic validation sample with fitting nodes excluded. Sampled
+  maximum cube violation and Oklab drift from the measured model provide
+  evidence at those concentrations. Capture copies the coefficients once per
+  solve, then evaluates the validation sample after continuation. It supports
+  at most 64 solves plus initialization, 48 boundary divisions, and 256
+  wavelengths. It records continuation boundaries exclusively.
+- **Inverse.** Up to 12 probes cover near-black, a central mixture, near-pure
+  mixtures, the cube corner with the largest reference SSE among the eight
+  corners, and the largest runtime reconstruction residuals on a fixed
+  64-color corpus. The diagnostics use the generation evaluator and two
+  deterministic seeds with the normal active-face LM kernel. They preserve
+  seed and face start and final states after the budget of 64 accepted
+  iterates per probe is reached. Each face is capped at 64 LM iterations.
+  Reference enumeration uses up to four restarts per face and provides a
+  numerical SSE comparison. The continuous fit, demonstration rounding,
+  actual float and byte vertex data, and interpolation and residual terms
+  have distinct fields. Capture runs up to 12 diagnostic and 20 reference
+  point solves alongside table generation.
+
+Each trace file is capped at 16 MiB. Diagnostics run outside the table
+traversal and are stored separately from the `.pmx` payload.

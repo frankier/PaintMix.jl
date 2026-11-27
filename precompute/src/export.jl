@@ -42,6 +42,8 @@ function provenance_text(
     return String(take!(io))
 end
 
+payload_digest(path) = bytes2hex(open(sha256, path))
+
 function _config_label(path)
     relative = relpath(abspath(path), normpath(joinpath(@__DIR__, "..", "..")))
     return isabspath(relative) || first(splitpath(relative)) == ".." ? basename(path) : replace(relative, '\\' => '/')
@@ -108,6 +110,7 @@ function build_provenance(
             "diagnostics" => fit.diagnostics,
             "theta" => fit.theta,
         ),
+        "surrogate_sha256" => coefficient_digest(K, S),
         "parameters" => Dict{String, Any}(
             "absorption" => _matrix_rows(K),
             "scattering" => _matrix_rows(S),
@@ -159,17 +162,7 @@ function quantize_tables(ft::FloatTables, cfg::AbstractDict)
     fwd = Vector{UInt8}(undef, 3 * n^3)
     @inbounds for v in 0:(n^3 - 1)
         o = 3 * v
-        c1 = ft.inverse[o + 1]
-        c2 = ft.inverse[o + 2]
-        c3 = ft.inverse[o + 3]
-        c4 = one(Float64) - c1 - c2 - c3
-        if c4 < 0
-            # The solver works on the simplex; this only repairs floating
-            # point drift before joint quantization.
-            p = project_to_simplex(SVector(c1, c2, c3, max(c4, 0.0)))
-            c1, c2, c3 = p[1], p[2], p[3]
-        end
-        b = quantize_simplex(SVector(c1, c2, c3, max(one(Float64) - c1 - c2 - c3, 0.0)))
+        b = _inverse_bytes(ft.inverse[o + 1], ft.inverse[o + 2], ft.inverse[o + 3])
         inv[o + 1] = b[1]
         inv[o + 2] = b[2]
         inv[o + 3] = b[3]
@@ -178,6 +171,16 @@ function quantize_tables(ft::FloatTables, cfg::AbstractDict)
         fwd[o + 3] = _byte(ft.forward[o + 3])
     end
     return PaintMix.ByteLUT(n, inv), PaintMix.ByteLUT(n, fwd)
+end
+
+@inline function _inverse_bytes(c1, c2, c3)
+    c4 = 1.0 - c1 - c2 - c3
+    if c4 < 0
+        # Repair floating-point drift before joint quantization.
+        p = project_to_simplex(SVector(c1, c2, c3, 0.0))
+        c1, c2, c3 = p[1], p[2], p[3]
+    end
+    return quantize_simplex(SVector(c1, c2, c3, max(1.0 - c1 - c2 - c3, 0.0)))
 end
 
 @inline function _byte(x::Float64)
@@ -224,6 +227,7 @@ is exactly one implementation of the format.
 function export_model(
         ft::FloatTables, cfg::AbstractDict, provenance::AbstractDict;
         out_dir::AbstractString, name::AbstractString = "default.pmx",
+        fit_trace = nothing, capture_inverse = nothing,
     )
     mkpath(out_dir)
     model = build_model(ft, cfg, provenance)
@@ -233,13 +237,38 @@ function export_model(
     id = PaintMix.model_id(model)
     sidecar = joinpath(out_dir, "$(id).toml")
     provenance = deepcopy(provenance)
-    provenance["payload_sha256"] = bytes2hex(sha256(read(payload_path)))
+    provenance["payload_sha256"] = payload_digest(payload_path)
+    references = Dict{String, Any}()
+    if isfile(sidecar)
+        previous = TOML.parsefile(sidecar)
+        if all(
+                k -> haskey(provenance, k) && get(previous, k, nothing) == provenance[k],
+                ("payload_sha256", "table_job_id", "surrogate_sha256")
+            )
+            merge!(references, get(previous, "traces", Dict()))
+        end
+    end
+    if fit_trace !== nothing
+        fit_trace["surrogate_sha256"] == provenance["surrogate_sha256"] ||
+            throw(InputError("fit trace and exported coefficients differ"))
+        identity = Dict(
+            "resolved_config_sha256" => experiment_id(cfg), "inputs" => provenance["inputs"],
+            "model_id" => id, "payload_sha256" => provenance["payload_sha256"]
+        )
+        haskey(provenance, "fit_job_id") && (identity["fit_job_id"] = provenance["fit_job_id"])
+        references["fit"] = write_trace(out_dir, merge(fit_trace, identity))
+    end
+    if capture_inverse !== nothing
+        references["inverse"] = write_trace(out_dir, capture_inverse(model, provenance))
+    end
+    isempty(references) || (provenance["traces"] = references)
     write_sidecar(sidecar, provenance, model, ft)
     return Dict{String, Any}(
         "model" => model,
         "model_id" => id,
         "payload_path" => payload_path,
         "sidecar_path" => sidecar,
+        "traces" => references,
     )
 end
 
@@ -254,7 +283,7 @@ function write_sidecar(path::AbstractString, provenance::AbstractDict, model, ft
     doc["schema_version"] = 2
     payload = joinpath(dirname(path), "default.pmx")
     if isfile(payload) && PaintMix.model_id(PaintMix.read_model(payload)) == PaintMix.model_id(model)
-        doc["payload_sha256"] = bytes2hex(sha256(read(payload)))
+        doc["payload_sha256"] = payload_digest(payload)
     end
     doc["model"] = Dict{String, Any}(
         "id" => PaintMix.model_id(model),

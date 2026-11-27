@@ -55,6 +55,11 @@ function comparison_summary(out; matched = false)
                 "environment" => d["environment"]
             )
         )
+        if haskey(d, "traces")
+            last(runs)["traces"] = Dict(
+                kind => merge(ref, Dict("file" => joinpath(name, ref["file"]))) for (kind, ref) in d["traces"]
+            )
+        end
     end
     digests = [r["validation"]["quality"]["corpus_sha256"] for r in runs]
     all(==(first(digests)), digests) || error("comparison corpus mismatch")
@@ -86,7 +91,9 @@ end
 
 function main(args = ARGS)
     matched = "--matched" in args
-    args = filter(!=("--matched"), args)
+    trace_fit = "--trace-fit" in args
+    trace_inverse = "--trace-inverse" in args
+    args = filter(arg -> !(arg in ("--matched", "--trace-fit", "--trace-inverse")), args)
     length(args) >= 2 || error("usage: compare.jl OUT fit|tables|all|summary [VARIANT] [dev|release]")
     out, stage = abspath(args[1]), args[2]
     stage == "summary" && return comparison_summary(out; matched)
@@ -96,7 +103,7 @@ function main(args = ARGS)
     st = TableSettings(cfg; profile, threads = Threads.nthreads())
     return run_pipeline(
         cfg; out_dir = joinpath(out, name), profile, stage = Symbol(stage),
-        settings = st, promote = false
+        settings = st, promote = false, trace_fit, trace_inverse
     )
 end
 

@@ -48,6 +48,12 @@ function parse_args(args)
         help = "worker threads for table generation"
         arg_type = Int
         default = Threads.nthreads()
+        "--trace-fit"
+        help = "record physical continuation snapshots"
+        action = :store_true
+        "--trace-inverse"
+        help = "record bounded inverse diagnostic probes (tables or all)"
+        action = :store_true
         "--no-promote"
         help = "never copy into data/default/"
         action = :store_false
@@ -99,12 +105,18 @@ function main(args = ARGS)
         cfg; out_dir = out, profile = opts["profile"], stage = Symbol(opts["stage"]),
         fit_solver = choices.fit, point_solver = choices.inverse, solver_source = source_id,
         settings = st, promote = opts["promote"], force = opts["force"],
-        force_import = opts["force-import"], cfg_path = opts["config"]
+        force_import = opts["force-import"], cfg_path = opts["config"],
+        trace_fit = opts["trace-fit"], trace_inverse = opts["trace-inverse"]
     )
     for (name, ok) in sort!(collect(get(result, "acceptance_gates", Dict())); by = first)
         println(name, ": ", ok ? "pass" : "FAIL")
     end
     haskey(result, "payload_path") && println("candidate: ", result["payload_path"])
+    fit_trace = get(result, "fit_trace", nothing)
+    fit_trace === nothing || println("fit trace: ", joinpath(dirname(result["fit_path"]), fit_trace["file"]))
+    for (kind, ref) in sort!(collect(get(result, "traces", Dict())); by = first)
+        println(kind, " trace: ", joinpath(dirname(result["sidecar_path"]), ref["file"]))
+    end
     return result
 end
 

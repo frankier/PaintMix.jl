@@ -31,5 +31,6 @@ const eval_jacobian4! = PaintMixPrecompute._jacobian4!
     include("test_inverse.jl")
     include("test_validation.jl")
     include("test_experiments.jl")
+    include("test_traces.jl")
     include("test_precision_cli.jl")
 end

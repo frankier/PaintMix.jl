@@ -264,7 +264,7 @@ const SYNTHETIC_ID = "00000000000000000000000000000000"
                 base = "http://127.0.0.1:$port"
                 fit = String(HTTP.get("$base/fit"; retry = false).body)
                 @test occursin("Continuation replay", fit)
-                @test occursin("Initial (0/2)", fit)
+                @test occursin(r"Initial (?:&#40;|\()0/2(?:&#41;|\))", fit)
                 @test occursin("Sampled Oklab drift", fit)
                 recorded = String(HTTP.get("$base/tables?probe=2"; retry = false).body)
                 @test occursin("Interior mixture", recorded)

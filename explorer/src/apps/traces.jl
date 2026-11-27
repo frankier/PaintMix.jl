@@ -54,7 +54,7 @@ function fit_trace_dom(session, trace)
         dom.h2("Continuation replay"),
         dom.label("Continuation step ", slider),
         dom.p(summary; role = "status"),
-        dom.p("Gray points show the initial gamut. Containment and Oklab drift are evaluated on held-out samples."),
+        dom.p("Gray points show the initial gamut. The cube violation and Oklab drift describe the held-out samples."),
         dom.div(fig; class = "figure-panel"); id = "fit-trace"
     )
 end

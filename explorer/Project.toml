@@ -31,7 +31,7 @@ PaintMixPrecompute = { path = "../precompute" }
 # entry; Oxygen resolves from the registry.
 Bonnie = { url = "https://github.com/frankier/Bonnie.jl.git", rev = "82aa2209a35a10a7dc70f5521a14ddbab1568795" }
 # Test-only; see [extras]/[targets] below. Also unregistered, so pinned.
-Playwright = { url = "https://github.com/frankier/playwright-julia", rev = "842508085c3a3a7d12d485adb0073e374cbdf334" }
+Playwright = { url = "https://github.com/frankier/playwright-julia", rev = "336e0c16486fbb67c80474c62f759329f2c4d520" }
 
 [compat]
 Bonito = "5.1"

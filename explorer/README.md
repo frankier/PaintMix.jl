@@ -262,12 +262,13 @@ spectral model, so paint blending can differ from RGB blending. It also asserts
 the model id and acceptance gates
 on `/` and `/provenance`; toggles a pigment and a quantity on `/spectra` and
 checks the readout table; clicks the diagram on
-`/cie` and checks the probe readout; and paints the same stroke on `/paint` in
-both the paint and naive-RGB modes, comparing the canvas data URL so the two
-blends are shown to differ. Physical synthetic spectra supply all `/spectra`
-and `/cie` interaction fixtures without the measurement database. The
-CIE checks also switch navigation modes and reset the view; Paint checks that
-right-dragging leaves the canvas unchanged.
+`/cie` and checks the probe readout; and drags a stroke on `/paint` in both
+blend modes with Playwright.jl's page-level mouse API. Pixel readback checks
+that the start, middle and end of the stroke carry paint, then compares the
+two blends' colour checksums on fresh pages. Physical synthetic spectra supply
+all `/spectra` and `/cie` interaction fixtures without the measurement database.
+The CIE checks also switch navigation modes and reset the view; Paint checks
+that right-dragging leaves the canvas unchanged and Clear restores the canvas.
 
 `EXPLORER_E2E_BROWSER` swaps the engine (default `chromium`; WGLMakie can trip
 Firefox's slow-script limit, which the lane disables),

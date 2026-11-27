@@ -27,6 +27,18 @@ const SYNTHETIC_ID = "00000000000000000000000000000000"
             @test startswith(body, "<!doctype html>")
             @test occursin("Loaded data", body)
             @test occursin(SYNTHETIC_ID, body)
+            @test occursin("From pigment spectra", body)
+            @test occursin("synthetic demonstration tables", body)
+            @test occursin("Compare across stages", body)
+            for stage in Explorer.PIPELINE
+                @test occursin("href=\"/$(stage.route)\"", body)
+                @test occursin(stage.title, body)
+                # The excerpt must exist in the checkout and have a bounded
+                # line range, otherwise the explanatory link has drifted.
+                excerpt = Explorer.source_excerpt(stage)
+                @test excerpt !== nothing
+                @test excerpt.last - excerpt.first <= 16
+            end
 
             css = HTTP.get("$base/static/explorer.css"; retry = false)
             @test css.status == 200
@@ -223,6 +235,12 @@ const SYNTHETIC_ID = "00000000000000000000000000000000"
             @test occursin("Fit data not available", body)
             @test occursin("Not available: no sidecar.", body)
             @test !occursin("&lt;script", body)
+            @test occursin("aria-current=\"step\"", body)
+            @test occursin("How can pigment mixtures fit inside sRGB?", body)
+            @test occursin("paper &amp; code", body)
+            @test occursin("#page=6", body)
+            @test occursin("precompute/src/surrogates.jl#L", body)
+            @test occursin("Readouts, conventions &amp; validation", body)
 
             fig = HTTP.get("http://127.0.0.1:$port/fig/fit"; retry = false)
             @test fig.status == 200

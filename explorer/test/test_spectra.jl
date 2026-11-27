@@ -6,6 +6,8 @@ using Test
 using PaintMix
 using PaintMixPrecompute
 using Explorer
+using StaticArrays: SVector
+using WGLMakie: Makie
 
 function synthetic_curves()
     w = collect(380.0:10.0:750.0)
@@ -38,6 +40,41 @@ end
 
 @testset "spectra" begin
     c = synthetic_curves()
+
+    @testset "pale curves retain their colour and a visible outline" begin
+        for rgb in (
+                (1.0, 1.0, 1.0), (1.0, 1.0, 0.0), (0.9, 0.92, 0.89),
+                (0.02, 0.09, 0.42), (0.55, 0.02, 0.12), (0.0, 0.0, 0.0),
+            )
+            colour = Explorer.linear_color(rgb)
+            outline = Explorer.spectra_outline(colour)
+            linear = PaintMix.linear_from_srgb(SVector(Float64(outline.r), Float64(outline.g), Float64(outline.b)))
+            luminance = sum(linear .* SVector(0.2126, 0.7152, 0.0722))
+            @test 1.05 / (luminance + 0.05) >= Explorer.SPECTRA_MIN_CONTRAST
+            @test all(x -> 0.0 <= x <= 1.0, (outline.r, outline.g, outline.b))
+        end
+        fig = Makie.Figure()
+        ax = Makie.Axis(fig[1, 1])
+        visible = Makie.Observable(true)
+        white = Makie.RGBf(1, 1, 1)
+        for q in (:K, :Rprime), fitted in (false, true)
+            plots = Explorer.spectra_lines!(
+                ax, [1, 2], [1, 2], white;
+                pattern = Explorer.spectra_pattern(Val(q), fitted), visible,
+            )
+            @test plots.centre.color[] == Makie.RGBAf(1, 1, 1, 1)
+            @test plots.outline.linewidth[] > plots.centre.linewidth[]
+            # Width-scaled patterns must leave the same gaps in both strokes.
+            if plots.centre.linestyle[] !== nothing
+                @test plots.centre.linestyle[].value .* plots.centre.linewidth[] ≈
+                    plots.outline.linestyle[].value .* plots.outline.linewidth[]
+            end
+            visible[] = false
+            @test !plots.centre.visible[] && !plots.outline.visible[]
+            visible[] = true
+        end
+        @test Explorer.spectra_pattern(Val(:Rprime), false) != Explorer.spectra_pattern(Val(:Rprime), true)
+    end
 
     @testset "quantity metadata" begin
         @test Explorer.SPECTRA_QUANTITY_KEYS == (:K, :S, :KS, :Rinf, :Rprime)

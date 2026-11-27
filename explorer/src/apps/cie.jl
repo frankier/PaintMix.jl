@@ -62,13 +62,15 @@ function cie_dom(session, d::ExplorerData)
         xlabel = "x", ylabel = "y", aspect = Makie.DataAspect(),
         limits = (0.0, 0.8, 0.0, 0.9), title = "CIE 1931 chromaticity",
     )
+    mode = Bonito.Observable("pick")
+    toolbar = cie_tools(session, ax, mode)
 
     _cie_triangle!(ax, primaries, d65)
     _cie_locus!(ax, quad, locus)
     gamut_controls = _cie_gamut!(session, ax, spectral, d.model, quad, primaries)
     _cie_pigments!(ax, c, colors, pigment_on, layer_on)
     _cie_nominal!(ax, nominal)
-    probe_controls = _cie_probe!(session, ax, d, quad, c)
+    probe_controls = _cie_probe!(session, ax, d, quad, c, mode)
 
     # --- controls ----------------------------------------------------------
     pigment_boxes = [Bonito.Checkbox(true) for _ in 1:4]
@@ -104,7 +106,8 @@ function cie_dom(session, d::ExplorerData)
         class = "spectra-controls",
     )
     return Bonito.DOM.div(
-        Bonito.DOM.div(fig; class = "figure-panel"), controls; class = "spectra-grid"
+        Bonito.DOM.div(toolbar, Bonito.DOM.div(fig; class = "figure-panel")),
+        controls; class = "spectra-grid"
     )
 end
 
@@ -271,7 +274,7 @@ end
 
 # The click handler, the probe marker, and the readout. Returns the readout
 # widget.
-function _cie_probe!(session, ax, d, quad, c)
+function _cie_probe!(session, ax, d, quad, c, mode)
     probe_obs = Bonito.Observable{Any}(nothing)
     probe_pt = Bonito.Observable(Makie.Point2f[])
     Makie.scatter!(
@@ -279,14 +282,16 @@ function _cie_probe!(session, ax, d, quad, c)
         color = :black, marker = :circle, markersize = 11,
         strokecolor = :white, strokewidth = 1.5,
     )
-    Bonito.on(session, Makie.events(ax.scene).mousebutton) do event
-        if event.button == Makie.Mouse.left && event.action == Makie.Mouse.press
-            p = Makie.mouseposition(ax.scene)
+    Makie.register_interaction!(ax, :probe) do event::Makie.MouseEvent, _
+        if mode[] == "pick" && event.type == Makie.MouseEventTypes.leftclick
+            p = event.data
             result = probe_xy(d.model, quad, p[1], p[2]; derived = c)
             probe_obs[] = result
             probe_pt[] = result === nothing ? Makie.Point2f[] :
                 [Makie.Point2f(result.xy[1], result.xy[2])]
+            return Makie.Consume(true)
         end
+        return Makie.Consume(false)
     end
     readout = Bonito.Observable{Any}(_probe_table(nothing))
     Bonito.on(session, probe_obs) do p
@@ -295,7 +300,7 @@ function _cie_probe!(session, ax, d, quad, c)
     return Bonito.DOM.div(
         Bonito.DOM.h3("Click to probe"),
         Bonito.DOM.p(
-            "Click the diagram to run the inverse lookup at that chromaticity.";
+            "Select Pick point, then click the diagram. In Pan / zoom mode, right-drag to pan, scroll to zoom, or left-drag a zoom rectangle.";
             class = "muted",
         ),
         Bonito.DOM.div(readout; class = "readout-wrap"),

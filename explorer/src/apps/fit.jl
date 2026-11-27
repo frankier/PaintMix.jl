@@ -21,18 +21,17 @@ function fit_spectra_figure(c::DerivedCurves)
         ax = Makie.Axis(
             fig[row, col]; ylabel = label, xlabel = row == 2 ? "λ (nm)" : "",
             yscale = quantity_log(q) ? log10 : identity,
+            backgroundcolor = :white,
         )
         for i in 1:4
             color = linear_color(c.measured_rgb[i])
-            Makie.lines!(
-                ax, c.wavelength, quantity_matrix(c, q)[i, :];
-                color = color, linewidth = 1.4,
+            spectra_lines!(
+                ax, c.wavelength, quantity_matrix(c, q)[i, :], color,
             )
             fm = fitted_matrix(c, q)
             fm === nothing && continue
-            Makie.lines!(
-                ax, c.wavelength, fm[i, :];
-                color = color, linewidth = 1.4, linestyle = :dash,
+            spectra_lines!(
+                ax, c.wavelength, fm[i, :], color; pattern = spectra_pattern(Val(:K), true),
             )
         end
     end

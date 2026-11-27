@@ -290,9 +290,14 @@ end
     K, S = pigment_parameters(model)
     @test K == spectra.K && S == spectra.S
     sq = SurfaceQuadrature(3)
-    metrics = PaintMixPrecompute._surface_metrics(model, sq, surface_targets(model, sq))
-    @test metrics.push == Epush(model, sq)
-    @test metrics.pull == Epull(model, sq, surface_targets(model, sq))
+    targets = surface_targets(model, sq)
+    for candidate in (model, SpectralModel(model; K = 1.1 .* K, S))
+        metrics = PaintMixPrecompute._surface_metrics(candidate, sq, targets)
+        @test metrics.push ≈ Epush(candidate, sq) rtol = 1.0e-12
+        # Squared residuals near zero differ at O(eps²) across reduction paths.
+        @test metrics.pull ≈ Epull(candidate, sq, targets) rtol = 1.0e-12 atol = 64eps(Float64)^2
+    end
+    @test Epull(SpectralModel(model; K = 1.1 .* K, S), sq, targets) > 1.0e-8
 end
 
 @testset "gauge coordinates preserve mixtures and derivatives" begin

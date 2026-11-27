@@ -1,8 +1,9 @@
 # explorer — interactive viewer
 
 A local web app that shows the PaintMix input database, the precompute
-intermediates, and the runtime payload. It answers "what is in the data, and
-what does each processing step do to it?" on one page.
+intermediates, and the runtime payload. Start at `/` and follow the pipeline:
+measured spectra → fitted surrogate pigments → lookup tables → runtime mixing.
+The CIE view compares the stages rather than adding a processing step.
 
 This is a development tool. It is not part of the runtime package and not part
 of the root workspace. The tracked root `Manifest.toml` stays free of Makie,
@@ -21,7 +22,7 @@ Playwright browser lane.
 
 | Route | Contents |
 | --- | --- |
-| `GET /` | overview: provenance banner, data card, links |
+| `GET /` | pipeline front page, stage availability, CIE comparison, expandable loaded data |
 | `GET /spectra` | measured, fitted, and derived K, S, K/S, R∞, R′ curves with a wavelength crosshair and readout |
 | `GET /cie` | CIE 1931 locus with a wavelength crown, sRGB triangle, the three pigment chromaticity layers, nominal colors, mixture gamut, and click-to-probe |
 | `GET /palette` | sRGB cube with the pure-pigment vertices and the mixing path of a selected pair, the pairwise mixture ramp matrix, the mixer ramp, and the nominal table |
@@ -37,6 +38,43 @@ Playwright browser lane.
 | `GET /provenance` | configuration, inputs and hashes, environment, payload header, acceptance gates, caveats |
 | `GET /static/...` | CSS |
 
+Every figure page carries the same numbered pipeline, one guiding question,
+and a next step. “Why this works · paper & code” pairs a short paper excerpt
+and a page/equation reference with an escaped excerpt read from the local
+source, plus a GitHub line link. Detailed captions and validation tables are
+collapsed under “Readouts, conventions & validation”. The interactive figure
+and its controls remain visible. The source banner expands to show model
+identity; `/provenance` retains the full metadata.
+
+The paper is Sochorová and Jamriška,
+[*Practical Pigment Mixing for Digital Painting* (2021)](https://doi.org/10.1145/3478513.3480549).
+The pipeline follows §2 (spectral reference), §3.1 (surrogates), §3.2 (table
+precomputation), and §3, Eqs. (12–14) (runtime latents). The fit explanation
+calls out the default softplus/L-BFGS substitution; padding and joint byte
+rounding are identified as implementation choices.
+
+## Remaining work
+
+The original route/figure phases are implemented. The remaining explanatory
+work needs data that the current payload and sidecar do not contain:
+
+- [#2: surrogate-fit snapshots](https://github.com/frankier/PaintMix.jl/issues/2)
+  for a continuation scrubber that links spectra, gamut movement, and loss.
+  The existing history stores scalar summaries and final coefficients only.
+- [#3: sampled inverse-solver traces](https://github.com/frankier/PaintMix.jl/issues/3)
+  for target → constrained solve → quantization → runtime lookup explanations.
+  Slab statistics do not preserve individual optimisation paths.
+
+Both traces should be bounded and opt-in, leave runtime dependencies and
+default solver allocations unchanged, and support older sidecars. Issue
+specifications are also in `issues/`.
+
+Further polish: simplify the controls and plot legends within the Bonito
+figures, measure paint latency/frame throughput, decide whether the heavy
+browser lane is a required gate, and verify the full workbook pigment mapping
+before adding the optional 24-pigment overlay. A chromaticity hull is a 2D
+comparison, not evidence of containment in the full RGB cube.
+
 `/spectra` is one WGLMakie figure built inside a Bonito `App`. Pigment and
 quantity checkboxes, a measured/fitted toggle (shown only when a sidecar
 supplied surrogate parameters), and a log-scale toggle drive it. A wavelength
@@ -44,6 +82,13 @@ slider moves the crosshair; a server-rendered readout table follows it and
 carries the source spreadsheet cell of each K and S sample. The caption lists
 the grid and the Saunderson constants and surfaces the `kins` contradiction.
 The figure degrades to a note when the input database is absent.
+
+Curves retain their pigment colour in an opaque centre, surrounded by a wider
+outline with at least 3:1 luminance contrast against the white plot surface.
+Pale pigments, including white, stay visible. Dash gaps align between the two
+strokes. Measured/fitted curves use solid/dashed lines; on the shared
+reflectance axis, measured/fitted R′ use dots/dash-dot instead of reduced
+opacity. The fit page uses the same outlined spectra.
 
 `/cie` draws the spectral locus closed by the line of purples, with a radial
 crown of wavelength ticks and labels; the sRGB chromaticity triangle and D65;
@@ -55,6 +100,11 @@ inverse lookup at that chromaticity and shows the recovered concentrations,
 the reconstructed color, the residual, and the nearest pigment. The caption
 lists the primaries, D65, the pigment layers, and the nominal paper colors.
 It degrades to a note when the input database is absent.
+
+The diagram toolbar has native icon radio buttons for **Pick point** (default)
+and **Pan / zoom**. Only Pick point updates the probe. Pan / zoom enables
+right-drag panning, scroll zoom and left-drag rectangle zoom. **Reset** restores
+the original diagram bounds while preserving the selected mode and probe.
 
 `/palette` draws the sRGB cube with its edges, the four pure-pigment runtime
 vertices, the nominal paper colors, and the D65 white point. A dropdown picks
@@ -82,6 +132,11 @@ flushed on release. At the default 128² a frame is 192 KiB (`3 * 4 * 128²`
 bytes), so a full-speed drag streams about 3.8 MiB/s; the dirty rectangle
 bounds the per-dab decode, and the frame copy is the cost that sets the
 default edge. The page needs only the runtime payload.
+
+Paint disables all axis navigation, including scroll zoom, rectangle zoom,
+panning, and keyboard-modified limit reset. A left drag paints within the
+canvas; controls and clicks outside it do not stamp paint. Canvas row 1 is at
+the top, and columns follow screen x, so strokes follow the pointer.
 
 `/tables` reads the inverse table at its stored vertices and shows a 2D slice
 for a selected fixed sRGB channel and level: one concentration field per
@@ -202,14 +257,18 @@ EXPLORER_E2E=1 julia --project=explorer -e 'using Pkg; Pkg.test()'
 payload (never the 96 MiB release artifact) and a small synthetic sidecar. It
 visits every page and asserts the title and a page-specific string, and it
 writes a screenshot, a console log, and a page-error log per page under
-`EXPLORER_E2E_ARTIFACTS`. It also asserts the model id and acceptance gates
+`EXPLORER_E2E_ARTIFACTS`. The tiny forward table comes from the synthetic
+spectral model, so paint blending can differ from RGB blending. It also asserts
+the model id and acceptance gates
 on `/` and `/provenance`; toggles a pigment and a quantity on `/spectra` and
 checks the readout table; clicks the diagram on
-`/cie` and checks the probe readout; and paints the same stroke on `/paint` in
-both the paint and naive-RGB modes, comparing the canvas data URL so the two
-blends are shown to differ. The `/spectra` and `/cie` interactions skip when
-the untracked input database is absent, so the lane still runs on a bare
-checkout.
+`/cie` and checks the probe readout; and drags a stroke on `/paint` in both
+blend modes with Playwright.jl's page-level mouse API. Pixel readback checks
+that the start, middle and end of the stroke carry paint, then compares the
+two blends' colour checksums on fresh pages. Physical synthetic spectra supply
+all `/spectra` and `/cie` interaction fixtures without the measurement database.
+The CIE checks also switch navigation modes and reset the view; Paint checks
+that right-dragging leaves the canvas unchanged and Clear restores the canvas.
 
 `EXPLORER_E2E_BROWSER` swaps the engine (default `chromium`; WGLMakie can trip
 Firefox's slow-script limit, which the lane disables),

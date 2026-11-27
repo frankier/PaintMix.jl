@@ -13,10 +13,9 @@
 # per-page screenshot, console log, and page errors are written.
 #
 # The lane serves a tiny synthetic payload, never the 96 MiB release artifact,
-# so it is fast and deterministic. The untracked input database is still read
-# when present, because `/spectra` and `/cie` need the spectral reference; the
-# tests that drive those figures skip on a bare checkout. A small synthetic
-# sidecar makes the gate, validation, and fit-history rendering deterministic.
+# so it is fast and deterministic. Physical synthetic inputs exercise spectra
+# and CIE without the measurement database. A small synthetic sidecar supplies
+# validation and fit-history reports.
 
 using Test
 
@@ -30,6 +29,7 @@ else
     using Playwright
     using Explorer
     include("helpers.jl")
+    isdefined(@__MODULE__, :PlotFixtures) || include("fixtures.jl")
 
     const E2E_ARTIFACTS = get(
         ENV, "EXPLORER_E2E_ARTIFACTS", joinpath(@__DIR__, "artifacts")
@@ -73,11 +73,9 @@ else
         )
     end
 
-    # A tiny `.pmx` pinned by path, with the real database when it exists.
+    # A nonlinear spectral table makes the paint-vs-RGB comparison meaningful.
     function e2e_data()
-        path = joinpath(mktempdir(), "synthetic.pmx")
-        PaintMix.write_model(path, Explorer.synthetic_model())
-        base = Explorer.load_explorer_data(; payload_path = path)
+        base = PlotFixtures.explorer_data()
         return Explorer.ExplorerData(;
             cfg = base.cfg, db = base.db, spectra = base.spectra, quad = base.quad,
             spectral = base.spectral, fitted = base.fitted, model = base.model,
@@ -88,8 +86,12 @@ else
 
     # The Bonito websocket is the readiness signal: driving a widget before it
     # connects is a silent no-op.
-    bonito_ready(target) =
+    function bonito_ready(target)
         wait_for_function(target, "() => window.Bonito?.can_send_to_julia() === true")
+        return wait_for_function(
+            target, "() => [...document.querySelectorAll('.wglmakie-spinner')].every(e => e.offsetParent === null)"
+        )
+    end
 
     checkboxes(target) = locator(target, "input[type=checkbox]"; strict = false)
 
@@ -141,13 +143,11 @@ else
         end
     end
 
-    # Playwright.jl exposes no high-level mouse API yet, so the drag drives the
-    # generated channel layer directly: real, trusted input events. The rev is
-    # pinned, so these names are fixed. The first move must land before the
-    # press, because the paint app reads `Makie.mouseposition` on mousedown.
-    mouse_move!(page, x, y) = Playwright._page_mouse_move(page; x = x, y = y)
-    mouse_down!(page) = Playwright._page_mouse_down(page; button = "left")
-    mouse_up!(page) = Playwright._page_mouse_up(page; button = "left")
+    # The gestures ride Playwright.jl's page-level input surface: a freehand
+    # drag at coordinates is `mouse_move!`, `mouse_down!`, `mouse_move!` with
+    # intermediate steps, `mouse_up!`. The steps are what a canvas painting
+    # handler reads; a single jump fires one `mousemove` at the destination
+    # and the path is never seen.
 
     function canvas_rect(page)
         return evaluate(
@@ -165,7 +165,7 @@ else
         )
     end
 
-    function drag_canvas!(page, x0, y0, x1, y1; steps = 6)
+    function drag_canvas!(page, x0, y0, x1, y1; steps = 8, button = "left")
         # Clicking a control below the fold scrolls the page, so the canvas may
         # be off-viewport. Bring it back before reading its rect.
         evaluate(
@@ -185,14 +185,67 @@ else
         px(f) = rect["x"] + f * rect["w"]
         py(f) = rect["y"] + f * rect["h"]
         mouse_move!(page, px(x0), py(y0))
-        mouse_down!(page)
+        mouse_down!(page; button)
+        # Individual moves cross the frame throttle instead of arriving as a burst.
         for i in 1:steps
             t = i / steps
             mouse_move!(page, px(x0 + (x1 - x0) * t), py(y0 + (y1 - y0) * t))
             sleep(0.05)
         end
-        mouse_up!(page)
+        mouse_up!(page; button)
         return true
+    end
+
+    # The paint canvas, read back as pixels. `drawImage` onto a 2D canvas is
+    # reliable because WGLMakie renders with `preserveDrawingBuffer`; a
+    # `toDataURL` byte compare is not, because it also sees the axis title and
+    # is blind to *where* a change was.
+    #
+    # `spots` are normalized `(x, y)` canvas positions. Returns the painted
+    # pixel count and colour checksum overall, plus the painted count in a
+    # small disc at each spot. Paper white and the black title are excluded, so
+    # any pigment dab is a clear signal.
+    function canvas_paint(page, spots = Vector{Vector{Float64}}())
+        return evaluate(
+            page, """
+            (spots) => {
+              const cs = [...document.querySelectorAll('canvas')]
+                .filter(c => c.offsetParent !== null);
+              const c = cs.sort((x, y) =>
+                y.width * y.height - x.width * x.height)[0];
+              if (!c) return null;
+              const c2 = document.createElement('canvas');
+              c2.width = c.width; c2.height = c.height;
+              const ctx = c2.getContext('2d');
+              ctx.drawImage(c, 0, 0);
+              const d = ctx.getImageData(0, 0, c2.width, c2.height).data;
+              const painted = (i) => {
+                const r = d[i], g = d[i + 1], b = d[i + 2];
+                return (r < 235 || g < 235 || b < 235) && r + g + b > 60;
+              };
+              let total = 0, sum = 0;
+              for (let i = 0; i < d.length; i += 4) {
+                sum += d[i] + d[i + 1] + d[i + 2];
+                if (painted(i)) total++;
+              }
+              const rad = 0.05 * Math.min(c.width, c.height);
+              const windows = spots.map(([fx, fy]) => {
+                const cx = fx * c.width, cy = fy * c.height;
+                let n = 0;
+                for (let y = Math.max(0, Math.floor(cy - rad));
+                     y < Math.min(c.height, Math.ceil(cy + rad)); y++) {
+                  for (let x = Math.max(0, Math.floor(cx - rad));
+                       x < Math.min(c.width, Math.ceil(cx + rad)); x++) {
+                    if ((x - cx) ** 2 + (y - cy) ** 2 <= rad * rad &&
+                        painted(4 * (y * c.width + x))) n++;
+                  }
+                }
+                return n;
+              });
+              return {total: total, sum: sum, windows: windows};
+            }
+            """, spots,
+        )
     end
 
     # The canvas content as a data URL. Comparing this isolates the WebGL
@@ -210,20 +263,6 @@ else
             previous = current
         end
         return previous
-    end
-
-    # A single drag is one frame update, and WGLMakie occasionally drops the
-    # first update after a plot is created. Retry the same stroke until the
-    # canvas moves, so the lane is not flaky about that race.
-    function drag_until_change!(page, before, x0, y0, x1, y1)
-        for _ in 1:3
-            drag_canvas!(page, x0, y0, x1, y1) || return false
-            changed = retry_until(; timeout = 5_000, on_timeout = :false) do
-                canvas_data(page) != before
-            end
-            changed && return true
-        end
-        return false
     end
 
     @testset "e2e ($E2E_BROWSER)" begin
@@ -262,6 +301,9 @@ else
                     for (route, name, text) in pages
                         with_route_page(browser, base, route, name) do page
                             expect(page; to_have_title = r"^PaintMix explorer")
+                            # Readouts are secondary to the figure. Open them
+                            # before checking their visible contents.
+                            evaluate(page, "() => document.querySelectorAll('details').forEach(d => d.open = true)")
                             expect(locator(page, "body"); to_contain_text = text)
                         end
                     end
@@ -300,12 +342,13 @@ else
                             heads = locator(
                                 page, "table.readout thead th"; strict = false
                             )
-                            expect(boxes; to_have_count = 10)
-                            expect(rows; to_have_count = 4)
+                            layers = data.derived.fitted_K === nothing ? 1 : 2
+                            expect(boxes; to_have_count = layers == 1 ? 10 : 11)
+                            expect(rows; to_have_count = 4 * layers)
                             expect(heads; to_have_count = 8)
                             # Pigment 1 off: one fewer readout row.
                             click!(nth(boxes, 1))
-                            expect(rows; to_have_count = 3)
+                            expect(rows; to_have_count = 3 * layers)
                             # Quantity K off: one fewer readout column.
                             click!(nth(boxes, 5))
                             expect(heads; to_have_count = 7)
@@ -322,40 +365,73 @@ else
                             click!(nth(locator(page, "canvas"; strict = false), 1))
                             expect(body; to_contain_text = "target xy")
                             expect(body; to_contain_text = "concentrations")
+                            before = settled_canvas(page)
+                            probe = evaluate(page, "() => document.querySelector('.readout-wrap').innerText")
+                            click!(locator(page, "label.plot-tool:has(input[value=navigate])"))
+                            drag_canvas!(page, 0.3, 0.3, 0.65, 0.65)
+                            @test retry_until(; timeout = 5_000, on_timeout = :false) do
+                                canvas_data(page) != before
+                            end
+                            @test evaluate(page, "() => document.querySelector('.readout-wrap').innerText") == probe
+                            click!(locator(page, ".plot-reset"))
+                            @test retry_until(; timeout = 5_000, on_timeout = :false) do
+                                canvas_data(page) == before
+                            end
+                            click!(locator(page, "label.plot-tool:has(input[value=pick])"))
+                            @test evaluate(page, "() => document.querySelector('input[value=pick]').checked")
                         end
                     end
                 end
             end
 
-            @testset "/paint drags and differs under the RGB blend" begin
+            @testset "/paint drags a stroke that differs under the RGB blend" begin
+                # The sample points step down the drag path: the start, middle,
+                # and end must each carry paint. A mousedown dab alone only
+                # covers the start, so this is the drag, not the press. A fresh
+                # page per mode isolates the blend from `Clear` and from the
+                # other mode's state.
+                spots = [[0.25, 0.35], [0.45, 0.5], [0.65, 0.65]]
+                function stroke_on(page)
+                    before = canvas_paint(page)
+                    drag_canvas!(page, 0.25, 0.35, 0.65, 0.65)
+                    painted = retry_until(; timeout = 10_000, on_timeout = :false) do
+                        p = canvas_paint(page, spots)
+                        p !== nothing && p["total"] > before["total"] + 400 &&
+                            all(>=(50), p["windows"])
+                    end
+                    result = canvas_paint(page, spots)
+                    @info "paint stroke" before = before["total"] stroke = result
+                    @test painted
+                    @test result["total"] > before["total"] + 400
+                    @test all(>=(50), result["windows"])
+                    return result
+                end
                 with_browser() do browser
-                    with_route_page(browser, base, "/paint", "paint-drag") do page
+                    paint = with_route_page(
+                        browser, base, "/paint", "paint-drag"
+                    ) do page
                         bonito_ready(page)
                         before = settled_canvas(page)
-
-                        # Paint the same stroke in each mode, clearing between,
-                        # and compare the two canvases. That isolates the blend
-                        # from the checkbox and from the stroke position.
-                        @test drag_until_change!(page, before, 0.3, 0.3, 0.7, 0.7)
-                        paint_stroke = canvas_data(page)
-
-                        cleared = false
-                        for _ in 1:3
-                            click!(locator(page, "button"))
-                            cleared = retry_until(;
-                                timeout = 5_000, on_timeout = :false
-                            ) do
-                                canvas_data(page) == before
-                            end
-                            cleared && break
+                        result = stroke_on(page)
+                        drag_canvas!(page, 0.35, 0.45, 0.65, 0.55; button = "right")
+                        @test canvas_paint(page)["sum"] == result["sum"]
+                        click!(locator(page, "button"))
+                        @test retry_until(; timeout = 5_000, on_timeout = :false) do
+                            canvas_data(page) == before
                         end
-                        @test cleared
-
+                        result
+                    end
+                    rgb = with_route_page(
+                        browser, base, "/paint", "paint-drag-rgb"
+                    ) do page
+                        bonito_ready(page)
                         click!(nth(checkboxes(page), 1))
                         sleep(0.5)
-                        @test drag_until_change!(page, before, 0.3, 0.3, 0.7, 0.7)
-                        @test canvas_data(page) != paint_stroke
+                        stroke_on(page)
                     end
+                    # The same pigment through the other blend must land
+                    # different pixels; a byte-identical stroke would not.
+                    @test paint["sum"] != rgb["sum"]
                 end
             end
         finally

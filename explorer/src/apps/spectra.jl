@@ -8,6 +8,9 @@
 # load gets its own state.
 
 const SPECTRA_DEFAULT_NM = 550.0
+const SPECTRA_MIN_CONTRAST = 3.0
+const SPECTRA_LINE_WIDTH = 2.0
+const SPECTRA_OUTLINE_WIDTH = 4.2
 
 # Display color of a pigment: its measured pure color, clipped (PY74's blue
 # channel is negative in linear light) and gamma encoded for an sRGB canvas.
@@ -63,17 +66,17 @@ function spectra_dom(session, d::ExplorerData)
         for i in 1:4
             qi = _quantity_position(q)
             _plot_curve!(
-                ax, c, Val(q), i, colors[i], alpha = 1.0,
+                ax, c, Val(q), i, colors[i],
                 pigment_on = pigment_on[i], quantity_on = quantity_on[qi],
                 fitted_on = fitted_on,
             )
         end
     end
-    for (q, alpha) in ((:Rinf, 1.0), (:Rprime, 0.45))
+    for q in (:Rinf, :Rprime)
         qi = _quantity_position(q)
         for i in 1:4
             _plot_curve!(
-                axes[4], c, Val(q), i, colors[i], alpha = alpha,
+                axes[4], c, Val(q), i, colors[i],
                 pigment_on = pigment_on[i], quantity_on = quantity_on[qi],
                 fitted_on = fitted_on,
             )
@@ -178,7 +181,8 @@ end
 function _spectra_axis(fig, row::Integer, ylabel::AbstractString, q::Symbol; last::Bool)
     scale = quantity_log(q) ? log10 : identity
     ax = Makie.Axis(
-        fig[row, 1]; ylabel = ylabel, xlabel = last ? "λ (nm)" : "", yscale = scale
+        fig[row, 1]; ylabel = ylabel, xlabel = last ? "λ (nm)" : "", yscale = scale,
+        backgroundcolor = :white,
     )
     last || Makie.hidexdecorations!(ax)
     return ax
@@ -193,28 +197,54 @@ end
 
 _quantity_position(q::Symbol) = findfirst(==(q), SPECTRA_QUANTITY_KEYS)
 
+# Keep the pigment colour in the centre and darken only its outline. The
+# luminance bound gives at least 3:1 contrast against the white plot surface.
+function spectra_outline(color)
+    rgb = PaintMix.linear_from_srgb(SVector(Float64(color.r), Float64(color.g), Float64(color.b)))
+    luminance = sum(rgb .* SVector(0.2126, 0.7152, 0.0722))
+    bound = 1.05 / SPECTRA_MIN_CONTRAST - 0.05 - 1.0e-6
+    scale = luminance > bound ? bound / luminance : 1.0
+    return linear_color(rgb * scale)
+end
+
+# Patterns are in pixels so the wide outline and narrow centre share gaps.
+spectra_pattern(::Val, fitted::Bool) = fitted ? [0, 8, 14] : nothing
+spectra_pattern(::Val{:Rprime}, fitted::Bool) = fitted ? [0, 8, 12, 14, 18] : [0, 2, 7]
+spectra_linestyle(::Nothing, width) = nothing
+spectra_linestyle(pattern::AbstractVector, width) = Makie.Linestyle(Float32.(pattern ./ width))
+
+function spectra_lines!(ax, x, y, color; pattern = nothing, visible = true)
+    outline = Makie.lines!(
+        ax, x, y; color = spectra_outline(color), linewidth = SPECTRA_OUTLINE_WIDTH,
+        linestyle = spectra_linestyle(pattern, SPECTRA_OUTLINE_WIDTH), visible = visible,
+    )
+    centre = Makie.lines!(
+        ax, x, y; color = color, linewidth = SPECTRA_LINE_WIDTH,
+        linestyle = spectra_linestyle(pattern, SPECTRA_LINE_WIDTH), visible = visible,
+    )
+    return (; outline, centre)
+end
+
 # One measured line, and a dashed fitted line when the surrogate is present.
 # Visibility combines the pigment toggle, the quantity toggle, and the
 # measured/fitted toggle.
 function _plot_curve!(
-        ax, c::DerivedCurves, q::Val, i::Integer, color; alpha::Float64,
+        ax, c::DerivedCurves, q::Val, i::Integer, color;
         pigment_on, quantity_on, fitted_on,
     )
-    width = 1.6
-    rgba = Makie.RGBAf(color.r, color.g, color.b, alpha)
     visible = Makie.lift((p, qo) -> p && qo, pigment_on, quantity_on)
-    Makie.lines!(
-        ax, c.wavelength, quantity_matrix(c, q)[i, :];
-        color = rgba, linewidth = width, visible = visible,
+    spectra_lines!(
+        ax, c.wavelength, quantity_matrix(c, q)[i, :], color;
+        pattern = spectra_pattern(q, false), visible = visible,
     )
     fm = fitted_matrix(c, q)
     if fm !== nothing
         fvisible = Makie.lift(
             (p, qo, f) -> p && qo && f, pigment_on, quantity_on, fitted_on
         )
-        Makie.lines!(
-            ax, c.wavelength, fm[i, :];
-            color = rgba, linewidth = width, linestyle = :dash, visible = fvisible,
+        spectra_lines!(
+            ax, c.wavelength, fm[i, :], color;
+            pattern = spectra_pattern(q, true), visible = fvisible,
         )
     end
     return
@@ -264,7 +294,8 @@ function spectra_caption(d::ExplorerData)
     rows = [
         ("Grid", @sprintf("%.0f–%.0f nm, step %.0f nm, %d samples", first(w), last(w), step, length(w))),
         ("Integral", "trapezoidal on the configuration grid"),
-        ("Lines", "solid = measured, dashed = fitted; on the R∞/R′ axis the lighter line is R′"),
+        ("Lines", "measured = solid, fitted = dashed; R′ = dotted measured, dash-dot fitted"),
+        ("Colour", "pigment-coloured centre with an opaque outline of at least 3:1 contrast against white"),
     ]
     note = ""
     if d.spectra !== nothing

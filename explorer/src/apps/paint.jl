@@ -30,11 +30,18 @@ function paint_dom(session, d::ExplorerData)
     # The observable must never hold the same array `dab!` mutates in place:
     # WGLMakie then compares equal old and new textures and skips the redraw.
     # It holds a private copy; every frame is another copy.
-    frame = Bonito.Observable(copy(canvas.display))
+    frame = Bonito.Observable(canvas_image(canvas))
 
     fig = Makie.Figure(; size = (560, 560))
-    ax = Makie.Axis(fig[1, 1]; title = "Paint canvas")
-    Makie.image!(ax, frame; interpolate = false)
+    ax = Makie.Axis(
+        fig[1, 1]; title = "Paint canvas", yreversed = true, aspect = Makie.DataAspect(),
+        limits = (0.5, PAINT_DEFAULT_SIZE + 0.5, 0.5, PAINT_DEFAULT_SIZE + 0.5),
+    )
+    navigation!(ax, false)
+    Makie.image!(
+        ax, (0.5, PAINT_DEFAULT_SIZE + 0.5), (0.5, PAINT_DEFAULT_SIZE + 0.5), frame;
+        interpolate = false,
+    )
     Makie.hidedecorations!(ax)
     Makie.hidespines!(ax)
 
@@ -71,8 +78,7 @@ function paint_dom(session, d::ExplorerData)
         return
     end
     function paint_at(pos)
-        h, _ = size(canvas.latent)
-        col, row = paint_pixel(pos, h)
+        col, row = paint_pixel(pos)
         mode = rgb_box.value[] ? Val(:rgb) : Val(:paint)
         dab!(
             canvas, model, brush[], col, row, radius_slider.value[],
@@ -83,19 +89,27 @@ function paint_dom(session, d::ExplorerData)
     end
 
     mouse = Makie.events(ax.scene)
-    Bonito.on(session, mouse.mousebutton) do event
+    Makie.on(ax.scene, mouse.mousebutton; priority = 2) do event
         if event.button == Makie.Mouse.left
-            if event.action == Makie.Mouse.press
+            if event.action == Makie.Mouse.press && Makie.is_mouseinside(ax.scene)
                 dragging[] = true
                 paint_at(Makie.mouseposition(ax.scene))
+                return Makie.Consume(true)
             elseif event.action == Makie.Mouse.release
+                was_dragging = dragging[]
                 dragging[] = false
                 flush_frame!(true)
+                return Makie.Consume(was_dragging)
             end
         end
+        return Makie.Consume(false)
     end
-    Bonito.on(session, mouse.mouseposition) do pos
-        dragging[] && paint_at(pos)
+    Makie.on(ax.scene, mouse.mouseposition; priority = 2) do _
+        if dragging[] && Makie.is_mouseinside(ax.scene)
+            paint_at(Makie.mouseposition(ax.scene))
+            return Makie.Consume(true)
+        end
+        return Makie.Consume(false)
     end
     Bonito.on(session, clear_button.value) do _
         clear!(canvas, model)

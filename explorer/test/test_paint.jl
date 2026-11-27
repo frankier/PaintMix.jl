@@ -108,10 +108,10 @@ using Explorer
     end
 
     @testset "paint_pixel maps the image axis" begin
-        # Row 1 is at the top, so the highest data y maps to row 1.
-        @test Explorer.paint_pixel((3.0, 8.0), 8) == (3, 1)
-        @test Explorer.paint_pixel((3.0, 1.0), 8) == (3, 8)
-        @test Explorer.paint_pixel((2.6, 4.4), 8) == (3, 5)
+        # The reversed-y image axis uses the canvas indices directly.
+        @test Explorer.paint_pixel((3.0, 8.0)) == (3, 8)
+        @test Explorer.paint_pixel((3.0, 1.0)) == (3, 1)
+        @test Explorer.paint_pixel((2.6, 4.4)) == (3, 4)
     end
 
     @testset "canvas_image is a copy" begin
@@ -120,6 +120,16 @@ using Explorer
         brush = Explorer.brush_from_weights(model, (1.0, 0.0, 0.0, 0.0))
         Explorer.dab!(canvas, model, brush, 2, 2, 1.0, 1.0, Val(:paint))
         @test image[2, 2] != canvas.display[2, 2]
+    end
+
+    @testset "image puts columns on x and rows on y" begin
+        canvas = Explorer.paint_canvas(model; width = 7, height = 5)
+        brush = Explorer.brush_from_weights(model, (1.0, 0.0, 0.0, 0.0))
+        Explorer.dab!(canvas, model, brush, 6, 2, 0.5, 1.0, Val(:paint))
+        image = Explorer.canvas_image(canvas)
+        @test size(image) == (7, 5)
+        @test image[6, 2] == canvas.display[2, 6]
+        @test image[2, 5] == Explorer.linear_color(SVector(1.0, 1.0, 1.0))
     end
 
     @testset "caption and default size" begin

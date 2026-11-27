@@ -13,10 +13,9 @@
 # per-page screenshot, console log, and page errors are written.
 #
 # The lane serves a tiny synthetic payload, never the 96 MiB release artifact,
-# so it is fast and deterministic. The untracked input database is still read
-# when present, because `/spectra` and `/cie` need the spectral reference; the
-# tests that drive those figures skip on a bare checkout. A small synthetic
-# sidecar makes the gate, validation, and fit-history rendering deterministic.
+# so it is fast and deterministic. Physical synthetic inputs exercise spectra
+# and CIE without the measurement database. A small synthetic sidecar supplies
+# validation and fit-history reports.
 
 using Test
 
@@ -30,6 +29,7 @@ else
     using Playwright
     using Explorer
     include("helpers.jl")
+    isdefined(@__MODULE__, :PlotFixtures) || include("fixtures.jl")
 
     const E2E_ARTIFACTS = get(
         ENV, "EXPLORER_E2E_ARTIFACTS", joinpath(@__DIR__, "artifacts")
@@ -73,11 +73,9 @@ else
         )
     end
 
-    # A tiny `.pmx` pinned by path, with the real database when it exists.
+    # A nonlinear spectral table makes the paint-vs-RGB comparison meaningful.
     function e2e_data()
-        path = joinpath(mktempdir(), "synthetic.pmx")
-        PaintMix.write_model(path, Explorer.synthetic_model())
-        base = Explorer.load_explorer_data(; payload_path = path)
+        base = PlotFixtures.explorer_data()
         return Explorer.ExplorerData(;
             cfg = base.cfg, db = base.db, spectra = base.spectra, quad = base.quad,
             spectral = base.spectral, fitted = base.fitted, model = base.model,
@@ -88,8 +86,12 @@ else
 
     # The Bonito websocket is the readiness signal: driving a widget before it
     # connects is a silent no-op.
-    bonito_ready(target) =
+    function bonito_ready(target)
         wait_for_function(target, "() => window.Bonito?.can_send_to_julia() === true")
+        return wait_for_function(
+            target, "() => [...document.querySelectorAll('.wglmakie-spinner')].every(e => e.offsetParent === null)"
+        )
+    end
 
     checkboxes(target) = locator(target, "input[type=checkbox]"; strict = false)
 
@@ -146,8 +148,8 @@ else
     # pinned, so these names are fixed. The first move must land before the
     # press, because the paint app reads `Makie.mouseposition` on mousedown.
     mouse_move!(page, x, y) = Playwright._page_mouse_move(page; x = x, y = y)
-    mouse_down!(page) = Playwright._page_mouse_down(page; button = "left")
-    mouse_up!(page) = Playwright._page_mouse_up(page; button = "left")
+    mouse_down!(page; button = "left") = Playwright._page_mouse_down(page; button)
+    mouse_up!(page; button = "left") = Playwright._page_mouse_up(page; button)
 
     function canvas_rect(page)
         return evaluate(
@@ -165,7 +167,7 @@ else
         )
     end
 
-    function drag_canvas!(page, x0, y0, x1, y1; steps = 6)
+    function drag_canvas!(page, x0, y0, x1, y1; steps = 6, button = "left")
         # Clicking a control below the fold scrolls the page, so the canvas may
         # be off-viewport. Bring it back before reading its rect.
         evaluate(
@@ -185,13 +187,13 @@ else
         px(f) = rect["x"] + f * rect["w"]
         py(f) = rect["y"] + f * rect["h"]
         mouse_move!(page, px(x0), py(y0))
-        mouse_down!(page)
+        mouse_down!(page; button)
         for i in 1:steps
             t = i / steps
             mouse_move!(page, px(x0 + (x1 - x0) * t), py(y0 + (y1 - y0) * t))
             sleep(0.05)
         end
-        mouse_up!(page)
+        mouse_up!(page; button)
         return true
     end
 
@@ -303,12 +305,13 @@ else
                             heads = locator(
                                 page, "table.readout thead th"; strict = false
                             )
-                            expect(boxes; to_have_count = 10)
-                            expect(rows; to_have_count = 4)
+                            layers = data.derived.fitted_K === nothing ? 1 : 2
+                            expect(boxes; to_have_count = layers == 1 ? 10 : 11)
+                            expect(rows; to_have_count = 4 * layers)
                             expect(heads; to_have_count = 8)
                             # Pigment 1 off: one fewer readout row.
                             click!(nth(boxes, 1))
-                            expect(rows; to_have_count = 3)
+                            expect(rows; to_have_count = 3 * layers)
                             # Quantity K off: one fewer readout column.
                             click!(nth(boxes, 5))
                             expect(heads; to_have_count = 7)
@@ -325,6 +328,20 @@ else
                             click!(nth(locator(page, "canvas"; strict = false), 1))
                             expect(body; to_contain_text = "target xy")
                             expect(body; to_contain_text = "concentrations")
+                            before = settled_canvas(page)
+                            probe = evaluate(page, "() => document.querySelector('.readout-wrap').innerText")
+                            click!(locator(page, "label.plot-tool:has(input[value=navigate])"))
+                            drag_canvas!(page, 0.3, 0.3, 0.65, 0.65)
+                            @test retry_until(; timeout = 5_000, on_timeout = :false) do
+                                canvas_data(page) != before
+                            end
+                            @test evaluate(page, "() => document.querySelector('.readout-wrap').innerText") == probe
+                            click!(locator(page, ".plot-reset"))
+                            @test retry_until(; timeout = 5_000, on_timeout = :false) do
+                                canvas_data(page) == before
+                            end
+                            click!(locator(page, "label.plot-tool:has(input[value=pick])"))
+                            @test evaluate(page, "() => document.querySelector('input[value=pick]').checked")
                         end
                     end
                 end
@@ -341,6 +358,8 @@ else
                         # from the checkbox and from the stroke position.
                         @test drag_until_change!(page, before, 0.3, 0.3, 0.7, 0.7)
                         paint_stroke = canvas_data(page)
+                        drag_canvas!(page, 0.35, 0.45, 0.65, 0.55; button = "right")
+                        @test canvas_data(page) == paint_stroke
 
                         cleared = false
                         for _ in 1:3

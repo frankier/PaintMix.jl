@@ -130,12 +130,12 @@ function picked_result(model::PigmentModel, hex::AbstractString)
 end
 
 """
-    paint_pixel(pos, height) -> (col, row)
+    paint_pixel(pos) -> (col, row)
 
-Map a mouse data position on an `image!` axis to canvas indices. `image!`
-puts row 1 at the top, so the data y axis runs upward.
+Map the paint axis' data position to canvas indices. The axis reverses y so
+row 1 is at the top; image data is transposed to put columns on x.
 """
-paint_pixel(pos, height::Integer) = (round(Int, pos[1]), round(Int, Int(height) - pos[2] + 1))
+paint_pixel(pos) = (round(Int, pos[1]), round(Int, pos[2]))
 
 # The bounding box of the dab disc, clamped to the canvas, or `nothing` when
 # the disc lies entirely outside.
@@ -221,6 +221,6 @@ end
 """
     canvas_image(canvas) -> Matrix{Makie.RGBf}
 
-A copy of the display matrix, ready to hand to an `Observable` and `image!`.
+A copy with columns along x and rows along y, ready for `image!`.
 """
-canvas_image(canvas::PaintCanvas) = copy(canvas.display)
+canvas_image(canvas::PaintCanvas) = permutedims(canvas.display)

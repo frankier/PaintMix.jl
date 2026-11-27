@@ -83,6 +83,13 @@ carries the source spreadsheet cell of each K and S sample. The caption lists
 the grid and the Saunderson constants and surfaces the `kins` contradiction.
 The figure degrades to a note when the input database is absent.
 
+Curves retain their pigment colour in an opaque centre, surrounded by a wider
+outline with at least 3:1 luminance contrast against the white plot surface.
+Pale pigments, including white, stay visible. Dash gaps align between the two
+strokes. Measured/fitted curves use solid/dashed lines; on the shared
+reflectance axis, measured/fitted R′ use dots/dash-dot instead of reduced
+opacity. The fit page uses the same outlined spectra.
+
 `/cie` draws the spectral locus closed by the line of purples, with a radial
 crown of wavelength ticks and labels; the sRGB chromaticity triangle and D65;
 and each pigment three times — the raw K/S point, the fitted surrogate ring,
@@ -93,6 +100,11 @@ inverse lookup at that chromaticity and shows the recovered concentrations,
 the reconstructed color, the residual, and the nearest pigment. The caption
 lists the primaries, D65, the pigment layers, and the nominal paper colors.
 It degrades to a note when the input database is absent.
+
+The diagram toolbar has native icon radio buttons for **Pick point** (default)
+and **Pan / zoom**. Only Pick point updates the probe. Pan / zoom enables
+right-drag panning, scroll zoom and left-drag rectangle zoom. **Reset** restores
+the original diagram bounds while preserving the selected mode and probe.
 
 `/palette` draws the sRGB cube with its edges, the four pure-pigment runtime
 vertices, the nominal paper colors, and the D65 white point. A dropdown picks
@@ -120,6 +132,11 @@ flushed on release. At the default 128² a frame is 192 KiB (`3 * 4 * 128²`
 bytes), so a full-speed drag streams about 3.8 MiB/s; the dirty rectangle
 bounds the per-dab decode, and the frame copy is the cost that sets the
 default edge. The page needs only the runtime payload.
+
+Paint disables all axis navigation, including scroll zoom, rectangle zoom,
+panning, and keyboard-modified limit reset. A left drag paints within the
+canvas; controls and clicks outside it do not stamp paint. Canvas row 1 is at
+the top, and columns follow screen x, so strokes follow the pointer.
 
 `/tables` reads the inverse table at its stored vertices and shows a 2D slice
 for a selected fixed sRGB channel and level: one concentration field per
@@ -240,14 +257,17 @@ EXPLORER_E2E=1 julia --project=explorer -e 'using Pkg; Pkg.test()'
 payload (never the 96 MiB release artifact) and a small synthetic sidecar. It
 visits every page and asserts the title and a page-specific string, and it
 writes a screenshot, a console log, and a page-error log per page under
-`EXPLORER_E2E_ARTIFACTS`. It also asserts the model id and acceptance gates
+`EXPLORER_E2E_ARTIFACTS`. The tiny forward table comes from the synthetic
+spectral model, so paint blending can differ from RGB blending. It also asserts
+the model id and acceptance gates
 on `/` and `/provenance`; toggles a pigment and a quantity on `/spectra` and
 checks the readout table; clicks the diagram on
 `/cie` and checks the probe readout; and paints the same stroke on `/paint` in
 both the paint and naive-RGB modes, comparing the canvas data URL so the two
-blends are shown to differ. The `/spectra` and `/cie` interactions skip when
-the untracked input database is absent, so the lane still runs on a bare
-checkout.
+blends are shown to differ. Physical synthetic spectra supply all `/spectra`
+and `/cie` interaction fixtures without the measurement database. The
+CIE checks also switch navigation modes and reset the view; Paint checks that
+right-dragging leaves the canvas unchanged.
 
 `EXPLORER_E2E_BROWSER` swaps the engine (default `chromium`; WGLMakie can trip
 Firefox's slow-script limit, which the lane disables),
